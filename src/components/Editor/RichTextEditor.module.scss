@@ -1,0 +1,57 @@
+// RichTextEditor Styles
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+// ============================================
+// Container
+// ============================================
+
+.editor-container {
+    border: 1px solid $color-gray-300;
+    border-radius: $border-radius-sm;
+    background-color: $color-white;
+    overflow: hidden;
+    transition: border-color $transition-fast;
+
+    &:focus-within {
+        border-color: $color-primary;
+    }
+}
+
+// ============================================
+// Toolbar
+// ============================================
+
+.editor-toolbar {
+    display: flex;
+    gap: $spacing-1;
+    padding: $spacing-1;
+    border-bottom: 1px solid $color-gray-200;
+    background-color: $color-gray-50;
+    flex-wrap: wrap;
+}
+
+.toolbar-btn {
+    min-width: 32px;
+    padding: 4px;
+}
+
+.toolbar-btn--active {
+    background-color: rgba($color-primary, 0.15);
+}
+
+.toolbar-divider {
+    width: 1px;
+    background-color: $color-gray-200;
+    margin: 0 $spacing-1;
+}
+
+// ============================================
+// Editor Content
+// ============================================
+
+.editor-content {
+    min-height: 80px;
+    padding: $spacing-2;
+    cursor: text;
+}

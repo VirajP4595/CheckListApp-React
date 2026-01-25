@@ -1,0 +1,121 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.trigger {
+    color: $color-white; // Assuming on brand header
+
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+.content {
+    max-height: 60vh;
+    overflow-y: auto;
+    @include scrollbar;
+}
+
+.section {
+    margin-bottom: $spacing-5;
+}
+
+.section-title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    margin-bottom: $spacing-3;
+    color: $color-primary;
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+
+    svg {
+        font-size: 20px;
+    }
+}
+
+.key-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    margin-bottom: $spacing-2;
+}
+
+.key-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &--yes {
+        background-color: $color-success;
+    }
+
+    &--no {
+        background-color: $color-answer-no;
+    }
+
+    &--ps {
+        background-color: #ff8c00;
+    }
+
+    &--pc {
+        background-color: #0078d4;
+    }
+
+    &--sub {
+        background-color: #8764b8;
+    }
+
+    &--ots {
+        background-color: #038387;
+    }
+
+    &--none {
+        background-color: $color-gray-100;
+        border: 1px solid $color-gray-300;
+    }
+}
+
+.key-label {
+    font-weight: $font-weight-bold;
+    min-width: 60px;
+    font-size: $font-size-sm;
+    color: $color-gray-800;
+}
+
+.key-desc {
+    font-size: $font-size-sm;
+    color: $color-gray-600;
+}
+
+.note {
+    margin-top: $spacing-4;
+    padding: $spacing-3;
+    background-color: $color-gray-50;
+    border-radius: $border-radius-md;
+    font-style: italic;
+    font-size: $font-size-sm;
+    color: $color-gray-700;
+    border-left: 3px solid $color-accent;
+}
+
+.usage-list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+}
+
+.usage-item {
+    font-size: $font-size-sm;
+    line-height: $line-height-relaxed;
+    color: $color-gray-700;
+
+    strong {
+        color: $color-gray-900;
+        font-weight: $font-weight-semibold;
+    }
+}
+
+.dialog-actions {
+    margin-top: $spacing-4;
+}

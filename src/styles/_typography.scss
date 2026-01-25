@@ -1,0 +1,225 @@
+// ============================================
+// PAP Checklist - Typography Styles
+// ============================================
+
+@use 'variables' as *;
+
+// ============================================
+// Font Face Declarations
+// ============================================
+
+// Note: In production, load Radnika Next and Avenir from proper font sources
+// For now, we use system font fallbacks that approximate the brand fonts
+
+// If you have the font files, uncomment and configure:
+// @font-face {
+//   font-family: 'Radnika Next';
+//   src: url('/fonts/RadnikaNext-Bold.woff2') format('woff2');
+//   font-weight: 700;
+//   font-style: normal;
+//   font-display: swap;
+// }
+
+// @font-face {
+//   font-family: 'Avenir';
+//   src: url('/fonts/Avenir-Roman.woff2') format('woff2');
+//   font-weight: 400;
+//   font-style: normal;
+//   font-display: swap;
+// }
+
+// ============================================
+// Base Typography Reset
+// ============================================
+
+html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: $font-family-body;
+    font-size: $font-size-base;
+    font-weight: $font-weight-normal;
+    line-height: $line-height-normal;
+    color: $color-gray-800;
+}
+
+// ============================================
+// Heading Styles
+// ============================================
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: $font-family-heading;
+    margin: 0;
+    color: $color-gray-900;
+}
+
+h1 {
+    font-size: $font-size-3xl;
+    font-weight: $font-weight-bold;
+    line-height: $line-height-tight;
+    letter-spacing: -0.02em;
+
+    @media (min-width: $breakpoint-lg) {
+        font-size: $font-size-4xl;
+    }
+}
+
+h2 {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    line-height: $line-height-tight;
+    letter-spacing: -0.01em;
+
+    @media (min-width: $breakpoint-lg) {
+        font-size: $font-size-3xl;
+    }
+}
+
+h3 {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
+    line-height: $line-height-tight;
+}
+
+h4 {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    line-height: $line-height-normal;
+}
+
+h5 {
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    line-height: $line-height-normal;
+}
+
+h6 {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    line-height: $line-height-normal;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+// ============================================
+// Paragraph & Text
+// ============================================
+
+p {
+    margin: 0 0 $spacing-4 0;
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+strong,
+b {
+    font-weight: $font-weight-semibold;
+}
+
+small {
+    font-size: $font-size-sm;
+}
+
+// ============================================
+// Links
+// ============================================
+
+a {
+    color: $color-primary;
+    text-decoration: none;
+    transition: color $transition-fast;
+
+    &:hover {
+        color: $color-primary-light;
+        text-decoration: underline;
+    }
+
+    &:focus {
+        outline: 2px solid $color-primary;
+        outline-offset: 2px;
+    }
+}
+
+// ============================================
+// Lists
+// ============================================
+
+ul,
+ol {
+    margin: 0 0 $spacing-4 0;
+    padding-left: $spacing-6;
+
+    li {
+        margin-bottom: $spacing-2;
+    }
+}
+
+// ============================================
+// Code & Monospace
+// ============================================
+
+code,
+kbd,
+pre,
+samp {
+    font-family: $font-family-mono;
+    font-size: $font-size-sm;
+}
+
+code {
+    background-color: $color-gray-100;
+    padding: 0.125em 0.25em;
+    border-radius: $border-radius-sm;
+}
+
+pre {
+    background-color: $color-gray-900;
+    color: $color-gray-100;
+    padding: $spacing-4;
+    border-radius: $border-radius-md;
+    overflow-x: auto;
+
+    code {
+        background: none;
+        padding: 0;
+    }
+}
+
+// ============================================
+// Brand Typography Classes
+// ============================================
+
+.pap-title {
+    font-family: $font-family-heading;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+}
+
+.pap-subtitle {
+    font-family: $font-family-body;
+    font-weight: $font-weight-normal;
+    color: $color-gray-600;
+}
+
+.pap-label {
+    font-family: $font-family-body;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $color-gray-500;
+}
+
+.pap-mono {
+    font-family: $font-family-mono;
+}

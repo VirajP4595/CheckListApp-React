@@ -1,0 +1,373 @@
+// Dashboard Component Styles
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+// ============================================
+// Dashboard Container
+// ============================================
+
+.dashboard {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+// ============================================
+// Dashboard Header
+// ============================================
+
+// ============================================
+// Dashboard Header
+// ============================================
+
+.dashboard-header {
+    background: linear-gradient(135deg, rgba($color-primary, 0.95) 0%, rgba($color-primary-dark, 0.98) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: $color-white;
+    padding: $spacing-3 $spacing-4; // Significantly reduced padding
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-bottom: 1px solid rgba($color-white, 0.1);
+
+    @include breakpoint('md') {
+        padding: $spacing-4 $spacing-6; // Compact but breathable on desktop
+    }
+}
+
+.dashboard-header-content {
+    @include container;
+    @include flex-between;
+    flex-wrap: wrap;
+    gap: $spacing-3;
+}
+
+.dashboard-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0; // Removing gap to tighten title area
+}
+
+.dashboard-title-main {
+    font-family: $font-family-heading;
+    font-size: $font-size-xl; // Reduced from 2xl
+    font-weight: $font-weight-bold;
+    color: $color-white;
+    margin: 0;
+    letter-spacing: -0.01em;
+
+    @include breakpoint('md') {
+        font-size: $font-size-2xl; // Reduced from 3xl
+    }
+}
+
+.dashboard-title-sub {
+    font-size: $font-size-xs;
+    color: rgba($color-white, 0.7);
+    font-weight: $font-weight-normal;
+    letter-spacing: 0.02em;
+}
+
+// ============================================
+// Create Button
+// ============================================
+
+.dashboard-create-btn {
+    background-color: $color-accent !important;
+    color: $color-gray-900 !important;
+    font-weight: $font-weight-bold;
+    padding: $spacing-2 $spacing-4;
+    border-radius: $border-radius-full; // Updated to pill shape
+    transition: all $transition-base;
+    box-shadow: 0 4px 12px rgba($color-accent, 0.3); // Added initial shadow
+
+    &:hover {
+        transform: translateY(-2px);
+        background-color: $color-accent-light !important;
+        box-shadow: 0 8px 20px rgba($color-accent, 0.4); // Enhanced glow on hover
+    }
+}
+
+// ============================================
+// Dashboard Content Area
+// ============================================
+
+.dashboard-content {
+    flex: 1;
+    padding: $spacing-6 $spacing-4;
+    background-color: $color-background;
+
+    @include breakpoint('md') {
+        padding: $spacing-8 $spacing-6;
+    }
+}
+
+.dashboard-container {
+    @include container;
+}
+
+// ============================================
+// Checklist Grid
+// ============================================
+
+.checklist-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $spacing-4;
+
+    @include breakpoint('sm') {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include breakpoint('lg') {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    @include breakpoint('xl') {
+        gap: $spacing-6;
+    }
+}
+
+// ============================================
+// Checklist Card
+// ============================================
+
+.checklist-card {
+    @include card;
+    @include card-hover;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid $color-gray-200;
+
+    &:focus-visible {
+        outline: 2px solid $color-primary;
+        outline-offset: 2px;
+    }
+}
+
+.checklist-card-header {
+    padding: $spacing-4;
+    border-bottom: 1px solid $color-gray-200;
+    background: linear-gradient(to right, rgba($color-primary, 0.05), transparent);
+}
+
+.checklist-card-job-ref {
+    font-family: $font-family-mono;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-primary;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: $spacing-1;
+}
+
+.checklist-card-title {
+    font-family: $font-family-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-900;
+    margin: 0;
+    line-height: $line-height-tight;
+}
+
+.checklist-card-body {
+    padding: $spacing-4;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+}
+
+.checklist-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-2;
+    align-items: center;
+}
+
+.checklist-card-status {
+    display: inline-flex;
+    align-items: center;
+    padding: $spacing-1 $spacing-2;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    border-radius: $border-radius-full;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+
+    &--draft {
+        background-color: rgba($color-status-draft, 0.15);
+        color: $color-status-draft;
+    }
+
+    &--in-review {
+        background-color: rgba($color-status-review, 0.15);
+        color: $color-status-review;
+    }
+
+    &--final {
+        background-color: rgba($color-status-final, 0.15);
+        color: $color-status-final;
+    }
+}
+
+.checklist-card-revision {
+    font-family: $font-family-mono;
+    font-size: $font-size-xs;
+    color: $color-gray-600;
+    background-color: $color-gray-100;
+    padding: $spacing-1 $spacing-2;
+    border-radius: $border-radius-sm;
+}
+
+.checklist-card-details {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+    margin-top: $spacing-1;
+}
+
+.checklist-card-detail-item {
+    display: flex;
+    gap: $spacing-2;
+    font-size: $font-size-xs;
+    line-height: $line-height-normal;
+}
+
+.detail-label {
+    color: $color-gray-500;
+    font-weight: $font-weight-medium;
+    min-width: 80px;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    color: $color-gray-700;
+    @include truncate;
+}
+
+.checklist-card-footer {
+    padding: $spacing-3 $spacing-4;
+    border-top: 1px solid $color-gray-100;
+    background-color: $color-gray-50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.checklist-card-date,
+.checklist-card-estimator {
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+}
+
+// ============================================
+// Empty State
+// ============================================
+
+.dashboard-empty {
+    @include flex-center;
+    flex-direction: column;
+    padding: $spacing-16 $spacing-4;
+    text-align: center;
+}
+
+.dashboard-empty-icon {
+    width: 80px;
+    height: 80px;
+    margin-bottom: $spacing-4;
+    color: $color-gray-400;
+}
+
+.dashboard-empty-title {
+    font-family: $font-family-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+    margin-bottom: $spacing-2;
+}
+
+.dashboard-empty-text {
+    font-size: $font-size-base;
+    color: $color-gray-500;
+    margin-bottom: $spacing-6;
+}
+
+// ============================================
+// Loading State
+// ============================================
+
+.dashboard-loading {
+    @include flex-center;
+    min-height: 300px;
+}
+
+// ============================================
+// Create Dialog Form
+// ============================================
+
+.create-form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-4;
+}
+
+.create-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+}
+
+.create-form-label {
+    @include label;
+}
+
+// ============================================
+// User Profile (in Header)
+// ============================================
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    margin-left: auto; // Push to right
+    margin-right: $spacing-4; // Space before Create button
+    padding: $spacing-2 $spacing-3;
+    background-color: rgba($color-white, 0.1);
+    border-radius: $border-radius-full;
+    border: 1px solid rgba($color-white, 0.2);
+
+    @media (max-width: $breakpoint-sm) {
+        display: none; // Hide on mobile if crowded, or adjust
+    }
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    background-color: rgba($color-white, 0.2);
+    color: $color-white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.user-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-white;
+    line-height: 1.2;
+}
+
+.user-email {
+    font-size: $font-size-xs;
+    color: rgba($color-white, 0.7);
+    line-height: 1.2;
+}

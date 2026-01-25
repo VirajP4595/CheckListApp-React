@@ -1,0 +1,126 @@
+// RevisionPanel Styles
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+// ============================================
+// Panel Container
+// ============================================
+
+.revision-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: $color-white;
+}
+
+// ============================================
+// Panel Header
+// ============================================
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-3 $spacing-4;
+    border-bottom: 1px solid $color-gray-200;
+    background: linear-gradient(to right, rgba($color-accent, 0.15), transparent);
+}
+
+.panel-title {
+    font-family: $font-family-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-gray-900;
+}
+
+.panel-close {
+    flex-shrink: 0;
+}
+
+// ============================================
+// Revision List
+// ============================================
+
+.revision-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-3;
+    @include scrollbar;
+}
+
+.revision-card {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-3;
+    padding: $spacing-3;
+    margin-bottom: $spacing-2;
+    background-color: $color-white;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-md;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+        border-color: $color-primary;
+        box-shadow: $shadow-sm;
+    }
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.revision-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    padding: $spacing-1 $spacing-2;
+    font-family: $font-family-mono;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    background-color: $color-accent;
+    color: $color-gray-900;
+    border-radius: $border-radius-sm;
+    flex-shrink: 0;
+}
+
+.revision-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.revision-summary {
+    font-weight: $font-weight-medium;
+    color: $color-gray-900;
+    margin-bottom: $spacing-1;
+    @include truncate;
+}
+
+.revision-meta {
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+}
+
+// ============================================
+// Create Revision Button
+// ============================================
+
+.create-revision {
+    padding: $spacing-3 $spacing-4;
+    border-top: 1px solid $color-gray-200;
+    background-color: $color-gray-50;
+}
+
+// ============================================
+// Empty State
+// ============================================
+
+.revision-empty {
+    @include flex-center;
+    flex-direction: column;
+    gap: $spacing-3;
+    padding: $spacing-8;
+    color: $color-gray-400;
+    text-align: center;
+}

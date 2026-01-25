@@ -1,0 +1,414 @@
+// Checklist Editor Styles
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+@use 'sass:color';
+
+// ============================================
+// Editor Container
+// ============================================
+
+.editor {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: $color-background;
+}
+
+// ============================================
+// Editor Header
+// ============================================
+
+// ============================================
+// Editor Header
+// ============================================
+
+.editor-header {
+    position: sticky;
+    top: 0;
+    z-index: $z-index-sticky;
+    // Modern Glassmorphism Background
+    background: linear-gradient(135deg, rgba($color-primary, 0.95) 0%, rgba($color-primary-dark, 0.98) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba($color-white, 0.1);
+    color: $color-white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transition: all $transition-base;
+}
+
+.editor-header-content {
+    @include container;
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    padding: $spacing-2 $spacing-3;
+    flex-wrap: wrap;
+
+    @include breakpoint('sm') {
+        gap: $spacing-3;
+        padding: $spacing-3 $spacing-4;
+    }
+
+    @include breakpoint('md') {
+        padding: $spacing-3 $spacing-6; // Slightly more compact vertical padding
+        gap: $spacing-4;
+        flex-wrap: nowrap;
+    }
+}
+
+.editor-back-btn {
+    color: rgba($color-white, 0.9) !important;
+    flex-shrink: 0;
+    border-radius: $border-radius-full !important;
+    transition: all $transition-fast !important;
+
+    &:hover {
+        background-color: rgba($color-white, 0.15) !important;
+        color: $color-white !important;
+        transform: translateX(-2px);
+    }
+}
+
+.editor-title-area {
+    flex: 1 1 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+    order: 2;
+
+    @include breakpoint('sm') {
+        flex: 1 1 auto;
+        flex-direction: row;
+        align-items: center;
+        gap: $spacing-3;
+        order: 0;
+    }
+}
+
+.editor-job-ref {
+    font-family: $font-family-mono;
+    font-size: $font-size-xs;
+    color: rgba($color-white, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba($color-white, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+
+    @include breakpoint('sm') {
+        font-size: $font-size-xs; // Kept consistent
+    }
+}
+
+.editor-title {
+    font-family: $font-family-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold; // Bolder title
+    color: $color-white;
+    // @include truncate; // Removed strict truncation to prevent cutoff
+    // Allow wrapping if needed, or just handle overflow better
+    white-space: normal;
+    overflow: visible;
+    line-height: 1.3; // Increased line-height
+    letter-spacing: -0.01em;
+
+    @include breakpoint('md') {
+        font-size: $font-size-xl;
+    }
+}
+
+.editor-status {
+    display: none;
+    align-items: center;
+    padding: 4px 10px; // Refined padding
+    font-size: 11px; // Precise size
+    font-weight: $font-weight-bold;
+    border-radius: $border-radius-full;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); // Subtle shadow for depth
+
+    @include breakpoint('sm') {
+        display: inline-flex;
+    }
+
+    &--draft {
+        background-color: rgba($color-white, 0.15);
+        color: rgba($color-white, 0.9);
+        border: 1px solid rgba($color-white, 0.2);
+    }
+
+    &--in-review {
+        background-color: rgba($color-status-review, 0.2);
+        color: color.adjust($color-status-review, $lightness: 10%);
+        border: 1px solid rgba($color-status-review, 0.4);
+    }
+
+    &--final {
+        background-color: rgba($color-success, 0.2);
+        color: color.adjust($color-success, $lightness: 10%);
+        border: 1px solid rgba($color-success, 0.4);
+    }
+}
+
+// Status Badge (read-only display)
+.editor-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: $font-weight-bold;
+    border-radius: $border-radius-full;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+    backdrop-filter: blur(4px);
+    transition: all $transition-fast;
+
+    &--draft {
+        background: linear-gradient(135deg, rgba($color-white, 0.15), rgba($color-white, 0.08));
+        color: rgba($color-white, 0.9);
+        border: 1px solid rgba($color-white, 0.25);
+    }
+
+    &--in-review {
+        background: linear-gradient(135deg, rgba($color-status-review, 0.25), rgba($color-status-review, 0.15));
+        color: color.adjust($color-status-review, $lightness: 15%);
+        border: 1px solid rgba($color-status-review, 0.4);
+    }
+
+    &--final {
+        background: linear-gradient(135deg, rgba($color-success, 0.25), rgba($color-success, 0.15));
+        color: color.adjust($color-success, $lightness: 15%);
+        border: 1px solid rgba($color-success, 0.4);
+    }
+}
+
+.editor-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2; // Increased gap slightly for breathability
+    flex-shrink: 0;
+    flex-basis: 100%;
+    justify-content: flex-end;
+    order: 3;
+
+    @include breakpoint('sm') {
+        gap: $spacing-2;
+        flex-basis: auto;
+        order: 0;
+    }
+}
+
+.editor-save-btn {
+    background-color: $color-accent !important;
+    color: $color-gray-900 !important;
+    font-weight: $font-weight-bold !important;
+    padding: $spacing-1 $spacing-2 !important;
+    min-width: unset !important;
+    font-size: 0 !important; // Hide text on mobile
+    border-radius: $border-radius-full !important; // Pill shape
+    box-shadow: 0 4px 12px rgba($color-accent, 0.4) !important; // Glow effect
+    transition: all $transition-base !important;
+
+    // Keep icon visible
+    >span {
+        font-size: $font-size-base;
+    }
+
+    @include breakpoint('sm') {
+        padding: 6px 16px !important; // Comfortable padding
+        font-size: $font-size-sm !important;
+    }
+
+    &:hover {
+        background-color: $color-accent-light !important;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba($color-accent, 0.5) !important;
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+}
+
+// ============================================
+// Editor Layout
+// ============================================
+
+.editor-layout {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: $spacing-4;
+
+    @include breakpoint('lg') {
+        flex-direction: row;
+        gap: $spacing-6;
+        padding: $spacing-6;
+    }
+}
+
+.editor-main {
+    flex: 1;
+    min-width: 0;
+    @include container;
+    padding: 0;
+}
+
+.editor-sidebar {
+    display: none;
+
+    @include breakpoint('lg') {
+        display: block;
+        width: 320px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 100px;
+        align-self: flex-start;
+        max-height: calc(100vh - 120px);
+        overflow-y: auto;
+        @include scrollbar;
+    }
+}
+
+// ============================================
+// Workgroups List
+// ============================================
+
+.editor-workgroups {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-4;
+
+    @include breakpoint('md') {
+        gap: $spacing-4;
+    }
+}
+
+.editor-add-workgroup {
+    margin-top: $spacing-4 !important;
+
+    // Dashed "Add" style (matching Workgroup Add Item)
+    width: 100% !important;
+    min-height: 48px; // Touch target
+    border: 2px dashed $color-gray-300 !important;
+    background: transparent !important;
+    color: $color-gray-500 !important;
+    justify-content: center !important;
+    font-weight: $font-weight-medium !important;
+
+    &:hover {
+        border-color: $color-primary !important;
+        color: $color-primary !important;
+        background: rgba($color-primary, 0.05) !important;
+    }
+
+    @include breakpoint('md') {
+        margin-top: $spacing-6;
+    }
+}
+
+// ============================================
+// Mobile Actions (bottom of page)
+// ============================================
+
+.editor-mobile-actions {
+    display: flex;
+    gap: $spacing-2;
+    margin-top: $spacing-4;
+    flex-wrap: wrap;
+
+    @include breakpoint('sm') {
+        display: none;
+    }
+}
+
+.editor-mobile-revision {
+    margin-top: $spacing-4;
+
+    @include breakpoint('sm') {
+        display: none;
+    }
+}
+
+// ============================================
+// Compact Mobile Header Buttons
+// ============================================
+
+.editor-action-btn--mobile {
+    padding: $spacing-1 $spacing-2 !important;
+    min-width: unset !important;
+
+    // Hide button text on very small screens, show only icon
+    span:not([class*="icon"]) {
+        display: none;
+    }
+
+    @include breakpoint('sm') {
+        padding: $spacing-2 $spacing-3 !important;
+
+        span:not([class*="icon"]) {
+            display: inline;
+        }
+    }
+}
+
+// ============================================
+// Loading State
+// ============================================
+
+.editor-loading {
+    @include flex-center;
+    min-height: 50vh;
+}
+
+// ============================================
+// Action Buttons (in header)
+// ============================================
+
+.editor-action-btn {
+    background-color: transparent !important;
+    color: rgba($color-white, 0.9) !important;
+    padding: $spacing-1 $spacing-2 !important;
+    min-width: unset !important;
+    font-size: 0 !important; // Hide text on mobile
+    border-radius: $border-radius-full !important;
+    border: 1px solid transparent !important;
+    transition: all $transition-fast !important;
+
+    // Keep icon visible
+    >span {
+        font-size: $font-size-base;
+    }
+
+    @include breakpoint('sm') {
+        padding: 6px 14px !important;
+        font-size: $font-size-sm !important;
+    }
+
+    // Ensure icons inside button are also white
+    span,
+    i,
+    svg {
+        color: inherit !important;
+        fill: currentColor !important;
+    }
+
+    &:hover {
+        background-color: rgba($color-white, 0.1) !important;
+        color: $color-white !important;
+        border-color: rgba($color-white, 0.2) !important;
+    }
+}
+
+// Auto-save indicator styling
+.editor-autosave {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    font-size: $font-size-xs;
+    color: rgba($color-white, 0.8);
+}

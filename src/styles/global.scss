@@ -1,0 +1,341 @@
+// ============================================
+// PAP Checklist - Global Styles
+// ============================================
+
+@use 'variables' as *;
+@use 'mixins' as *;
+@use 'typography';
+
+// ============================================
+// CSS Reset / Normalize
+// ============================================
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+* {
+    margin: 0;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+}
+
+body {
+    background-color: $color-background;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+    display: block;
+    max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+    font: inherit;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    overflow-wrap: break-word;
+}
+
+#root {
+    isolation: isolate;
+}
+
+// ============================================
+// Focus Styles (Accessibility)
+// ============================================
+
+:focus-visible {
+    outline: 2px solid $color-primary;
+    outline-offset: 2px;
+}
+
+// Remove focus outline for mouse users
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+// ============================================
+// Selection Styles
+// ============================================
+
+::selection {
+    background-color: $color-accent;
+    color: $color-gray-900;
+}
+
+// ============================================
+// Scrollbar Styles
+// ============================================
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: $color-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+    background: $color-gray-400;
+    border-radius: 5px;
+
+    &:hover {
+        background: $color-gray-500;
+    }
+}
+
+// Firefox scrollbar
+* {
+    scrollbar-width: thin;
+    scrollbar-color: $color-gray-400 $color-gray-100;
+}
+
+// ============================================
+// App Layout Containers
+// ============================================
+
+.pap-app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: $color-background;
+}
+
+.pap-container {
+    @include container;
+}
+
+.pap-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+// ============================================
+// Brand Header Bar
+// ============================================
+
+.pap-header {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
+    color: $color-white;
+    padding: $spacing-4 $spacing-6;
+    box-shadow: $shadow-md;
+    position: sticky;
+    top: 0;
+    z-index: $z-index-sticky;
+
+    @include mobile {
+        padding: $spacing-3 $spacing-4;
+    }
+}
+
+.pap-header-content {
+    @include flex-between;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.pap-header-title {
+    font-family: $font-family-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-white;
+
+    @include mobile {
+        font-size: $font-size-lg;
+    }
+}
+
+.pap-header-actions {
+    @include flex-start;
+    gap: $spacing-3;
+}
+
+// ============================================
+// Card Styles
+// ============================================
+
+.pap-card {
+    @include card;
+    padding: $spacing-4;
+
+    @include breakpoint('md') {
+        padding: $spacing-6;
+    }
+}
+
+.pap-card-header {
+    @include flex-between;
+    margin-bottom: $spacing-4;
+    padding-bottom: $spacing-3;
+    border-bottom: 1px solid $color-gray-200;
+}
+
+.pap-card-title {
+    font-family: $font-family-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-900;
+}
+
+// ============================================
+// Badge Styles
+// ============================================
+
+.pap-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: $spacing-1 $spacing-2;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    border-radius: $border-radius-full;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pap-badge--primary {
+    background-color: $color-primary;
+    color: $color-white;
+}
+
+.pap-badge--success {
+    background-color: $color-success;
+    color: $color-white;
+}
+
+.pap-badge--accent {
+    background-color: $color-accent;
+    color: $color-gray-900;
+}
+
+.pap-badge--draft {
+    background-color: $color-status-draft;
+    color: $color-white;
+}
+
+.pap-badge--review {
+    background-color: $color-status-review;
+    color: $color-white;
+}
+
+.pap-badge--final {
+    background-color: $color-status-final;
+    color: $color-white;
+}
+
+// ============================================
+// Button Overrides (FluentUI Integration)
+// ============================================
+
+// Primary brand button
+.pap-button-primary {
+    background-color: $color-primary !important;
+    border-color: $color-primary !important;
+
+    &:hover {
+        background-color: $color-primary-light !important;
+        border-color: $color-primary-light !important;
+    }
+}
+
+// Success button
+.pap-button-success {
+    background-color: $color-success !important;
+    border-color: $color-success !important;
+}
+
+// ============================================
+// Loading State
+// ============================================
+
+.pap-loading {
+    @include flex-center;
+    min-height: 200px;
+}
+
+// ============================================
+// Empty State
+// ============================================
+
+.pap-empty-state {
+    @include flex-center;
+    flex-direction: column;
+    padding: $spacing-12;
+    text-align: center;
+    color: $color-gray-500;
+}
+
+// ============================================
+// Transitions & Animations
+// ============================================
+
+.pap-fade-in {
+    @include fade-in;
+}
+
+.pap-slide-up {
+    @include slide-up;
+}
+
+// ============================================
+// Utility Classes
+// ============================================
+
+.pap-sr-only {
+    @include visually-hidden;
+}
+
+.pap-truncate {
+    @include truncate;
+}
+
+.pap-text-center {
+    text-align: center;
+}
+
+.pap-text-primary {
+    color: $color-primary;
+}
+
+.pap-text-success {
+    color: $color-success;
+}
+
+.pap-text-muted {
+    color: $color-gray-500;
+}
+
+.pap-mt-4 {
+    margin-top: $spacing-4;
+}
+
+.pap-mb-4 {
+    margin-bottom: $spacing-4;
+}
+
+.pap-gap-4 {
+    gap: $spacing-4;
+}

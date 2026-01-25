@@ -1,0 +1,136 @@
+// ChecklistFiles Styles
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+// ============================================
+// Container
+// ============================================
+
+.files-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: $spacing-3;
+}
+
+// ============================================
+// Upload Area
+// ============================================
+
+.files-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-6;
+    border: 2px dashed $color-gray-300;
+    border-radius: $border-radius-md;
+    background-color: $color-gray-50;
+    cursor: pointer;
+    transition: all $transition-fast;
+    margin-bottom: $spacing-4;
+
+    &:hover {
+        border-color: $color-primary;
+        background-color: rgba($color-primary, 0.05);
+    }
+
+    &--dragging {
+        border-color: $color-primary;
+        background-color: rgba($color-primary, 0.1);
+    }
+}
+
+.files-upload-icon {
+    color: $color-gray-400;
+    margin-bottom: $spacing-2;
+}
+
+.files-upload-text {
+    font-size: $font-size-sm;
+    color: $color-gray-600;
+    text-align: center;
+}
+
+.files-upload-hint {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    margin-top: $spacing-1;
+}
+
+// ============================================
+// File List
+// ============================================
+
+.files-list {
+    flex: 1;
+    overflow-y: auto;
+    @include scrollbar;
+}
+
+.files-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    padding: $spacing-2;
+    border-radius: $border-radius-sm;
+    transition: background-color $transition-fast;
+
+    &:hover {
+        background-color: $color-gray-50;
+    }
+}
+
+.files-item-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: $color-gray-100;
+    border-radius: $border-radius-sm;
+    color: $color-gray-500;
+}
+
+.files-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.files-item-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-900;
+    @include truncate;
+}
+
+.files-item-meta {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    margin-top: 2px;
+}
+
+.files-item-actions {
+    display: flex;
+    gap: $spacing-1;
+    opacity: 0;
+    transition: opacity $transition-fast;
+
+    .files-item:hover & {
+        opacity: 1;
+    }
+}
+
+// ============================================
+// Empty State
+// ============================================
+
+.files-empty {
+    @include flex-center;
+    flex-direction: column;
+    gap: $spacing-2;
+    color: $color-gray-400;
+    padding: $spacing-6;
+    text-align: center;
+}

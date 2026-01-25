@@ -1,0 +1,4 @@
+
+// Add jobs entity to known entities list (if not dynamic)
+// Actually dataverseService.ts exports 'entities'. I should append to it or just use string literal 'pap_jobs'.
+// I used string literal 'pap_jobs' in the service above.

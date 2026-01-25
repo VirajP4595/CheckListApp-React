@@ -1,0 +1,269 @@
+@use "sass:color";
+// WorkgroupSection Styles (Reference Style)
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+// ============================================
+// Workgroup Section Container
+// ============================================
+
+.workgroup {
+    @include card;
+    overflow: visible;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-lg; // Ensure rounded corners
+    transition: box-shadow $transition-base;
+    // margin-bottom: $spacing-5;
+    background: $color-white;
+
+    &:hover {
+        box-shadow: $shadow-lg;
+    }
+}
+
+// ============================================
+// Workgroup Header
+// ============================================
+
+.workgroup-header {
+    display: flex;
+    justify-content: space-between; // Split Left and Right
+    align-items: center;
+    gap: $spacing-4;
+    padding: 1.25rem; // p-5
+    // background: $color-white;
+    border-bottom: 1px solid $color-border;
+    border-radius: $border-radius-lg $border-radius-lg 0 0; // Rounded top only
+
+    @include mobile {
+        padding: $spacing-3;
+        flex-wrap: wrap;
+        gap: $spacing-2;
+    }
+}
+
+.workgroup-header-left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-4;
+    flex: 1;
+    min-width: 0;
+}
+
+.workgroup-header-right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-4;
+    flex-shrink: 0;
+}
+
+.workgroup-expand-btn {
+    color: $color-gray-400 !important;
+    min-width: 20px !important;
+    padding: 0 !important;
+    height: 20px !important;
+    flex-shrink: 0;
+
+    &:hover {
+        color: $color-gray-600 !important;
+    }
+}
+
+// ============================================
+// Number Badge / Input
+// ============================================
+
+$badge-bg: $color-primary-subtle;
+$badge-color: $color-primary;
+$badge-height: 40px;
+$badge-radius: $border-radius-lg;
+
+.workgroup-number-badge {
+    font-family: $font-family-mono;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    background-color: $badge-bg;
+    color: $badge-color;
+
+    // Fixed size-ish, min width
+    min-width: 3rem;
+    height: $badge-height;
+    padding: 0 0.75rem;
+    border-radius: $badge-radius;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.workgroup-number-input {
+    // Matches badge style exactly but editable
+    @include input-filled;
+
+    // Override specific mixin defaults for number badge look
+    min-width: 3rem;
+    width: 5rem;
+    padding: 0 0.75rem;
+    border-radius: $badge-radius !important;
+    background-color: $badge-bg !important; // Keep badge color or use input gray? User said consistency.
+    // If I use input-filled, it turns gray. Badge is usually blue-subtle.
+    // Maybe number input should stay blue-subtle? 
+    // "all the inputs text boxed" implies fields like Title, Description.
+    // Number is a special token.
+    // I will stick to badge color but ensure it looks like an input when editing?
+    // Actually, let's keep it consistent with other inputs for "Edit Mode".
+    background-color: $color-gray-100 !important;
+
+    input {
+        text-align: center !important;
+        padding: 0 !important; // Override mixin padding
+    }
+}
+
+// ============================================
+// Title Text / Input
+// ============================================
+
+.workgroup-title-text {
+    font-size: $font-size-base;
+    font-weight: $font-weight-bold;
+    color: $color-gray-900;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.5; // Ensure descenders fit
+    padding-bottom: 1px; // Safety buffer
+    padding-top: 1px;
+}
+
+.workgroup-title-input {
+    flex: 1;
+    min-width: 150px;
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+
+    @include input-filled;
+}
+
+// ============================================
+// Item Count & Status
+// ============================================
+
+.workgroup-item-count {
+    flex-shrink: 0;
+    font-size: $font-size-xs;
+    color: $color-gray-500; // Screenshot gray text
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.workgroup-status-summary {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+
+    // Improved Styling (Dot Indicators)
+    .status-summary-container {
+        display: flex;
+        align-items: center;
+        gap: $spacing-3; // Space between groups (1 Yes   3 Blank)
+    }
+
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: $spacing-2; // Space between dot and text
+        color: $color-gray-500; // Text is always gray
+        font-size: $font-size-xs;
+        font-weight: $font-weight-medium;
+        white-space: nowrap;
+    }
+
+    // Dots are rendered as text (\u25cf) so we size them via font-size
+    .status-dot-yes {
+        color: $color-success;
+        font-size: 0.75em; // Slightly smaller than text
+        line-height: 1;
+        transform: translateY(-1px); // Optical alignment
+    }
+
+    .status-dot-no {
+        color: $color-error;
+        font-size: 0.75em;
+        line-height: 1;
+        transform: translateY(-1px);
+    }
+
+    .status-dot-blank {
+        color: $color-gray-400;
+        font-size: 0.75em;
+        line-height: 1;
+        transform: translateY(-1px);
+    }
+
+    @include mobile {
+        display: none;
+    }
+}
+
+// ============================================
+// Actions
+// ============================================
+
+.workgroup-actions {
+    display: flex;
+    gap: $spacing-1;
+    flex-shrink: 0;
+}
+
+.workgroup-action-btn {
+    color: $color-gray-400 !important;
+
+    &:hover {
+        color: $color-gray-600 !important;
+    }
+}
+
+.workgroup-action-btn--delete {
+    color: $color-gray-400 !important;
+
+    &:hover {
+        color: $color-error !important;
+        background: rgba($color-error, 0.1) !important;
+    }
+}
+
+// ============================================
+// Content Area
+// ============================================
+
+.workgroup-content {
+    padding: 1.25rem;
+    background-color: $color-gray-50;
+    border-radius: 0 0 $border-radius-lg $border-radius-lg; // Rounded bottom only
+
+    // Fix top border issue if content is just below header
+    // The header has border-bottom, so content starts cleanly.
+}
+
+.workgroup-rows {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+}
+
+.workgroup-add-row {
+    margin-top: $spacing-4;
+    width: 100% !important;
+    border: 2px dashed $color-gray-300 !important;
+    background: transparent !important;
+    color: $color-gray-500 !important;
+    justify-content: center !important;
+
+    &:hover {
+        border-color: $color-primary !important;
+        color: $color-primary !important;
+    }
+}
