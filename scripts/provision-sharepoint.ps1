@@ -116,6 +116,7 @@ try {
     Add-PnPFolder -Name $templateFolder -Folder $libraryUrl | Out-Null
     Add-PnPFolder -Name "files" -Folder "$libraryUrl/$templateFolder" | Out-Null
     Add-PnPFolder -Name "images" -Folder "$libraryUrl/$templateFolder" | Out-Null
+    Add-PnPFolder -Name "branding" -Folder "$libraryUrl/$templateFolder" | Out-Null
     Write-Host "  ✓ Template folder structure created" -ForegroundColor Green
 }
 

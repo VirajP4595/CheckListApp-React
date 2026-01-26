@@ -43,6 +43,12 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
         setExpanded(!expanded);
     };
 
+    React.useEffect(() => {
+        if (expanded) {
+            useChecklistStore.getState().fetchRowImages(row.id);
+        }
+    }, [expanded, row.id]);
+
 
 
     const handleToggleReview = () => {

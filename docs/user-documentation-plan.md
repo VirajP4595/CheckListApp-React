@@ -61,11 +61,17 @@ Comprehensive reference for all application features.
 - Viewing historical snapshots
 - Understanding read-only mode for revisions
 
-#### 2.5 Exporting to PDF
-- Previewing the PDF layout
-- Downloading the PDF
-- PDF naming conventions
-- What's included in the export
+#### 2.5 Branding & Settings
+- **Client Logo**: Uploading a custom logo for reports (via Branding tab)
+- **Preview**: Verifying how the logo appears
+- **Fallback**: Understanding default branding (PAP Logo)
+
+#### 2.6 Exporting to PDF
+- **Generating**: How to create the report
+- **Progress**: Understanding the generation process steps & progress bar (e.g. "Processing Images...")
+- **Cancelability**: How to stop generation if needed
+- **Upload**: Where to find the saved PDF copies (SharePoint)
+- **What's included**: Workgroups, Notes, Images (Optimized High-Res)
 
 ---
 

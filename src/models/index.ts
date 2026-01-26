@@ -27,7 +27,8 @@ export interface ChecklistImage {
     id: string;
     rowId: string;
     caption?: string;
-    source: string;  // Base64 data URL or mock URL
+    source: string;  // Base64 data URL (initial) or Full URL (saved)
+    thumbnailUrl?: string; // Optimized thumbnail URL
     order: number;
 }
 
@@ -99,6 +100,7 @@ export interface Checklist {
     clientCorrespondence: string[];
     estimateType: string[];
     commonNotes: string;
+    clientLogoUrl?: string;
     comments: ChecklistComment[];
     files: ChecklistFile[];
     // Extended Job Details

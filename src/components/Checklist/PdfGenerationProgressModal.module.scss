@@ -1,0 +1,48 @@
+
+.surface {
+    min-width: 400px;
+    padding: 24px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.iconArea {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+
+    .pdfIcon {
+        color: #d13438; // PDF Red
+        font-size: 48px;
+    }
+}
+
+.progressArea {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.statusRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.hint {
+    color: #605e5c;
+    text-align: center;
+    font-style: italic;
+}

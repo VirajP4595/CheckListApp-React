@@ -7,10 +7,15 @@ import { WorkgroupSection } from './WorkgroupSection';
 import { AutoSaveIndicator } from './AutoSaveIndicator';
 import { RevisionPanel } from '../Revision/RevisionPanel';
 import { RevisionViewer } from '../Revision/RevisionViewer';
-import { ExportButton } from '../Export/ExportButton';
+
 import { FilterBar, type FilterState } from './FilterBar';
 import { HelpGuide } from './HelpGuide';
 import { ChecklistInfoDialog } from './Sidebar/ChecklistInfoDialog';
+import { PdfGenerationProgressModal } from '../Checklist/PdfGenerationProgressModal';
+import { PdfGeneratorService } from '../../services/PdfGeneratorService';
+import { SharePointImageService } from '../../services/sharePointService';
+import { getChecklistService, getImageService } from '../../services';
+import { ArrowDownload24Regular } from '@fluentui/react-icons';
 import styles from './ChecklistEditor.module.scss';
 
 interface ChecklistEditorProps {
@@ -36,6 +41,8 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
     const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, workgroupIds: [] });
     const [expandWorkgroups, setExpandWorkgroups] = useState(false);  // Collapsed by default
     const [expandTasks, setExpandTasks] = useState(false);  // Collapsed by default
+    const [exportProgress, setExportProgress] = useState<{ open: boolean; status: string; percent: number; cancelled: boolean }>({ open: false, status: '', percent: 0, cancelled: false });
+    const isCancelledRef = useRef(false);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -65,6 +72,105 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
     const handleCloseRevision = () => {
         setViewingRevision(null);
+    };
+
+    const handleCancelExport = () => {
+        isCancelledRef.current = true;
+        setExportProgress(prev => ({ ...prev, cancelled: true }));
+    };
+
+    const handleExportPdf = async () => {
+        if (!activeChecklist) return;
+
+        isCancelledRef.current = false;
+        setExportProgress({ open: true, status: 'Initializing...', percent: 0, cancelled: false });
+
+        try {
+            // STEP 1: Retrieve all images (Pre-fetch for collapsed rows)
+            setExportProgress(prev => ({ ...prev, status: 'Retrieving all images...', percent: 5 }));
+            const fullChecklist = await getChecklistService().getChecklist(activeChecklist.id, { includeImages: true });
+
+            if (isCancelledRef.current) throw new Error("Cancelled");
+
+            // STEP 2: Download Image Content (Bypass CORS)
+            const allImages: { img: any, id: string }[] = [];
+            fullChecklist.workgroups.forEach(wg => {
+                wg.rows.forEach(r => {
+                    if (r.images) {
+                        r.images.forEach(img => {
+                            if (img.id && !img.source.startsWith('data:')) {
+                                allImages.push({ img, id: img.id });
+                            }
+                        });
+                    }
+                });
+            });
+
+            if (allImages.length > 0) {
+                setExportProgress(prev => ({ ...prev, status: `Downloading ${allImages.length} images...`, percent: 10 }));
+                const imageService = getImageService();
+                const getImageContent = async (item: { img: any, id: string }) => {
+                    try {
+                        if (isCancelledRef.current) return;
+                        const base64 = await imageService.downloadImageContent(item.id);
+                        item.img.source = base64; // Replace URL with Data URL
+                    } catch (err) {
+                        console.warn(`Failed to download image ${item.id}`, err);
+                    }
+                };
+
+                await Promise.all(allImages.map(getImageContent));
+            }
+
+            const generator = new PdfGeneratorService(fullChecklist);
+
+            // STEP 3: Fetch Branding Logo (Securely via Graph)
+            let logoBlob: Blob | null = null;
+            if (fullChecklist.clientLogoUrl) {
+                try {
+                    setExportProgress(prev => ({ ...prev, status: 'Fetching branding...', percent: 15 }));
+                    // Use secure download instead of fetch(url) to avoid CORS
+                    logoBlob = await getImageService().downloadClientLogoContent(activeChecklist.id);
+                } catch (e) {
+                    console.warn("Could not fetch logo for PDF", e);
+                }
+            }
+
+            const pdfBlob = await generator.generate(logoBlob, (status, percent) => {
+                if (isCancelledRef.current) return false; // Abort
+
+                // Remap percent (20-95%)
+                const adjustedPercent = 20 + (percent * 0.75);
+                setExportProgress(prev => ({ ...prev, status, percent: adjustedPercent }));
+                return true;
+            });
+
+            // Upload
+            setExportProgress(prev => ({ ...prev, status: 'Uploading...', percent: 95 }));
+            const sharePointService = new SharePointImageService();
+            const fileName = `${activeChecklist.title.replace(/[^a-z0-9]/gi, '_')}-REV${activeChecklist.currentRevisionNumber}.pdf`;
+            await sharePointService.uploadFile(activeChecklist.id, new File([pdfBlob], fileName, { type: 'application/pdf' }));
+
+            setExportProgress(prev => ({ ...prev, status: 'Done!', percent: 100 }));
+
+            // Auto download for user convenience
+            const url = URL.createObjectURL(pdfBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            setTimeout(() => setExportProgress({ open: false, status: '', percent: 0, cancelled: false }), 2000);
+
+        } catch (error: any) {
+            if (error.message === 'Cancelled' || error.message?.includes('Cancelled')) {
+                setExportProgress({ open: false, status: '', percent: 0, cancelled: false });
+            } else {
+                console.error("PDF Generation Error", error);
+                setExportProgress(prev => ({ ...prev, status: 'Error: ' + error.message, percent: 0 }));
+            }
+        }
     };
 
     const getStatusClass = () => {
@@ -111,12 +217,21 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
                     <div className={styles['editor-actions']}>
                         <AutoSaveIndicator isSaving={isSaving} lastSaved={lastSaved} />
-                        <ExportButton checklist={activeChecklist} />
                         <ChecklistInfoDialog
                             checklist={activeChecklist}
                             onViewRevision={handleViewRevision}
                             triggerClassName={styles['editor-action-btn']}
                         />
+                        <Button
+                            className={styles['editor-action-btn']}
+                            appearance="subtle"
+                            icon={<ArrowDownload24Regular />}
+                            onClick={handleExportPdf}
+                            disabled={isSaving}
+                            title="Export to PDF"
+                        >
+                            Export
+                        </Button>
                         <HelpGuide triggerClassName={styles['editor-action-btn']} />
                         <Button
                             className={styles['editor-save-btn']}
@@ -144,7 +259,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                         onExpandTasksChange={setExpandTasks}
                     />
 
-                    <div className={styles['editor-workgroups']}>
+                    <div className={styles['editor-workgroups']} id="checklist-print-content">
                         {activeChecklist.workgroups
                             .filter(wg => filters.workgroupIds.length === 0 || filters.workgroupIds.includes(wg.id))
                             .sort((a, b) => a.order - b.order)
@@ -176,7 +291,6 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
                     {/* Mobile Actions */}
                     <div className={styles['editor-mobile-actions']}>
-                        <ExportButton checklist={activeChecklist} />
                         <Button
                             appearance="outline"
                             icon={<History24Regular />}
@@ -205,6 +319,13 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                     onClose={handleCloseRevision}
                 />
             )}
+
+            <PdfGenerationProgressModal
+                open={exportProgress.open}
+                status={exportProgress.status}
+                percent={exportProgress.percent}
+                onCancel={() => setExportProgress(prev => ({ ...prev, cancelled: true }))}
+            />
         </div>
     );
 };

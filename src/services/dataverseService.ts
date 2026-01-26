@@ -112,6 +112,55 @@ export class DataverseClient {
             throw new Error(`DELETE ${entitySet}(${id}) failed: ${response.status}`);
         }
     }
+
+    /**
+     * UPLOAD File to Dataverse File Column
+     * PUT [Organization URI]/api/data/v9.0/[EntityPath]([RecordGuid])/[AttributeName]
+     */
+    async uploadFile(entitySet: string, id: string, attributeName: string, file: Blob): Promise<void> {
+        // 1. Initialize Chunk Upload (Simplified to single shot for now if < 10MB)
+        // For larger files, we need chunked upload. Let's start with direct PUT which supports up to 10MB usually? 
+        // Docs say PUT is for single API call max 128MB.
+        const url = `${baseUrl}/${entitySet}(${id})/${attributeName}`;
+
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${await getDataverseToken()}`,
+                'Content-Type': 'application/octet-stream', // Generic binary
+                'x-ms-file-name': `snapshot-${id}.json` // Optional hint
+            },
+            body: file
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`FILE UPLOAD failed: ${response.status} - ${error}`);
+        }
+    }
+
+    /**
+     * DOWNLOAD File from Dataverse File Column
+     * GET [Organization URI]/api/data/v9.0/[EntityPath]([RecordGuid])/[AttributeName]/$value
+     */
+    async downloadFile(entitySet: string, id: string, attributeName: string): Promise<string> {
+        const url = `${baseUrl}/${entitySet}(${id})/${attributeName}/$value`;
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${await getDataverseToken()}`
+            }
+        });
+
+        if (!response.ok) {
+            // 404 means no file content yet
+            if (response.status === 404) return '';
+            throw new Error(`FILE DOWNLOAD failed: ${response.status}`);
+        }
+
+        return response.text();
+    }
 }
 
 // ─── SINGLETON INSTANCE ────────────────────────────────────

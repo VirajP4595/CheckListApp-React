@@ -14,8 +14,8 @@
         "test:watch": "vitest"
     },
     "dependencies": {
-        "@azure/msal-browser": "^5.0.2",
-        "@azure/msal-react": "^5.0.2",
+        "@azure/msal-browser": "^3.0.0",
+        "@azure/msal-react": "^2.0.0",
         "@fluentui/react-components": "^9.46.0",
         "@fluentui/react-icons": "^2.0.230",
         "@tiptap/extension-image": "^3.15.3",
@@ -29,6 +29,7 @@
         "@tiptap/starter-kit": "^3.15.3",
         "html2canvas": "^1.4.1",
         "jspdf": "^2.5.2",
+        "jspdf-autotable": "^3.8.2",
         "react": "^17.0.2",
         "react-dom": "^17.0.2",
         "scheduler": "^0.27.0",

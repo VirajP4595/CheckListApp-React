@@ -218,7 +218,7 @@ export const InlineImageArea: React.FC<InlineImageAreaProps> = ({
                                     style={{ opacity: isRemoving ? 0.5 : 1, pointerEvents: isRemoving ? 'none' : 'auto' }}
                                 >
                                     <img
-                                        src={image.source}
+                                        src={image.thumbnailUrl || image.source}
                                         alt={image.caption || 'Attached image'}
                                         className={styles.image}
                                     />

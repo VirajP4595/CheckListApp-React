@@ -434,3 +434,27 @@ PAP-CheckList-React/
 ### Phase 1.8 Verification
 - [ ] PDF preview matches layout
 - [ ] Download produces valid PDF
+
+---
+
+## Phase 2: Optimization & Enhancements (Current)
+
+### Phase 2.1: Image Optimization
+- **Lazy Loading**: Fetch images only when row expanded.
+- **Resizing**: Client-side resizing (Max 1920px) before upload.
+- **Thumbnails**: Use SharePoint thumbnails for grid view.
+- **Auto-Naming**: Default new rows to "{Workgroup} Item {N}".
+
+### Phase 2.2: Advanced Revisions
+- **Architecture**: Store snapshots as JSON files in Dataverse `File` column (`pap_snapshotfile`).
+- **Completeness**: Fetch all image metadata before snapshotting.
+- **Progress UI**: Show progress bars for snapshot generation.
+
+### Phase 2.3: PDF Generation
+- **Engine**: Client-side generation using `jspdf`.
+- **Quality**: Use 'Large' Graph API variants (optimized high-res).
+- **Branding**:
+    - Manage Client Logo in "Checklist Info" tab (stored in SharePoint).
+    - Fallback to PAP Logo.
+- **Upload**: Auto-upload generated PDF to `reports/` folder in SharePoint.
+

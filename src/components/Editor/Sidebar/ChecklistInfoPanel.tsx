@@ -1,7 +1,8 @@
-import React from 'react';
-import { mergeClasses } from '@fluentui/react-components';
-import { Checkmark12Filled } from '@fluentui/react-icons';
-import { Checklist, ChecklistStatus, STATUS_CONFIG } from '../../../models';
+import { useState, useRef } from 'react';
+import { mergeClasses, Button, ProgressBar, Text } from '@fluentui/react-components';
+import { Checkmark12Filled, ArrowDownload24Regular, Dismiss24Regular } from '@fluentui/react-icons';
+import { Checklist, ChecklistStatus } from '../../../models';
+import { getPDFService, getImageService } from '../../../services';
 import styles from './ChecklistInfoPanel.module.scss';
 
 interface ChecklistInfoPanelProps {
@@ -19,6 +20,78 @@ const CORRESPONDENCE_OPTIONS = ['Builder Copy', 'Client Copy', 'File Copy', 'Oth
 const ESTIMATE_TYPE_OPTIONS = ['FQE', 'Budget', 'Variation', 'Final Account'];
 
 export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklist, onUpdate, readOnly }) => {
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const [pdfProgress, setPdfProgress] = useState(0);
+    const [pdfStatus, setPdfStatus] = useState('');
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    const handleExportPDF = async () => {
+        setIsGeneratingPdf(true);
+        setPdfProgress(0);
+        setPdfStatus('Initializing...');
+
+        const abortController = new AbortController();
+        abortControllerRef.current = abortController;
+
+        try {
+            // 1. Get Source Element (The main list)
+            const sourceElement = document.getElementById('checklist-print-content');
+            if (!sourceElement) throw new Error('Could not find content to capture');
+
+            // 2. Generate PDF Blob (Visual Mode)
+            const pdfBlob = await getPDFService().generateChecklistPDF(checklist, {
+                includeImages: true,
+                signal: abortController.signal, sourceElement,
+                onProgress: (status: string, progress: number) => {
+                    setPdfStatus(status);
+                    setPdfProgress(progress);
+                }
+            });
+
+            // 3. Download Locally
+            const url = window.URL.createObjectURL(pdfBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${checklist.title} - ${checklist.currentRevisionNumber}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            // 3. Upload to SharePoint (Background)
+            // Filename: {title}-Rev{num}-{timestamp}.pdf
+            setPdfStatus('Uploading to SharePoint...');
+            const filename = `${checklist.title}-Rev${checklist.currentRevisionNumber}-${Date.now()}.pdf`.replace(/[^a-z0-9]/gi, '_');
+            await getImageService().uploadPDFReport(checklist.id, filename, pdfBlob);
+
+            setPdfStatus('Done!');
+            setTimeout(() => {
+                setIsGeneratingPdf(false);
+                setPdfStatus('');
+                setPdfProgress(0);
+            }, 2000);
+
+        } catch (err) {
+            if ((err as Error).name === 'AbortError') {
+                console.log('PDF Generation Aborted');
+                setPdfStatus('Cancelled');
+            } else {
+                console.error('PDF Generation Failed', err);
+                setPdfStatus('Failed');
+                alert('Failed to generate PDF. Check console.');
+            }
+            setIsGeneratingPdf(false);
+        } finally {
+            abortControllerRef.current = null;
+        }
+    };
+
+    const handleCancelPDF = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+    };
+
     const handleStatusChange = (status: ChecklistStatus) => {
         if (readOnly) return;
         onUpdate({ status });
@@ -69,7 +142,7 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
                                 )}
                                 onClick={() => handleStatusChange(option.value)}
                                 role="radio"
-                                aria-checked={selected}
+                                aria-checked={selected ? 'true' : 'false'}
                                 tabIndex={0}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
@@ -102,7 +175,7 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
                                 )}
                                 onClick={() => handleCorrespondenceChange(option)}
                                 role="checkbox"
-                                aria-checked={selected}
+                                aria-checked={selected ? 'true' : 'false'}
                                 tabIndex={0}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
@@ -135,7 +208,7 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
                                 )}
                                 onClick={() => handleEstimateTypeChange(option)}
                                 role="checkbox"
-                                aria-checked={selected}
+                                aria-checked={selected ? 'true' : 'false'}
                                 tabIndex={0}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
@@ -149,6 +222,34 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
                             </div>
                         );
                     })}
+                </div>
+            </div>
+            {/* Actions */}
+            <div className={styles['info-section']}>
+                <span className={styles['info-section-title']}>Actions</span>
+                <div className={styles['action-group']}>
+                    {!isGeneratingPdf ? (
+                        <Button
+                            icon={<ArrowDownload24Regular />}
+                            onClick={handleExportPDF}
+                        >
+                            Export to PDF
+                        </Button>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text size={200}>{pdfStatus}</Text>
+                                <Button
+                                    size="small"
+                                    appearance="subtle"
+                                    icon={<Dismiss24Regular />}
+                                    onClick={handleCancelPDF}
+                                    aria-label="Cancel"
+                                />
+                            </div>
+                            <ProgressBar value={pdfProgress / 100} />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

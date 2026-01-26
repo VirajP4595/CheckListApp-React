@@ -57,46 +57,70 @@ async function getCachedDriveInfo() {
     return driveInfoCache;
 }
 
+// ─── HELPER: RESIZE IMAGE ──────────────────────────────────
+async function resizeImage(source: string, maxWidth: number, maxHeight: number): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+
+            // Calculate new dimensions
+            if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width = width * ratio;
+                height = height * ratio;
+            } else {
+                // No resize needed, return original blob if possible, or draw to canvas
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error('Canvas context not available'));
+                return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob((blob) => {
+                if (blob) resolve(blob);
+                else reject(new Error('Canvas toBlob failed'));
+            }, 'image/jpeg', 0.8); // 80% quality
+        };
+        img.onerror = (err) => reject(err);
+        img.src = source;
+    });
+}
+
 // ─── SHAREPOINT IMAGE SERVICE ──────────────────────────────
 
 export class SharePointImageService implements IImageService {
 
     /**
-     * Upload image to SharePoint
+     * Upload image to SharePoint with Resize
      * Path: /{checklistId}/images/{rowId}/{filename}
      */
-    async addImage(rowId: string, source: string, caption?: string): Promise<ChecklistImage> {
+    async addImage(checklistId: string, workgroupId: string, rowId: string, source: string, caption?: string): Promise<ChecklistImage> {
         const token = await getGraphToken();
         const { driveId } = await getCachedDriveInfo();
 
-        // For now, we need checklistId passed differently
-        // This is a simplified version - in production, we'd track checklistId
-        const checklistId = 'default';  // TODO: Get from context
-
-        // Convert base64 to blob if needed
+        // 1. Resize Image (Client Side)
         let blob: Blob;
-        let filename: string;
-
-        if (source.startsWith('data:')) {
-            const [meta, data] = source.split(',');
-            const mimeType = meta.match(/data:(.*);/)?.[1] || 'image/jpeg';
-            const extension = mimeType.split('/')[1];
-            filename = `image-${Date.now()}.${extension}`;
-
-            const byteCharacters = atob(data);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            blob = new Blob([new Uint8Array(byteNumbers)], { type: mimeType });
-        } else {
-            // URL source - fetch and upload
+        try {
+            console.log('[SharePoint] Resizing image...');
+            blob = await resizeImage(source, 1920, 1080);
+        } catch (error) {
+            console.warn('[SharePoint] Resize failed, falling back to original', error);
+            // Fallback: Convert original source to blob
             const response = await fetch(source);
             blob = await response.blob();
-            filename = `image-${Date.now()}.jpg`;
         }
 
-        // Upload to SharePoint
+        const filename = `image-${Date.now()}.jpg`;
+
+        // 2. Upload to SharePoint
         const folderPath = `${checklistId}/images/${rowId}`;
         const uploadUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${folderPath}/${filename}:/content`;
 
@@ -115,23 +139,31 @@ export class SharePointImageService implements IImageService {
 
         const file = await uploadResponse.json();
 
-        // Update ListItem fields with metadata
+        // 3. Update Metadata
         try {
-            await fetch(
-                `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${file.id}/listItem/fields`,
-                {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        pap_checklistid: checklistId,
-                        pap_rowid: rowId,
-                        Title: caption || filename
-                    })
-                }
-            );
+            const fieldUpdateUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${file.id}/listItem/fields`;
+            const metaResponse = await fetch(fieldUpdateUrl, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    // Correct Internal Names provided by User
+                    ChecklistId: checklistId,
+                    RowId: rowId,
+                    Caption: caption || filename,
+                    Title: caption || filename
+                })
+            });
+
+            if (!metaResponse.ok) {
+                const errText = await metaResponse.text();
+                console.error('[SharePoint] Metadata Update Failed:', metaResponse.status, errText);
+            } else {
+                console.log('[SharePoint] Metadata Updated Successfully');
+            }
+
         } catch (error) {
             console.warn('[SharePoint] Failed to update image metadata', error);
         }
@@ -140,129 +172,252 @@ export class SharePointImageService implements IImageService {
             id: file.id,
             rowId,
             caption: caption || '',
-            source: file.webUrl || file['@microsoft.graph.downloadUrl'],
-            order: Date.now()  // Use timestamp as order for now
+            source: file['@microsoft.graph.downloadUrl'] || file.webUrl, // Use download URL for full res
+            // Graph doesn't return thumbnails on PUT response usually, might need separate call or optimistic guess.
+            // For now, leave undefined.
+            order: Date.now()
         };
     }
 
     /**
-     * Delete image from SharePoint
+     * Get images for a specific row (Lazy Load)
      */
-    async removeImage(imageId: string): Promise<void> {
+    async getRowImages(checklistId: string, rowId: string): Promise<ChecklistImage[]> {
         const token = await getGraphToken();
         const { driveId } = await getCachedDriveInfo();
 
-        const response = await fetch(
-            `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${imageId}`,
-            {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            }
-        );
+        try {
+            // List children of: {checklistId}/images/{rowId}
+            // Expand thumbnails
+            const folderPath = `${checklistId}/images/${rowId}`;
+            const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${folderPath}:/children?select=id,name,webUrl,thumbnails,@microsoft.graph.downloadUrl&expand=thumbnails`;
 
-        if (!response.ok && response.status !== 404) {
-            throw new Error(`Delete failed: ${response.status}`);
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.status === 404) return []; // No folder = no images
+
+            const data = await response.json();
+
+            return (data.value || []).map((item: any) => ({
+                id: item.id,
+                rowId: rowId,
+                caption: item.name,
+                source: item['@microsoft.graph.downloadUrl'] || item.webUrl,
+                // Critical for PDF: Use 'large' thumbnail if available, else medium, else original
+                thumbnailUrl: item.thumbnails?.[0]?.large?.url || item.thumbnails?.[0]?.medium?.url || item['@microsoft.graph.downloadUrl'],
+                order: 0
+            }));
+
+        } catch (error) {
+            console.warn(`[SharePoint] Failed to load images for row ${rowId}`, error);
+            return [];
         }
     }
 
     /**
-     * Update image caption (stored as list item metadata)
+     * Upload generic file (e.g. PDF report)
      */
+    async uploadFile(checklistId: string, file: File): Promise<string> {
+        // Wrapper for specialized uploads if needed, or generic Logic
+        if (file.type === 'application/pdf') {
+            return this.uploadPDFReport(checklistId, file.name, file);
+        }
+        // Fallback for other files... (To be implemented if needed)
+        throw new Error("File type not supported for generic upload yet");
+    }
+
+    /**
+     * Get ALL image metadata for Revision Snapshot (Completeness)
+     */
+    async getAllImageMetadata(checklistId: string): Promise<ChecklistImage[]> {
+        const token = await getGraphToken();
+        const { driveId } = await getCachedDriveInfo();
+        const images: ChecklistImage[] = [];
+
+        try {
+            // 1. List 'images' folder (Contains Row Folders)
+            const rootPath = `${checklistId}/images`;
+            const rootUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${rootPath}:/children?select=id,name,folder`;
+
+            const rootResponse = await fetch(rootUrl, { headers: { 'Authorization': `Bearer ${token}` } });
+
+            if (rootResponse.status === 404) {
+                console.warn('[SharePoint] Images root folder not found');
+                return [];
+            }
+            if (!rootResponse.ok) throw new Error(`Failed to list images root: ${rootResponse.status}`);
+
+            const rootData = await rootResponse.json();
+            const rowFolders = (rootData.value || []).filter((i: any) => i.folder);
+
+            if (rowFolders.length === 0) return [];
+
+            console.log(`[SharePoint] Found ${rowFolders.length} row folders. Fetching images...`);
+
+            // 2. Fetch Images for each Row Folder in parallel
+            // Limit concurrency if needed, but for now Promise.all is fine for <50 folders
+            const imagePromises = rowFolders.map(async (folder: any) => {
+                const rowId = folder.name; // Folder name is the RowID
+                const folderUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${folder.id}/children?select=id,name,webUrl,thumbnails,@microsoft.graph.downloadUrl&expand=thumbnails`;
+
+                try {
+                    const resp = await fetch(folderUrl, { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (!resp.ok) return [];
+                    const data = await resp.json();
+
+                    return (data.value || []).map((img: any) => ({
+                        id: img.id,
+                        rowId: rowId,
+                        caption: img.name,
+                        source: img['@microsoft.graph.downloadUrl'] || img.webUrl,
+                        thumbnailUrl: img.thumbnails?.[0]?.medium?.url,
+                        order: 0
+                    }));
+                } catch (e) {
+                    console.warn(`[SharePoint] Failed to list images for row ${rowId}`, e);
+                    return [];
+                }
+            });
+
+            const results = await Promise.all(imagePromises);
+            return results.flat();
+
+        } catch (error) {
+            console.warn('[SharePoint] Failed to load all image metadata', error);
+            return [];
+        }
+    }
+
+    async removeImage(imageId: string): Promise<void> {
+        const token = await getGraphToken();
+        const { driveId } = await getCachedDriveInfo();
+        const response = await fetch(
+            `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${imageId}`,
+            { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        if (!response.ok && response.status !== 404) throw new Error(`Delete failed: ${response.status}`);
+    }
+
     async updateCaption(imageId: string, caption: string): Promise<void> {
         const token = await getGraphToken();
         const { driveId } = await getCachedDriveInfo();
-
-        // Update list item fields
         await fetch(
             `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${imageId}/listItem/fields`,
             {
                 method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ Caption: caption, Title: caption })
             }
         );
     }
 
     /**
-     * Get all images for a checklist
+     * Upload Client Logo
+     * Path: /{checklistId}/branding/logo.png
      */
-    async getImages(checklistId: string): Promise<ChecklistImage[]> {
+    async uploadClientLogo(checklistId: string, file: File): Promise<string> {
         const token = await getGraphToken();
         const { driveId } = await getCachedDriveInfo();
 
-        // Search for items in the checklist folder
-        // We use the search API to find items under the checklist path
-        // Query: path:"<checklistId>/images" AND filetype:image (implicit or check mimetype)
+        const cleanId = checklistId.trim();
+        // Ensure path components are safe
+        const folderPath = `${encodeURIComponent(cleanId)}/branding`;
+        const filename = 'logo.png';
 
-        // Note: Graph Search syntax is tricky for specific paths. 
-        // Safer approach: List children of checklist folder, then iterate? No, too slow.
-        // Better: Search for items where pap_checklistid = checklistId (if indexed).
-        // Fallback: Since we structure by folder, we can try to list items in the images root.
+        const uploadUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${folderPath}/${filename}:/content`;
 
+        console.log('[SharePoint] Uploading Logo to:', uploadUrl);
+
+        const response = await fetch(uploadUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': file.type
+            },
+            body: file
+        });
+
+        if (!response.ok) {
+            throw new Error(`Logo Upload failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data['@microsoft.graph.downloadUrl'] || data.webUrl;
+    }
+
+    /**
+     * Upload Generated PDF Report
+     * Path: /{checklistId}/reports/{filename}.pdf
+     */
+    async uploadPDFReport(checklistId: string, filename: string, blob: Blob): Promise<string> {
+        const token = await getGraphToken();
+        const { driveId } = await getCachedDriveInfo();
+
+        const folderPath = `${checklistId}/reports`;
+
+        const uploadUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${folderPath}/${filename}:/content`;
+
+        const response = await fetch(uploadUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/pdf'
+            },
+            body: blob
+        });
+
+        if (!response.ok) {
+            throw new Error(`PDF Upload failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.webUrl;
+    }
+    async downloadImageContent(itemId: string): Promise<string> {
+        const token = await getGraphToken();
+        const { driveId } = await getCachedDriveInfo();
+
+        // Use Graph API content endpoint which supports CORS + Auth
+        const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/content`;
+
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to download image content: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    async downloadClientLogoContent(checklistId: string): Promise<Blob | null> {
         try {
-            // First, try to list the 'images' folder for this checklist
-            const folderPath = `${checklistId}/images`;
-            // Get all children of the images folder (which are row folders)
-            const rowFoldersUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${folderPath}:/children`;
+            const token = await getGraphToken();
+            const { driveId } = await getCachedDriveInfo();
+            const path = `${checklistId}/branding/logo.png`;
 
-            const rowFoldersResponse = await fetch(rowFoldersUrl, {
+            // Get content by path
+            const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${path}:/content`;
+
+            const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            if (rowFoldersResponse.status === 404) return []; // No images yet
-            const rowFolders = await rowFoldersResponse.json();
+            if (!response.ok) return null; // No logo found
 
-            if (!rowFolders.value) return [];
-
-            // Now get images from each row folder. 
-            // Optimally, we would use a search query, but let's do this for now to rely on structure.
-            // Or use search from the 'images' folder?
-            // Let's try a search query scoped to the checklistId
-
-            const searchUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${folderPath}:/search(q='')?select=id,name,webUrl,parentReference,listItem`;
-            const searchResponse = await fetch(searchUrl, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const searchResults = await searchResponse.json();
-
-            // To get metadata (pap_rowid), we might need to expand listitem
-            // But search results might not contain custom columns deep linked immediately.
-            // We can fall back to parsing parent folder name as rowId if metadata is missing.
-
-            const images: ChecklistImage[] = [];
-
-            for (const file of searchResults.value || []) {
-                if (file.folder) continue; // Skip folders
-
-                // Get rowId from Parent Path or Metadata
-                // Parent path format: .../images/<rowId>
-                let rowId = '';
-
-                // Try to extract from parent path name logic?
-                // The search result 'parentReference.path' looks like: "/drives/<id>/root:/checklistId/images/<rowId>"
-                if (file.parentReference && file.parentReference.path) {
-                    const parts = file.parentReference.path.split('/');
-                    rowId = parts[parts.length - 1]; // Last part should be rowId
-                }
-
-                if (rowId) {
-                    images.push({
-                        id: file.id,
-                        rowId: rowId,
-                        source: file['@microsoft.graph.downloadUrl'] || file.webUrl,
-                        caption: file.name, // or fetch title
-                        order: 0
-                    });
-                }
-            }
-            return images;
-
+            return await response.blob();
         } catch (error) {
-            console.warn('[SharePoint] Failed to load images', error);
-            return [];
+            console.warn("Failed to download client logo content", error);
+            return null;
         }
     }
+
 }

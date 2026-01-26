@@ -275,6 +275,10 @@ function Create-Column {
             Options = $optionsList
         }
     }
+    elseif ($Type -eq "File") {
+        $attributeBody["@odata.type"] = "Microsoft.Dynamics.CRM.FileAttributeMetadata"
+        $attributeBody["MaxSizeInKB"] = 32768 # 32MB
+    }
     elseif ($Type -eq "Lookup") {
         $attributeBody["@odata.type"] = "Microsoft.Dynamics.CRM.LookupAttributeMetadata"
         Write-Host " Use Create-Lookup instead" -ForegroundColor Yellow
@@ -396,6 +400,7 @@ Create-Column -TableName "checklist" -SchemaName "status" -DisplayName "Status" 
 Create-Column -TableName "checklist" -SchemaName "clientcorrespondence" -DisplayName "Client Correspondence" -Type "MultilineText"
 Create-Column -TableName "checklist" -SchemaName "estimatetype" -DisplayName "Estimate Type" -Type "MultilineText"
 Create-Column -TableName "checklist" -SchemaName "commonnotes" -DisplayName "Common Notes" -Type "MultilineText"
+Create-Column -TableName "checklist" -SchemaName "clientlogourl" -DisplayName "Client Logo URL" -Type "String" -MaxLength 2000
 
 # --- Workgroup ---
 Create-Column -TableName "workgroup" -SchemaName "number" -DisplayName "Number" -Type "String" # String to handle "20.28"
@@ -416,7 +421,7 @@ Create-Column -TableName "checklistrow" -SchemaName "iscustom" -DisplayName "Is 
 # --- Revision ---
 Create-Column -TableName "revision" -SchemaName "summary" -DisplayName "Summary" -Type "MultilineText"
 Create-Column -TableName "revision" -SchemaName "number" -DisplayName "Revision Number" -Type "Integer"
-Create-Column -TableName "revision" -SchemaName "snapshotjson" -DisplayName "Snapshot JSON" -Type "MultilineText"
+Create-Column -TableName "revision" -SchemaName "snapshotfile" -DisplayName "Snapshot File" -Type "File"
 
 # --- Comment ---
 Create-Column -TableName "comment" -SchemaName "text" -DisplayName "Text" -Type "MultilineText"

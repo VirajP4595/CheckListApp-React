@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Checklist, ChecklistRow, AnswerState, ChecklistImage, Workgroup } from '../models';
 import { generateId, createEmptyRow } from '../models';
-import { getChecklistService, getImageService } from '../services';
+import { getChecklistService, getImageService, getRevisionService } from '../services';
 
 interface ChecklistState {
     // Data
@@ -15,13 +15,20 @@ interface ChecklistState {
     error: string | null;
     processingItems: string[]; // IDs of items currently being processed (adding/deleting)
 
+    loadedRowImages: Record<string, boolean>;
+
     // Actions - Data Loading
     loadChecklists: () => Promise<void>;
     loadChecklist: (id: string) => Promise<void>;
+    fetchRowImages: (rowId: string) => Promise<void>;
+    loadRevisions: () => Promise<void>;
+    restoreRevision: (revisionId: string) => Promise<void>;
 
     // Actions - Checklist CRUD
     saveChecklist: () => Promise<void>;
     saveRow: (rowId: string) => Promise<void>;
+    createRevision: (summary: string) => Promise<void>;
+    uploadClientLogo: (file: File) => Promise<void>;
 
     // Actions - Row Operations
     updateRow: (rowId: string, updates: Partial<ChecklistRow>) => void;
@@ -58,6 +65,7 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
     lastSaved: null,
     error: null,
     processingItems: [],
+    loadedRowImages: {},
 
     // Data Loading
     loadChecklists: async () => {
@@ -71,7 +79,7 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
     },
 
     loadChecklist: async (id: string) => {
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null, loadedRowImages: {} }); // Clear cache on new load
         try {
             const checklist = await getChecklistService().getChecklist(id);
             set({ activeChecklist: checklist, isLoading: false });
@@ -80,7 +88,44 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         }
     },
 
+    fetchRowImages: async (rowId: string) => {
+        const { activeChecklist, loadedRowImages } = get();
+        if (!activeChecklist || loadedRowImages[rowId]) return;
 
+        // Mark as loading/loaded to prevent duplicate fetches
+        // Ideally we'd have a 'loading' state per row, but simple boolean is okay if we assume fast enough or debounce
+        set(state => ({ loadedRowImages: { ...state.loadedRowImages, [rowId]: true } }));
+
+        try {
+            const images = await getImageService().getRowImages(activeChecklist.id, rowId);
+
+            set(state => {
+                if (!state.activeChecklist) return state;
+
+                const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => ({
+                    ...wg,
+                    rows: wg.rows.map(row =>
+                        row.id === rowId ? { ...row, images } : row
+                    )
+                }));
+
+                return {
+                    activeChecklist: {
+                        ...state.activeChecklist,
+                        workgroups: updatedWorkgroups
+                    }
+                };
+            });
+        } catch (err) {
+            console.error(`[Store] Failed to fetch images for row ${rowId}`, err);
+            // On error, maybe we should remove the loaded flag to allow retry?
+            set(state => {
+                const newLoaded = { ...state.loadedRowImages };
+                delete newLoaded[rowId];
+                return { loadedRowImages: newLoaded };
+            });
+        }
+    },
 
     // Checklist CRUD
     saveChecklist: async () => {
@@ -181,17 +226,20 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         const wg = activeChecklist.workgroups.find(w => w.id === workgroupId);
         if (!wg) return;
 
-        // Calculate Order
+        // Calculate Order and Name
         const rows = wg.rows;
         const newOrder = afterRowId
             ? (rows.find(r => r.id === afterRowId)?.order ?? rows.length) + 1
             : rows.length;
 
+        const nextItemNumber = rows.length + 1;
+        const defaultName = `${wg.name} Item ${nextItemNumber}`;
+
         set(state => ({ processingItems: [...state.processingItems, workgroupId], isSaving: true }));
         try {
             const newRow = await getChecklistService().createRow(workgroupId, {
                 order: newOrder,
-                name: '', // Empty name initially
+                name: defaultName,
                 description: '',
                 answer: 'BLANK'
             });
@@ -273,10 +321,22 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         const processId = `img-add-${rowId}`;
         set(state => ({ processingItems: [...state.processingItems, processId] }));
 
+        const { activeChecklist } = get();
+        if (!activeChecklist) return;
+
+        // Find workgroupId
+        let workgroupId = '';
+        for (const wg of activeChecklist.workgroups) {
+            if (wg.rows.find(r => r.id === rowId)) {
+                workgroupId = wg.id;
+                break;
+            }
+        }
+
         try {
             // Server Call
             // Note: 'image.source' is expected to be the base64/blob data here
-            const savedImage = await getImageService().addImage(rowId, image.source, image.caption);
+            const savedImage = await getImageService().addImage(activeChecklist.id, workgroupId, rowId, image.source, image.caption);
 
             set(state => {
                 if (!state.activeChecklist) return { processingItems: state.processingItems.filter(p => p !== processId) };
@@ -290,8 +350,10 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
                     ),
                 }));
 
+                // Ensure row is marked loaded so we don't overwrite if fetch happens
                 return {
                     processingItems: state.processingItems.filter(p => p !== processId),
+                    loadedRowImages: { ...state.loadedRowImages, [rowId]: true },
                     activeChecklist: {
                         ...state.activeChecklist,
                         workgroups: updatedWorkgroups,
@@ -468,6 +530,102 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
                 // We'll optimistically update activeChecklist.
             };
         });
+    },
+
+    // Revision Operations
+    createRevision: async (summary: string) => {
+        const { activeChecklist } = get();
+        if (!activeChecklist) return;
+
+        set({ isSaving: true });
+        try {
+            // Note: Service relies on Image Service which is already handled via service factory
+            const revision = await getRevisionService().createRevision(activeChecklist.id, summary);
+
+            set(state => {
+                if (!state.activeChecklist) return { isSaving: false };
+                return {
+                    isSaving: false,
+                    lastSaved: new Date(),
+                    activeChecklist: {
+                        ...state.activeChecklist,
+                        currentRevisionNumber: revision.number,
+                        revisions: [revision, ...(state.activeChecklist.revisions || [])],
+                        updatedAt: new Date()
+                    }
+                };
+            });
+        } catch (err) {
+            set({ error: (err as Error).message, isSaving: false });
+        }
+    },
+
+    loadRevisions: async () => {
+        const { activeChecklist } = get();
+        if (!activeChecklist) return;
+
+        set({ isLoading: true });
+        try {
+            const revisions = await getRevisionService().getRevisions(activeChecklist.id);
+            set(state => {
+                if (!state.activeChecklist) return { isLoading: false };
+                return {
+                    isLoading: false,
+                    activeChecklist: {
+                        ...state.activeChecklist,
+                        revisions: revisions
+                    }
+                };
+            });
+        } catch (err) {
+            set({ error: (err as Error).message, isLoading: false });
+        }
+    },
+
+    restoreRevision: async (revisionId: string) => {
+        set({ isLoading: true });
+        try {
+            const revision = await getRevisionService().getRevision(revisionId);
+            if (revision && revision.snapshot) {
+                set(state => ({
+                    isLoading: false,
+                    activeChecklist: {
+                        ...revision.snapshot,
+                        // Ensure we mistakenly don't overwrite metadata that shouldn't change if snapshot is old structure
+                        id: state.activeChecklist?.id || revision.snapshot.id,
+                    }
+                }));
+            } else {
+                set({ isLoading: false, error: "Snapshot content missing" });
+            }
+        } catch (err) {
+            set({ error: (err as Error).message, isLoading: false });
+        }
+    },
+
+    uploadClientLogo: async (file: File) => {
+        const { activeChecklist } = get();
+        if (!activeChecklist) return;
+
+        set({ isSaving: true });
+        try {
+            // 1. Upload to SharePoint
+            const url = await getImageService().uploadClientLogo(activeChecklist.id, file);
+
+            // 2. Update Checklist Metadata (Validation: Save URL to Dataverse)
+            // We use updateChecklist logic but specific trigger
+            const updatedChecklist = { ...activeChecklist, clientLogoUrl: url, updatedAt: new Date() };
+
+            await getChecklistService().saveChecklist(updatedChecklist);
+
+            set({
+                isSaving: false,
+                lastSaved: new Date(),
+                activeChecklist: updatedChecklist
+            });
+        } catch (err) {
+            set({ error: (err as Error).message, isSaving: false });
+        }
     },
 
     // Utility

@@ -134,7 +134,7 @@ graph TB
 | `pap_checklistid` | Lookup → pap_checklist | Yes | Parent checklist |
 | `pap_number` | Whole Number | Yes | Revision number (1, 2, 3...) |
 | `pap_summary` | Multiline Text | Yes | Change description |
-| `pap_snapshotjson` | Multiline Text (Max) | Yes | JSON snapshot of checklist state |
+| `pap_snapshotfile` | File | Yes | JSON snapshot file (.json) |
 | `pap_createdby` | Lookup → systemuser | Auto | Creator |
 | `pap_createdon` | DateTime | Auto | Created timestamp |
 
@@ -195,15 +195,18 @@ graph TB
 ```
 PAP Attachments/
 ├── {checklistId}/
+│   ├── branding/
+│   │   └── logo.png (Client Logo)
 │   ├── files/
 │   │   ├── structural-drawings.pdf
 │   │   └── site-plan.dwg
-│   └── images/
-│       ├── {rowId}/
-│       │   ├── image-001.jpg
-│       │   └── image-002.png
-│       └── {rowId}/
-│           └── photo.jpg
+│   ├── images/
+│   │   ├── {rowId}/
+│   │   │   ├── image-001.jpg
+│   │   │   └── image-002.png
+│   ├── reports/
+│   │   └── {checklistName}-rev{number}.pdf
+│   ├── revisions/ (Backup/Legacy)
 ```
 
 ### Metadata Columns on Library
@@ -250,6 +253,26 @@ Use **Microsoft Graph API** or **SharePoint REST API** to:
 2. Build JSON snapshot
 3. Create `pap_revision` record with snapshot
 4. Increment `pap_currentrevisionnumber` on checklist
+
+---
+
+
+## PDF Generation Strategy (Client-Side)
+
+### Architecture
+- **Engine**: Client-side generation using `jspdf` and `jspdf-autotable`.
+- **Reasoning**: Provides fine-grained control over table layout, page breaks, and branding headers/footers which is essential for professional reporting.
+- **Image Handling**:
+  - Images are fetched via Microsoft Graph API.
+  - **Optimization**: Use the 'large' thumbnail variant (~1600px) instead of raw full-res uploads to prevent Out-Of-Memory crashes on large reports.
+- **branding**:
+  - **Client Logo**: Fetched from `PAP Attachments/{checklistId}/branding/logo.png`.
+  - **Fallback**: Use embedded PAP logo or centralized asset if client logo is missing.
+- **Storage**: Generated PDFs are uploaded back to `PAP Attachments/{checklistId}/reports/`.
+
+### UI/UX Considerations
+- **Progress Feedback**: Visible progress bar (e.g., "Processing Images 5/50...") to inform user during generation.
+- **Cancelability**: Option to abort generation if it hangs or takes too long.
 
 ---
 

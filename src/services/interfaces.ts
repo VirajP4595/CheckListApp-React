@@ -1,8 +1,8 @@
-import type { Checklist, ChecklistImage, Revision, UserContext } from '../models';
+import type { Checklist, ChecklistRow, Workgroup, ChecklistImage, Revision, UserContext } from '../models';
 
 // ─── CHECKLIST SERVICE ───────────────────────────────────
 export interface IChecklistService {
-    getChecklist(id: string): Promise<Checklist>;
+    getChecklist(id: string, options?: { includeImages?: boolean }): Promise<Checklist>;
     getAllChecklists(): Promise<Checklist[]>;
 
     // Metadata Only
@@ -28,10 +28,15 @@ export interface IRevisionService {
 
 // ─── IMAGE SERVICE ───────────────────────────────────────
 export interface IImageService {
-    addImage(rowId: string, source: string, caption?: string): Promise<ChecklistImage>;
+    addImage(checklistId: string, workgroupId: string, rowId: string, source: string, caption?: string): Promise<ChecklistImage>;
     removeImage(imageId: string): Promise<void>;
     updateCaption(imageId: string, caption: string): Promise<void>;
-    getImages(checklistId: string): Promise<ChecklistImage[]>;
+    getRowImages(checklistId: string, rowId: string): Promise<ChecklistImage[]>;
+    getAllImageMetadata(checklistId: string): Promise<ChecklistImage[]>;
+    uploadClientLogo(checklistId: string, file: File): Promise<string>;
+    uploadPDFReport(checklistId: string, filename: string, blob: Blob): Promise<string>;
+    downloadImageContent(itemId: string): Promise<string>;
+    downloadClientLogoContent(checklistId: string): Promise<Blob | null>;
 }
 
 // ─── USER SERVICE ────────────────────────────────────────

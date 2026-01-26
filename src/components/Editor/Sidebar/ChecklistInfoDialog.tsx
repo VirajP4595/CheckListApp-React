@@ -12,13 +12,14 @@ import {
     SelectTabEvent,
     Button,
 } from '@fluentui/react-components';
-import { Dismiss24Regular, Info24Regular, Chat24Regular, NoteEdit24Regular, Folder24Regular, History24Regular } from '@fluentui/react-icons';
+import { Dismiss24Regular, Info24Regular, Chat24Regular, NoteEdit24Regular, Folder24Regular, History24Regular, Image24Regular } from '@fluentui/react-icons';
 import { Checklist } from '../../../models';
 import { RevisionPanel } from '../../Revision/RevisionPanel';
 import { ChecklistChat } from './ChecklistChat';
 import { CommonNotes } from './CommonNotes';
 import { ChecklistFiles } from './ChecklistFiles';
 import { ChecklistInfoPanel } from './ChecklistInfoPanel';
+import { BrandingPanel } from './BrandingPanel';
 import { useChecklistStore } from '../../../stores';
 import styles from './ChecklistInfoDialog.module.scss';
 
@@ -84,6 +85,7 @@ export const ChecklistInfoDialog: React.FC<ChecklistInfoDialogProps> = ({ checkl
                             <Tab value="notes" icon={<NoteEdit24Regular />}>Notes</Tab>
                             <Tab value="files" icon={<Folder24Regular />}>Files</Tab>
                             <Tab value="revisions" icon={<History24Regular />}>Revisions</Tab>
+                            <Tab value="branding" icon={<Image24Regular />}>Branding</Tab>
                         </TabList>
 
                         <DialogContent className={styles['dialog-content']}>
@@ -119,6 +121,11 @@ export const ChecklistInfoDialog: React.FC<ChecklistInfoDialogProps> = ({ checkl
                                 <RevisionPanel
                                     checklistId={checklist.id}
                                     onViewRevision={handleViewRevision}
+                                />
+                            )}
+                            {selectedTab === 'branding' && (
+                                <BrandingPanel
+                                    checklist={checklist}
                                 />
                             )}
                         </DialogContent>
