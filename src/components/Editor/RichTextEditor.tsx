@@ -22,12 +22,16 @@ import styles from './RichTextEditor.module.scss';
 interface RichTextEditorProps {
     content: string;
     onChange: (html: string) => void;
+    onBlur?: () => void;
+    onFocus?: () => void;
     placeholder?: string;
 }
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     content,
     onChange,
+    onBlur,
+    onFocus,
     placeholder = 'Add notes, assumptions, or explanations...',
 }) => {
     const editor = useEditor({
@@ -50,6 +54,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         content,
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML());
+        },
+        onBlur: () => {
+            // Smart Save Trigger
+            if (onBlur) onBlur();
+        },
+        onFocus: () => {
+            if (onFocus) onFocus();
         },
     });
 

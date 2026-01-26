@@ -11,7 +11,9 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    Spinner as S_Spinner
 } from '@fluentui/react-components';
+import { useChecklistStore } from '../../stores';
 import { Image20Regular, Dismiss16Regular, ArrowDownload24Regular, Dismiss24Regular } from '@fluentui/react-icons';
 import type { ChecklistImage } from '../../models';
 
@@ -103,17 +105,22 @@ const useStyles = makeStyles({
 });
 
 interface InlineImageAreaProps {
+    rowId: string;
     images: ChecklistImage[];
     onAddImage: (source: string) => void;
     onRemoveImage: (imageId: string) => void;
 }
 
 export const InlineImageArea: React.FC<InlineImageAreaProps> = ({
+    rowId,
     images,
     onAddImage,
     onRemoveImage,
 }) => {
     const styles = useStyles();
+    const { processingItems } = useChecklistStore(); // Import store
+    const isAdding = processingItems.includes(`img-add-${rowId}`);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragOver, setIsDragOver] = useState(false);
     const [previewImage, setPreviewImage] = useState<ChecklistImage | null>(null);
@@ -131,26 +138,30 @@ export const InlineImageArea: React.FC<InlineImageAreaProps> = ({
         reader.readAsDataURL(file);
     }, [onAddImage]);
 
+    // ... (Hooks for drag/drop remain same)
+
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         setIsDragOver(false);
+        if (isAdding) return; // Prevent drop while adding
 
         const file = e.dataTransfer.files[0];
         if (file) {
             handleFile(file);
         }
-    }, [handleFile]);
+    }, [handleFile, isAdding]);
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
-        setIsDragOver(true);
-    }, []);
+        if (!isAdding) setIsDragOver(true);
+    }, [isAdding]);
 
     const handleDragLeave = useCallback(() => {
         setIsDragOver(false);
     }, []);
 
     const handlePaste = useCallback((e: React.ClipboardEvent) => {
+        if (isAdding) return;
         const items = e.clipboardData.items;
         for (const item of items) {
             if (item.type.startsWith('image/')) {
@@ -161,7 +172,7 @@ export const InlineImageArea: React.FC<InlineImageAreaProps> = ({
                 break;
             }
         }
-    }, [handleFile]);
+    }, [handleFile, isAdding]);
 
     const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -173,7 +184,7 @@ export const InlineImageArea: React.FC<InlineImageAreaProps> = ({
     }, [handleFile]);
 
     const handleClick = () => {
-        fileInputRef.current?.click();
+        if (!isAdding) fileInputRef.current?.click();
     };
 
     const handleImageClick = (image: ChecklistImage, e: React.MouseEvent) => {
@@ -197,29 +208,34 @@ export const InlineImageArea: React.FC<InlineImageAreaProps> = ({
             <div className={styles.container} onPaste={handlePaste}>
                 {images.length > 0 && (
                     <div className={styles.images}>
-                        {images.map(image => (
-                            <div
-                                key={image.id}
-                                className={styles.imageWrapper}
-                                onClick={(e) => handleImageClick(image, e)}
-                            >
-                                <img
-                                    src={image.source}
-                                    alt={image.caption || 'Attached image'}
-                                    className={styles.image}
-                                />
-                                <Button
-                                    className={styles.removeButton}
-                                    appearance="subtle"
-                                    size="small"
-                                    icon={<Dismiss16Regular />}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onRemoveImage(image.id);
-                                    }}
-                                />
-                            </div>
-                        ))}
+                        {images.map(image => {
+                            const isRemoving = processingItems.includes(`img-rm-${image.id}`);
+                            return (
+                                <div
+                                    key={image.id}
+                                    className={styles.imageWrapper}
+                                    onClick={(e) => handleImageClick(image, e)}
+                                    style={{ opacity: isRemoving ? 0.5 : 1, pointerEvents: isRemoving ? 'none' : 'auto' }}
+                                >
+                                    <img
+                                        src={image.source}
+                                        alt={image.caption || 'Attached image'}
+                                        className={styles.image}
+                                    />
+                                    <Button
+                                        className={styles.removeButton}
+                                        appearance="subtle"
+                                        size="small"
+                                        icon={isRemoving ? <S_Spinner size="extra-tiny" /> : <Dismiss16Regular />}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (!isRemoving) onRemoveImage(image.id);
+                                        }}
+                                        disabled={isRemoving}
+                                    />
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
 
@@ -229,10 +245,11 @@ export const InlineImageArea: React.FC<InlineImageAreaProps> = ({
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onClick={handleClick}
+                    style={{ opacity: isAdding ? 0.7 : 1, cursor: isAdding ? 'wait' : 'pointer' }}
                 >
-                    <Image20Regular />
+                    {isAdding ? <S_Spinner size="tiny" /> : <Image20Regular />}
                     <Text className={styles.dropzoneText}>
-                        Drop image, paste, or click to upload
+                        {isAdding ? 'Adding image...' : 'Drop image, paste, or click to upload'}
                     </Text>
                 </div>
 
@@ -243,6 +260,7 @@ export const InlineImageArea: React.FC<InlineImageAreaProps> = ({
                     className={styles.hiddenInput}
                     onChange={handleFileSelect}
                     aria-label="Upload image"
+                    disabled={isAdding}
                 />
             </div>
 

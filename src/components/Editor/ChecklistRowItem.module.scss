@@ -10,7 +10,7 @@
     @include surface;
     background-color: $color-white;
     border: 1px solid $color-border;
-    padding: 1.25rem; // p-5
+    padding: $spacing-3; // Reduced from 1.25rem (p-5) to closer match compact
     border-radius: $border-radius-lg;
     margin-bottom: $spacing-3;
     transition: box-shadow $transition-base;

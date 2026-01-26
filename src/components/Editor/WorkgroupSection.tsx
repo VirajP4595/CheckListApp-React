@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Input, Tooltip } from '@fluentui/react-components';
+import { Button, Input, Tooltip, Spinner } from '@fluentui/react-components';
 import {
     Add20Regular,
     ChevronDown20Regular,
@@ -30,13 +30,24 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
     isCollapsed = false,
     expandTasks = true,
 }) => {
-    const { addRow, updateWorkgroup, deleteWorkgroup } = useChecklistStore();
+    const { addRow, updateWorkgroup, deleteWorkgroup, processingItems } = useChecklistStore();
+    const isAdding = processingItems.includes(workgroup.id);
     const [localCollapsed, setLocalCollapsed] = useState(isCollapsed);
     const [isEditing, setIsEditing] = useState(false);
+    const [tempName, setTempName] = useState(workgroup.name);
+    const [tempNumber, setTempNumber] = useState(workgroup.number);
 
     useEffect(() => {
         setLocalCollapsed(isCollapsed || false);
     }, [isCollapsed]);
+
+    // Update local state when prop changes (if not editing to avoid overwrite)
+    useEffect(() => {
+        if (!isEditing) {
+            setTempName(workgroup.name);
+            setTempNumber(workgroup.number);
+        }
+    }, [workgroup.name, workgroup.number, isEditing]);
 
     const collapsed = localCollapsed;
 
@@ -44,15 +55,38 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
         setLocalCollapsed(!localCollapsed);
     };
 
+    const handleStartEditing = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setTempName(workgroup.name);
+        setTempNumber(workgroup.number);
+        setIsEditing(true);
+    };
+
+    const handleSaveEditing = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (tempName !== workgroup.name || tempNumber !== workgroup.number) {
+            updateWorkgroup(workgroup.id, { name: tempName, number: tempNumber });
+        }
+        setIsEditing(false);
+    };
+
+    const handleCancelEditing = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setTempName(workgroup.name);
+        setTempNumber(workgroup.number);
+        setIsEditing(false);
+    };
+
+
     const handleAddRow = () => {
         addRow(workgroup.id);
-        onRowChange();
+        // onRowChange(); // REMOVED: Granular action handles save
     };
 
     const handleDelete = () => {
         if (window.confirm(`Delete workgroup "${workgroup.name}"? This will also delete all ${workgroup.rows.length} items.`)) {
             deleteWorkgroup(workgroup.id);
-            onRowChange();
+            // onRowChange(); // REMOVED: Granular action handles save
         }
     };
 
@@ -94,12 +128,13 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
                     {isEditing ? (
                         <Input
                             className={styles['workgroup-number-input']}
-                            value={String(workgroup.number)}
+                            value={String(tempNumber)}
                             onChange={(_, data) => {
-                                const num = parseFloat(data.value) || 0;
-                                updateWorkgroup(workgroup.id, { number: num });
+                                const num = parseFloat(data.value); // Allow NaN while typing empty
+                                setTempNumber(isNaN(num) ? 0 : num);
                             }}
                             onClick={(e) => e.stopPropagation()}
+                            type="number"
                         />
                     ) : (
                         <div className={styles['workgroup-number-badge']}>
@@ -116,10 +151,8 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
                     {isEditing ? (
                         <Input
                             className={styles['workgroup-title-input']}
-                            value={workgroup.name}
-                            onChange={(_, data) => {
-                                updateWorkgroup(workgroup.id, { name: data.value });
-                            }}
+                            value={tempName}
+                            onChange={(_, data) => setTempName(data.value)}
                             onClick={(e) => e.stopPropagation()}
                             placeholder="Workgroup name"
                             autoFocus
@@ -178,10 +211,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
                                 appearance="subtle"
                                 size="small"
                                 icon={<Checkmark20Regular />} // Should be Check icon
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsEditing(false);
-                                }}
+                                onClick={handleSaveEditing}
                             />
                         ) : (
                             <Button
@@ -189,10 +219,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
                                 appearance="subtle"
                                 size="small"
                                 icon={<Edit20Regular />}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsEditing(true);
-                                }}
+                                onClick={handleStartEditing}
                             />
                         )}
 
@@ -239,13 +266,14 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
                     <Button
                         className={styles['workgroup-add-row']}
                         appearance="subtle"
-                        icon={<Add20Regular />}
+                        icon={isAdding ? <Spinner size="extra-tiny" /> : <Add20Regular />}
                         onClick={(e) => {
                             e.stopPropagation();
-                            handleAddRow();
+                            if (!isAdding) handleAddRow();
                         }}
+                        disabled={isAdding}
                     >
-                        Add checklist item
+                        {isAdding ? 'Adding...' : 'Add checklist item'}
                     </Button>
                 </div>
             )}

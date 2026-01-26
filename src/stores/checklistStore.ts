@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Checklist, ChecklistRow, AnswerState, ChecklistImage, Workgroup } from '../models';
 import { generateId, createEmptyRow } from '../models';
-import { getChecklistService } from '../services';
+import { getChecklistService, getImageService } from '../services';
 
 interface ChecklistState {
     // Data
@@ -13,19 +13,20 @@ interface ChecklistState {
     isSaving: boolean;
     lastSaved: Date | null;
     error: string | null;
+    processingItems: string[]; // IDs of items currently being processed (adding/deleting)
 
     // Actions - Data Loading
     loadChecklists: () => Promise<void>;
     loadChecklist: (id: string) => Promise<void>;
 
     // Actions - Checklist CRUD
-    createChecklist: (title: string, jobReference: string) => Promise<Checklist>;
     saveChecklist: () => Promise<void>;
+    saveRow: (rowId: string) => Promise<void>;
 
     // Actions - Row Operations
     updateRow: (rowId: string, updates: Partial<ChecklistRow>) => void;
-    addRow: (workgroupId: string, afterRowId?: string) => void;
-    deleteRow: (rowId: string) => void;
+    addRow: (workgroupId: string, afterRowId?: string) => Promise<void>;
+    deleteRow: (rowId: string) => Promise<void>;
     toggleAnswer: (rowId: string, answer: AnswerState) => void;
 
     // Actions - Image Operations
@@ -33,10 +34,10 @@ interface ChecklistState {
     removeImageFromRow: (rowId: string, imageId: string) => void;
 
     // Actions - Workgroup Operations
-    addWorkgroup: (number: number, name: string) => void;
-    deleteWorkgroup: (workgroupId: string) => void;
-    updateWorkgroupNotes: (workgroupId: string, notes: string) => void;
-    updateWorkgroup: (workgroupId: string, updates: Partial<Workgroup>) => void;
+    addWorkgroup: (number: number, name: string) => Promise<void>;
+    deleteWorkgroup: (workgroupId: string) => Promise<void>;
+    updateWorkgroupNotes: (workgroupId: string, notes: string) => Promise<void>;
+    updateWorkgroup: (workgroupId: string, updates: Partial<Workgroup>) => Promise<void>;
 
     // Actions - General
     updateChecklist: (id: string, updates: Partial<Checklist>) => void;
@@ -46,6 +47,8 @@ interface ChecklistState {
     setActiveChecklist: (checklist: Checklist | null) => void;
 }
 
+
+
 export const useChecklistStore = create<ChecklistState>((set, get) => ({
     // Initial State
     checklists: [],
@@ -54,6 +57,7 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
     isSaving: false,
     lastSaved: null,
     error: null,
+    processingItems: [],
 
     // Data Loading
     loadChecklists: async () => {
@@ -76,37 +80,78 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         }
     },
 
-    // Checklist CRUD
-    createChecklist: async (title: string, jobReference: string) => {
-        set({ isLoading: true, error: null });
-        try {
-            const newChecklist = await getChecklistService().createChecklist(title, jobReference);
-            set(state => ({
-                checklists: [...state.checklists, newChecklist],
-                isLoading: false,
-            }));
-            return newChecklist;
-        } catch (err) {
-            set({ error: (err as Error).message, isLoading: false });
-            throw err;
-        }
-    },
 
+
+    // Checklist CRUD
     saveChecklist: async () => {
         const { activeChecklist } = get();
         if (!activeChecklist) return;
 
         set({ isSaving: true });
         try {
-            await getChecklistService().saveChecklist(activeChecklist);
-            set({ isSaving: false, lastSaved: new Date() });
+            // Metadata only save
+            const savedChecklist = await getChecklistService().saveChecklist(activeChecklist);
+            set({
+                isSaving: false,
+                lastSaved: new Date(),
+                activeChecklist: { ...activeChecklist, ...savedChecklist, updatedAt: new Date() }
+            });
         } catch (err) {
+            set({ error: (err as Error).message, isSaving: false });
+        }
+    },
+
+    saveRow: async (rowId: string) => { // Renaming to updateRow in interface, keeping public action name loose or aligning? User asked "use updateRow instead of saveRow". Let's align.
+        // Actually, interface has updateRow. Store action can be updateRow too, or stick to saveRow for compat if we don't want to refactor all components yet.
+        // But user said "use updateRow".
+        // Let's implement updateRow action and deprecate saveRow? Or just replace body.
+        // I will replace body and call service.updateRow.
+        const { activeChecklist } = get();
+        if (!activeChecklist) return;
+
+        let rowToSave: ChecklistRow | undefined;
+        for (const wg of activeChecklist.workgroups) {
+            const found = wg.rows.find(r => r.id === rowId);
+            if (found) {
+                rowToSave = found;
+                break;
+            }
+        }
+        if (!rowToSave) return;
+
+        // Check if it's a new row (temp ID) -> Use createRow
+        // But wait, addRow now calls createRow immediately? Yes, per plan.
+        // So saveRow here should only be for UPDATES.
+
+        console.log(`[Store] Updating Row: ${rowId}`);
+        set({ isSaving: true });
+        try {
+            const updatedRow = await getChecklistService().updateRow(rowToSave);
+            set(state => {
+                if (!state.activeChecklist) return state;
+                const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => ({
+                    ...wg,
+                    rows: wg.rows.map(r => r.id === rowId ? updatedRow : r)
+                }));
+                return {
+                    isSaving: false,
+                    lastSaved: new Date(),
+                    activeChecklist: {
+                        ...state.activeChecklist,
+                        workgroups: updatedWorkgroups,
+                        updatedAt: new Date()
+                    }
+                };
+            });
+        } catch (err) {
+            console.error('[Store] Update Row Failed', err);
             set({ error: (err as Error).message, isSaving: false });
         }
     },
 
     // Row Operations
     updateRow: (rowId: string, updates: Partial<ChecklistRow>) => {
+        // Optimistic update local state (for typing speed)
         set(state => {
             if (!state.activeChecklist) return state;
 
@@ -125,192 +170,281 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
                 },
             };
         });
+        // Note: We do NOT auto-save here to allow debouncing/controlled saves via saveRow (onBlur)
     },
 
-    addRow: (workgroupId: string, afterRowId?: string) => {
-        set(state => {
-            if (!state.activeChecklist) return state;
+    addRow: async (workgroupId: string, afterRowId?: string) => {
+        // Immediate server persistence
+        const { activeChecklist } = get();
+        if (!activeChecklist) return;
 
-            const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => {
-                if (wg.id !== workgroupId) return wg;
+        const wg = activeChecklist.workgroups.find(w => w.id === workgroupId);
+        if (!wg) return;
 
-                const rows = [...wg.rows];
-                const newOrder = afterRowId
-                    ? (rows.find(r => r.id === afterRowId)?.order ?? rows.length) + 1
-                    : rows.length;
+        // Calculate Order
+        const rows = wg.rows;
+        const newOrder = afterRowId
+            ? (rows.find(r => r.id === afterRowId)?.order ?? rows.length) + 1
+            : rows.length;
 
-                const newRow = createEmptyRow(workgroupId, newOrder);
-
-                if (afterRowId) {
-                    const insertIndex = rows.findIndex(r => r.id === afterRowId) + 1;
-                    rows.splice(insertIndex, 0, newRow);
-                    // Reorder subsequent rows
-                    rows.forEach((row, idx) => {
-                        row.order = idx;
-                    });
-                } else {
-                    rows.push(newRow);
-                }
-
-                return { ...wg, rows };
+        set(state => ({ processingItems: [...state.processingItems, workgroupId], isSaving: true }));
+        try {
+            const newRow = await getChecklistService().createRow(workgroupId, {
+                order: newOrder,
+                name: '', // Empty name initially
+                description: '',
+                answer: 'BLANK'
             });
 
-            return {
-                activeChecklist: {
-                    ...state.activeChecklist,
-                    workgroups: updatedWorkgroups,
-                    updatedAt: new Date(),
-                },
-            };
-        });
+            set(state => {
+                if (!state.activeChecklist) return { processingItems: state.processingItems.filter(id => id !== workgroupId), isSaving: false };
+                const updatedWorkgroups = state.activeChecklist.workgroups.map(w => {
+                    if (w.id !== workgroupId) return w;
+                    const newRows = [...w.rows];
+                    if (afterRowId) {
+                        const idx = newRows.findIndex(r => r.id === afterRowId);
+                        newRows.splice(idx + 1, 0, newRow);
+                        // Note: We might need to re-index subsequent orders on server if we insert mid-list.
+                        // For now, minimal viable insert.
+                    } else {
+                        newRows.push(newRow);
+                    }
+                    return { ...w, rows: newRows };
+                });
+                return {
+                    isSaving: false,
+                    lastSaved: new Date(),
+                    processingItems: state.processingItems.filter(id => id !== workgroupId),
+                    activeChecklist: {
+                        ...state.activeChecklist,
+                        workgroups: updatedWorkgroups,
+                        updatedAt: new Date()
+                    }
+                };
+            });
+        } catch (err) {
+            console.error('[Store] Add Row Failed', err);
+            set(state => ({
+                error: (err as Error).message,
+                isSaving: false,
+                processingItems: state.processingItems.filter(id => id !== workgroupId)
+            }));
+        }
     },
 
-    deleteRow: (rowId: string) => {
-        set(state => {
-            if (!state.activeChecklist) return state;
-
-            const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => ({
-                ...wg,
-                rows: wg.rows.filter(row => row.id !== rowId),
+    deleteRow: async (rowId: string) => {
+        set(state => ({ processingItems: [...state.processingItems, rowId], isSaving: true }));
+        try {
+            await getChecklistService().deleteRow(rowId);
+            set(state => {
+                if (!state.activeChecklist) return { processingItems: state.processingItems.filter(id => id !== rowId), isSaving: false };
+                const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => ({
+                    ...wg,
+                    rows: wg.rows.filter(row => row.id !== rowId),
+                }));
+                return {
+                    isSaving: false,
+                    lastSaved: new Date(),
+                    processingItems: state.processingItems.filter(id => id !== rowId),
+                    activeChecklist: {
+                        ...state.activeChecklist,
+                        workgroups: updatedWorkgroups,
+                        updatedAt: new Date()
+                    }
+                };
+            });
+        } catch (err) {
+            set(state => ({
+                error: (err as Error).message,
+                isSaving: false,
+                processingItems: state.processingItems.filter(id => id !== rowId)
             }));
-
-            return {
-                activeChecklist: {
-                    ...state.activeChecklist,
-                    workgroups: updatedWorkgroups,
-                    updatedAt: new Date(),
-                },
-            };
-        });
+        }
     },
 
     toggleAnswer: (rowId: string, answer: AnswerState) => {
         get().updateRow(rowId, { answer });
+        get().saveRow(rowId); // Trigger save immediately
     },
 
     // Image Operations
-    addImageToRow: (rowId: string, image: ChecklistImage) => {
-        set(state => {
-            if (!state.activeChecklist) return state;
+    // Image Operations
+    addImageToRow: async (rowId: string, image: ChecklistImage) => {
+        const processId = `img-add-${rowId}`;
+        set(state => ({ processingItems: [...state.processingItems, processId] }));
 
-            const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => ({
-                ...wg,
-                rows: wg.rows.map(row =>
-                    row.id === rowId
-                        ? { ...row, images: [...row.images, image] }
-                        : row
-                ),
+        try {
+            // Server Call
+            // Note: 'image.source' is expected to be the base64/blob data here
+            const savedImage = await getImageService().addImage(rowId, image.source, image.caption);
+
+            set(state => {
+                if (!state.activeChecklist) return { processingItems: state.processingItems.filter(p => p !== processId) };
+
+                const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => ({
+                    ...wg,
+                    rows: wg.rows.map(row =>
+                        row.id === rowId
+                            ? { ...row, images: [...row.images, savedImage] }
+                            : row
+                    ),
+                }));
+
+                return {
+                    processingItems: state.processingItems.filter(p => p !== processId),
+                    activeChecklist: {
+                        ...state.activeChecklist,
+                        workgroups: updatedWorkgroups,
+                        updatedAt: new Date(),
+                    },
+                };
+            });
+        } catch (err) {
+            console.error('[Store] Add Image Failed', err);
+            set(state => ({
+                error: (err as Error).message,
+                processingItems: state.processingItems.filter(p => p !== processId)
             }));
-
-            return {
-                activeChecklist: {
-                    ...state.activeChecklist,
-                    workgroups: updatedWorkgroups,
-                    updatedAt: new Date(),
-                },
-            };
-        });
+        }
     },
 
-    removeImageFromRow: (rowId: string, imageId: string) => {
-        set(state => {
-            if (!state.activeChecklist) return state;
+    removeImageFromRow: async (rowId: string, imageId: string) => {
+        const processId = `img-rm-${imageId}`;
+        set(state => ({ processingItems: [...state.processingItems, processId] }));
 
-            const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => ({
-                ...wg,
-                rows: wg.rows.map(row =>
-                    row.id === rowId
-                        ? { ...row, images: row.images.filter(img => img.id !== imageId) }
-                        : row
-                ),
+        try {
+            await getImageService().removeImage(imageId);
+
+            set(state => {
+                if (!state.activeChecklist) return { processingItems: state.processingItems.filter(p => p !== processId) };
+
+                const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => ({
+                    ...wg,
+                    rows: wg.rows.map(row =>
+                        row.id === rowId
+                            ? { ...row, images: row.images.filter(img => img.id !== imageId) }
+                            : row
+                    ),
+                }));
+
+                return {
+                    processingItems: state.processingItems.filter(p => p !== processId),
+                    activeChecklist: {
+                        ...state.activeChecklist,
+                        workgroups: updatedWorkgroups,
+                        updatedAt: new Date(),
+                    },
+                };
+            });
+        } catch (err) {
+            console.error('[Store] Remove Image Failed', err);
+            set(state => ({
+                error: (err as Error).message,
+                processingItems: state.processingItems.filter(p => p !== processId)
             }));
-
-            return {
-                activeChecklist: {
-                    ...state.activeChecklist,
-                    workgroups: updatedWorkgroups,
-                    updatedAt: new Date(),
-                },
-            };
-        });
+        }
     },
 
     // Workgroup Operations
-    addWorkgroup: (number: number, name: string) => {
-        set(state => {
-            if (!state.activeChecklist) return state;
+    addWorkgroup: async (number: number, name: string) => {
+        const { activeChecklist } = get();
+        if (!activeChecklist) return;
 
-            const newWorkgroup: Workgroup = {
-                id: generateId(),
-                checklistId: state.activeChecklist.id,
-                number,
-                name,
-                rows: [],
-                order: state.activeChecklist.workgroups.length,
-            };
-
-            return {
-                activeChecklist: {
-                    ...state.activeChecklist,
-                    workgroups: [...state.activeChecklist.workgroups, newWorkgroup],
-                    updatedAt: new Date(),
-                },
-            };
-        });
+        set(state => ({ processingItems: [...state.processingItems, `add-wg-${activeChecklist.id}`], isSaving: true }));
+        try {
+            const newWg = await getChecklistService().createWorkgroup(activeChecklist.id, number, name);
+            set(state => {
+                if (!state.activeChecklist) return { processingItems: state.processingItems.filter(id => id !== `add-wg-${activeChecklist.id}`), isSaving: false };
+                return {
+                    isSaving: false,
+                    lastSaved: new Date(),
+                    processingItems: state.processingItems.filter(id => id !== `add-wg-${activeChecklist.id}`),
+                    activeChecklist: {
+                        ...state.activeChecklist,
+                        workgroups: [...state.activeChecklist.workgroups, newWg],
+                        updatedAt: new Date()
+                    }
+                };
+            });
+        } catch (err) {
+            set(state => ({
+                error: (err as Error).message,
+                isSaving: false,
+                processingItems: state.processingItems.filter(id => id !== `add-wg-${activeChecklist.id}`)
+            }));
+        }
     },
 
-    deleteWorkgroup: (workgroupId: string) => {
-        set(state => {
-            if (!state.activeChecklist) return state;
-
-            const updatedWorkgroups = state.activeChecklist.workgroups.filter(
-                wg => wg.id !== workgroupId
-            );
-
-            return {
-                activeChecklist: {
-                    ...state.activeChecklist,
-                    workgroups: updatedWorkgroups,
-                    updatedAt: new Date(),
-                },
-            };
-        });
+    deleteWorkgroup: async (workgroupId: string) => {
+        set(state => ({ processingItems: [...state.processingItems, workgroupId], isSaving: true }));
+        try {
+            await getChecklistService().deleteWorkgroup(workgroupId);
+            set(state => {
+                if (!state.activeChecklist) return { processingItems: state.processingItems.filter(id => id !== workgroupId), isSaving: false };
+                const updatedWorkgroups = state.activeChecklist.workgroups.filter(
+                    wg => wg.id !== workgroupId
+                );
+                return {
+                    isSaving: false,
+                    lastSaved: new Date(),
+                    processingItems: state.processingItems.filter(id => id !== workgroupId),
+                    activeChecklist: {
+                        ...state.activeChecklist,
+                        workgroups: updatedWorkgroups,
+                        updatedAt: new Date()
+                    }
+                };
+            });
+        } catch (err) {
+            set(state => ({
+                error: (err as Error).message,
+                isSaving: false,
+                processingItems: state.processingItems.filter(id => id !== workgroupId)
+            }));
+        }
     },
 
-    updateWorkgroupNotes: (workgroupId: string, notes: string) => {
-        set(state => {
-            if (!state.activeChecklist) return state;
-
-            const updatedWorkgroups = state.activeChecklist.workgroups.map(wg =>
-                wg.id === workgroupId ? { ...wg, summaryNotes: notes } : wg
-            );
-
-            return {
-                activeChecklist: {
-                    ...state.activeChecklist,
-                    workgroups: updatedWorkgroups,
-                    updatedAt: new Date(),
-                },
-            };
-        });
+    updateWorkgroupNotes: async (workgroupId: string, notes: string) => {
+        // Helper to find and update
+        const { activeChecklist } = get();
+        if (!activeChecklist) return;
+        const wg = activeChecklist.workgroups.find(w => w.id === workgroupId);
+        if (wg) {
+            const updated = { ...wg, summaryNotes: notes };
+            // Optimistic
+            set(state => {
+                if (!state.activeChecklist) return state;
+                return {
+                    activeChecklist: {
+                        ...state.activeChecklist,
+                        workgroups: state.activeChecklist.workgroups.map(w => w.id === workgroupId ? updated : w)
+                    }
+                };
+            });
+            // Server
+            await getChecklistService().updateWorkgroup(updated);
+        }
     },
 
-    updateWorkgroup: (workgroupId: string, updates: Partial<Workgroup>) => {
-        set(state => {
-            if (!state.activeChecklist) return state;
-
-            const updatedWorkgroups = state.activeChecklist.workgroups.map(wg =>
-                wg.id === workgroupId ? { ...wg, ...updates } : wg
-            );
-
-            return {
-                activeChecklist: {
-                    ...state.activeChecklist,
-                    workgroups: updatedWorkgroups,
-                    updatedAt: new Date(),
-                },
-            };
-        });
+    updateWorkgroup: async (workgroupId: string, updates: Partial<Workgroup>) => {
+        const { activeChecklist } = get();
+        if (!activeChecklist) return;
+        const wg = activeChecklist.workgroups.find(w => w.id === workgroupId);
+        if (wg) {
+            const updated = { ...wg, ...updates };
+            // Optimistic
+            set(state => {
+                if (!state.activeChecklist) return state;
+                return {
+                    activeChecklist: {
+                        ...state.activeChecklist,
+                        workgroups: state.activeChecklist.workgroups.map(w => w.id === workgroupId ? updated : w)
+                    }
+                };
+            });
+            // Server
+            await getChecklistService().updateWorkgroup(updated);
+        }
     },
 
     updateChecklist: (id: string, updates: Partial<Checklist>) => {

@@ -1,5 +1,6 @@
 import { dataverseClient, entities, col, navprops } from './dataverseService';
 import type { IChecklistService } from './interfaces';
+import { getImageService } from './serviceFactory';
 import type { Checklist, Workgroup, ChecklistRow, AnswerState, ChecklistStatus } from '../models';
 
 // ─── DATAVERSE RESPONSE TYPES ──────────────────────────────
@@ -205,7 +206,15 @@ export class DataverseChecklistService implements IChecklistService {
             allRows = rowsResponse.value;
         }
 
-        // Map workgroups with their rows
+        // Load images from SharePoint
+        let checklistImages: any[] = [];
+        try {
+            checklistImages = await getImageService().getImages(id);
+        } catch (err) {
+            console.warn('[DataverseService] Failed to load images from SharePoint', err);
+        }
+
+        // Map workgroups with their rows and attach images
         const workgroups = workgroupsResponse.value.map(wg => {
             const wgRows = allRows.filter(r => r._pap_workgroupid_value === wg.pap_workgroupid);
             return {
@@ -213,7 +222,12 @@ export class DataverseChecklistService implements IChecklistService {
                 checklistId: wg._pap_checklistid_value,
                 number: parseFloat(wg.pap_number) || 0,
                 name: wg.pap_name,
-                rows: wgRows.map(mapRow).sort((a, b) => a.order - b.order),
+                rows: wgRows.map(r => {
+                    const row = mapRow(r);
+                    // Attach images for this row
+                    row.images = checklistImages.filter(img => img.rowId === row.id);
+                    return row;
+                }).sort((a, b) => a.order - b.order),
                 summaryNotes: wg.pap_summarynotes,
                 order: wg.pap_order
             };
@@ -261,8 +275,9 @@ export class DataverseChecklistService implements IChecklistService {
         return response.value.map(dv => mapChecklist(dv));
     }
 
-    async saveChecklist(checklist: Checklist): Promise<void> {
-        // Update checklist metadata
+    async saveChecklist(checklist: Checklist): Promise<Checklist> {
+        console.log(`[Dataverse] Saving Checklist Metadata: ${checklist.id}`);
+        // Only update metadata, do not iterate children
         await dataverseClient.update(entities.checklists, checklist.id, {
             [col('name')]: checklist.title,
             [col('status')]: STATUS_VALUE_MAP[checklist.status],
@@ -270,97 +285,102 @@ export class DataverseChecklistService implements IChecklistService {
             [col('estimatetype')]: JSON.stringify(checklist.estimateType),
             [col('commonnotes')]: checklist.commonNotes
         });
-
-        // Update workgroups
-        for (const wg of checklist.workgroups) {
-            await dataverseClient.update(entities.workgroups, wg.id, {
-                [col('name')]: wg.name,
-                [col('number')]: String(wg.number),
-                [col('order')]: wg.order,
-                [col('summarynotes')]: wg.summaryNotes || ''
-            });
-
-            // Update rows
-            for (const row of wg.rows) {
-                await dataverseClient.update(entities.checklistrows, row.id, {
-                    [col('description_primary')]: row.name, // Save name to description_primary
-                    [col('description')]: row.description,
-                    [col('answer')]: ANSWER_VALUE_MAP[row.answer],
-                    [col('notes')]: row.notes,
-                    [col('markedforreview')]: row.markedForReview,
-                    [col('order')]: row.order
-                });
-            }
-        }
+        return checklist;
     }
 
-    async createChecklist(title: string, jobReferenceOrId: string): Promise<Checklist> {
-        // Determine if arg is ID (GUID) or Reference
-        const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobReferenceOrId);
+    // ─── WORKGROUP ACTIONS ──────────────────────────────────────────────
 
-        const data: any = {
-            [col('name')]: title,
-            [col('status')]: STATUS_VALUE_MAP['draft'],
-            [col('currentrevisionnumber')]: 0,
-            [col('clientcorrespondence')]: '[]',
-            [col('estimatetype')]: '[]',
-            [col('commonnotes')]: ''
+    async createWorkgroup(checklistId: string, number: number, name: string): Promise<Workgroup> {
+        console.log(`[Dataverse] Creating Workgroup: "${name}" for Checklist: ${checklistId}`);
+        const result = await dataverseClient.create<{ pap_workgroupid: string }>(entities.workgroups, {
+            [col('name')]: name,
+            [col('number')]: String(number),
+            [col('order')]: number, // Initial order usually matches number, or handled by caller
+            [`${col('checklistid')}@odata.bind`]: `/${entities.checklists}(${checklistId})`
+        });
+
+        console.log(`[Dataverse] Workgroup Created: ${result.pap_workgroupid}`);
+
+        return {
+            id: result.pap_workgroupid,
+            checklistId: checklistId,
+            number: number,
+            name: name,
+            rows: [],
+            order: number,
+            summaryNotes: ''
+        };
+    }
+
+    async updateWorkgroup(workgroup: Workgroup): Promise<Workgroup> {
+        console.log(`[Dataverse] Updating Workgroup: ${workgroup.id}`);
+        await dataverseClient.update(entities.workgroups, workgroup.id, {
+            [col('name')]: workgroup.name,
+            [col('number')]: String(workgroup.number),
+            [col('order')]: workgroup.order,
+            [col('summarynotes')]: workgroup.summaryNotes || ''
+        });
+        return workgroup;
+    }
+
+    async deleteWorkgroup(workgroupId: string): Promise<void> {
+        console.log(`[Dataverse] Deleting Workgroup: ${workgroupId}`);
+        await dataverseClient.delete(entities.workgroups, workgroupId);
+    }
+
+    // ─── ROW ACTIONS ───────────────────────────────────────────────────
+
+    async createRow(workgroupId: string, rowData: Partial<ChecklistRow>): Promise<ChecklistRow> {
+        console.log(`[Dataverse] Creating Row in Workgroup: ${workgroupId}`);
+
+        // Defaults
+        const newRow: any = {
+            [col('description_primary')]: rowData.name || 'New Item',
+            [col('description')]: rowData.description || '',
+            [col('answer')]: ANSWER_VALUE_MAP[rowData.answer || 'BLANK'],
+            [col('notes')]: rowData.notes || '',
+            [col('markedforreview')]: rowData.markedForReview || false,
+            [col('order')]: rowData.order || 0,
+            [`${col('workgroupid')}@odata.bind`]: `/${entities.workgroups}(${workgroupId})`
         };
 
-        if (isGuid) {
-            // Bind to existing Job
-            // Use entities.jobs (pap_jobs) to bind
-            data[`${col('jobid')}@odata.bind`] = `/${entities.jobs}(${jobReferenceOrId})`;
-        }
+        const result = await dataverseClient.create<DataverseRow>(entities.checklistrows, newRow);
+        console.log(`[Dataverse] Row Created: ${result.pap_checklistrowid}`);
 
-        // Create checklist record
-        const created = await dataverseClient.create<DataverseChecklist>(entities.checklists, data);
-
-        // Fetch default workgroups
-        const defaults = await dataverseClient.get<{ value: any[] }>(
-            entities.defaultworkgroups,
-            `$filter=${col('isactive')} eq true&$orderby=${col('order')}`
-        );
-
-        // Fetch all default rows
-        const defaultRowsRes = await dataverseClient.get<{ value: any[] }>(
-            entities.defaultrows,
-            `$filter=${col('isactive')} eq true&$orderby=${col('order')}`
-        );
-        const allDefaultRows = defaultRowsRes.value;
-
-        for (const dwg of defaults.value) {
-            // Create Workgroup
-            const createdWg = await dataverseClient.create<{ pap_workgroupid: string }>(entities.workgroups, {
-                [col('name')]: dwg[col('name')],
-                [col('number')]: dwg[col('number')],
-                [col('order')]: dwg[col('order')],
-                [`${col('checklistid')}@odata.bind`]: `/${entities.checklists}(${created.pap_checklistid})`
-            });
-
-            // Find matching rows for this default workgroup
-            // Assuming default row has lookup to default workgroup: pap_defaultworkgroupid
-            const wgRows = allDefaultRows.filter(r => r[`_${col('defaultworkgroupid')}_value`] === dwg.pap_defaultworkgroupid);
-
-            // Create Rows
-            for (const row of wgRows) {
-                await dataverseClient.create(entities.checklistrows, {
-                    [col('description_primary')]: row[col('name')] || row[col('title')] || '', // Initialize name
-                    [col('description')]: row[col('description')] || '', // Initialize description mapping
-                    [col('answer')]: 3, // BLANK
-                    [col('answer')]: 3, // BLANK
-                    [col('order')]: row[col('order')],
-                    [`${col('workgroupid')}@odata.bind`]: `/${entities.workgroups}(${createdWg.pap_workgroupid})`
-                });
-            }
-        }
-
-        // Return full checklist
-        return this.getChecklist(created.pap_checklistid);
+        // Return full Row object
+        return {
+            id: result.pap_checklistrowid,
+            workgroupId: workgroupId,
+            name: rowData.name || 'New Item',
+            description: rowData.description || '',
+            answer: rowData.answer || 'BLANK',
+            notes: rowData.notes || '',
+            markedForReview: rowData.markedForReview || false,
+            images: [],
+            order: rowData.order || 0
+        };
     }
 
-    async deleteChecklist(id: string): Promise<void> {
-        // Note: Cascade delete should be configured in Dataverse
-        await dataverseClient.delete(entities.checklists, id);
+    async updateRow(row: ChecklistRow): Promise<ChecklistRow> {
+        console.log(`[Dataverse] Updating Row: ${row.id}`);
+        await dataverseClient.update(entities.checklistrows, row.id, {
+            [col('description_primary')]: row.name,
+            [col('description')]: row.description,
+            [col('answer')]: ANSWER_VALUE_MAP[row.answer],
+            [col('notes')]: row.notes,
+            [col('markedforreview')]: row.markedForReview,
+            [col('order')]: row.order
+        });
+        return row;
     }
+
+    async deleteRow(rowId: string): Promise<void> {
+        console.log(`[Dataverse] Deleting Row: ${rowId}`);
+        await dataverseClient.delete(entities.checklistrows, rowId);
+    }
+
+
+
+
+
 }

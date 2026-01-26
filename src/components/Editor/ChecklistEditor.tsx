@@ -28,6 +28,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
         saveChecklist,
         addWorkgroup,
         updateChecklist,
+        processingItems
     } = useChecklistStore();
 
     const [showRevisionPanel, setShowRevisionPanel] = useState(false);
@@ -162,14 +163,15 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                     <Button
                         className={styles['editor-add-workgroup']}
                         appearance="outline"
-                        icon={<Add24Regular />}
+                        icon={processingItems.includes(`add-wg-${activeChecklist.id}`) ? <Spinner size="extra-tiny" /> : <Add24Regular />}
                         onClick={() => {
                             const nextNumber = Math.max(...activeChecklist.workgroups.map(w => w.number), 0) + 10;
                             addWorkgroup(nextNumber, 'New Workgroup');
-                            triggerAutoSave();
+                            // triggerAutoSave(); // REMOVED: Granular action handles save
                         }}
+                        disabled={processingItems.includes(`add-wg-${activeChecklist.id}`)}
                     >
-                        Add Workgroup
+                        {processingItems.includes(`add-wg-${activeChecklist.id}`) ? 'Adding...' : 'Add Workgroup'}
                     </Button>
 
                     {/* Mobile Actions */}

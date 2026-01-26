@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Button, Tooltip, Input, Textarea } from '@fluentui/react-components';
+import { Button, Tooltip, Input, Textarea, Spinner } from '@fluentui/react-components';
 import {
     Delete20Regular,
     Flag20Regular,
@@ -27,8 +27,11 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
     onRowChange,
     isCompact = false,
 }) => {
-    const { updateRow, deleteRow, addRow, addImageToRow, removeImageFromRow } = useChecklistStore();
+    const { updateRow, deleteRow, addRow, addImageToRow, removeImageFromRow, saveRow, processingItems } = useChecklistStore();
+    const isDeleting = processingItems.includes(row.id);
     const nameRef = useRef<HTMLInputElement>(null);
+    const originalNameRef = useRef(row.name);
+    const originalNotesRef = useRef(row.notes);
 
     const [expanded, setExpanded] = React.useState(!isCompact);
 
@@ -40,19 +43,16 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
         setExpanded(!expanded);
     };
 
-    const handleNotesChange = (html: string) => {
-        updateRow(row.id, { notes: html });
-        onRowChange();
-    };
+
 
     const handleToggleReview = () => {
         updateRow(row.id, { markedForReview: !row.markedForReview });
-        onRowChange();
+        saveRow(row.id); // Granular save
     };
 
     const handleDelete = () => {
         deleteRow(row.id);
-        onRowChange();
+        // onRowChange(); // REMOVED: Granular delete updates store and server directly. Calling this triggers unnecessary parent re-renders/saves.
     };
 
     const handleImageAdd = (source: string) => {
@@ -63,16 +63,18 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
             order: row.images.length,
         };
         addImageToRow(row.id, newImage);
-        onRowChange();
+
+        // saveRow(row.id); // Store handles server call now
     };
 
     const handleImageRemove = (imageId: string) => {
         removeImageFromRow(row.id, imageId);
-        onRowChange();
+
+        // saveRow(row.id); // Store handles server call now
     };
 
     return (
-        <div className={`${styles['row-item']} ${row.markedForReview ? styles['row-item--review'] : ''} ${isCompact ? styles['row-item--compact'] : ''}`}>
+        <div className={`${styles['row-item']} ${row.markedForReview ? styles['row-item--review'] : ''} ${!expanded ? styles['row-item--compact'] : ''}`}>
 
             {/* Main Flex Container (3 Columns) */}
             <div className={styles['row-main-flex']}>
@@ -98,23 +100,36 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
                                 value={row.answer}
                                 onChange={(answer) => {
                                     updateRow(row.id, { answer });
-                                    onRowChange();
+                                    saveRow(row.id); // Immediate granular save
                                 }}
                             />
                         </div>
+
+
+
+
 
                         <Input
                             className={styles['row-name']}
                             value={row.name || ''}
                             onChange={(e, data) => {
                                 updateRow(row.id, { name: data.value });
-                                onRowChange();
+                            }}
+                            onFocus={() => {
+                                originalNameRef.current = row.name;
+                            }}
+                            onBlur={() => {
+                                if (row.name !== originalNameRef.current) {
+                                    saveRow(row.id);
+                                }
                             }}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && !e.shiftKey) {
                                     e.preventDefault();
                                     addRow(workgroupId, row.id);
-                                    onRowChange();
+                                    if (row.name !== originalNameRef.current) {
+                                        saveRow(row.id);
+                                    }
                                 }
                             }}
                             placeholder="Item name"
@@ -129,12 +144,21 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
                             <div className={styles['row-notes']}>
                                 <RichTextEditor
                                     content={row.notes}
-                                    onChange={handleNotesChange}
+                                    onChange={(html) => updateRow(row.id, { notes: html })}
+                                    onFocus={() => {
+                                        originalNotesRef.current = row.notes;
+                                    }}
+                                    onBlur={() => {
+                                        if (row.notes !== originalNotesRef.current) {
+                                            saveRow(row.id);
+                                        }
+                                    }}
                                     placeholder="Add notes with formatting and checklists..."
                                 />
                             </div>
                             <div className={styles['row-images']}>
                                 <InlineImageArea
+                                    rowId={row.id}
                                     images={row.images}
                                     onAddImage={handleImageAdd}
                                     onRemoveImage={handleImageRemove}
@@ -156,13 +180,17 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
                         />
                     </Tooltip>
                     <Tooltip content="Delete item" relationship="label">
-                        <Button
-                            className={styles['row-action-btn--delete']}
-                            appearance="subtle"
-                            size="small"
-                            icon={<Delete20Regular />}
-                            onClick={handleDelete}
-                        />
+                        {isDeleting ? (
+                            <Spinner size="extra-tiny" />
+                        ) : (
+                            <Button
+                                className={styles['row-action-btn--delete']}
+                                appearance="subtle"
+                                size="small"
+                                icon={<Delete20Regular />}
+                                onClick={handleDelete}
+                            />
+                        )}
                     </Tooltip>
                 </div>
 

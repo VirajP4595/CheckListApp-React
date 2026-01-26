@@ -1,22 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import {
-    Button,
-    Spinner,
-    Dialog,
-    DialogTrigger,
-    DialogSurface,
-    DialogTitle,
-    DialogBody,
-    DialogActions,
-    DialogContent,
-    Input,
-    Label,
-    Dropdown,
-    Option,
-    OptionOnSelectData,
-    SelectionEvents,
-} from '@fluentui/react-components';
-import { Add24Regular, DocumentBulletList24Regular, Person24Regular } from '@fluentui/react-icons';
+import React, { useEffect } from 'react';
+import { Spinner } from '@fluentui/react-components';
+import { DocumentBulletList24Regular, Person24Regular } from '@fluentui/react-icons';
 import { useChecklistStore } from '../../stores';
 import { useAuth } from '../../providers/AuthProvider';
 import { ChecklistCard } from './ChecklistCard';
@@ -27,39 +11,14 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist }) => {
-    const { checklists, isLoading, loadChecklists, createChecklist } = useChecklistStore();
+    const { checklists, isLoading, loadChecklists } = useChecklistStore();
     const { user } = useAuth();
 
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [newTitle, setNewTitle] = useState('');
-    const [newJobRef, setNewJobRef] = useState(''); // Display value (Reference)
-    const [newJobId, setNewJobId] = useState('');   // Selected Job ID
-    const [jobs, setJobs] = useState<any[]>([]);    // Should use Job interface
-    const [isCreating, setIsCreating] = useState(false);
+    // Removed manual creation state/logic as checklists are auto-created via Jobs
 
     useEffect(() => {
         loadChecklists();
-        // Load jobs
-        import('../../services/dataverseJobService').then(({ jobService }) => {
-            jobService.getAllJobs().then(setJobs).catch(console.error);
-        });
     }, [loadChecklists]);
-
-    const handleCreate = async () => {
-        if (!newTitle.trim() || !newJobRef.trim()) return;
-
-        setIsCreating(true);
-        try {
-            // Pass both Title and JobId (first arg was title, second was jobRef - we'll update service to take ID)
-            const newChecklist = await createChecklist(newTitle, newJobId || newJobRef); // Fallback if no ID (legacy)
-            setDialogOpen(false);
-            setNewTitle('');
-            setNewJobRef('');
-            onOpenChecklist(newChecklist.id);
-        } finally {
-            setIsCreating(false);
-        }
-    };
 
     if (isLoading && checklists.length === 0) {
         return (
@@ -95,8 +54,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist }) => {
                             </div>
                         </div>
                     )}
-
-                    {/* Create Checklist removed - handled by Power Automate Flow on Job creation */}
                 </div>
             </header>
 
@@ -106,18 +63,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist }) => {
                     {checklists.length === 0 ? (
                         <div className={styles['dashboard-empty']}>
                             <DocumentBulletList24Regular className={styles['dashboard-empty-icon']} />
-                            <h2 className={styles['dashboard-empty-title']}>No Checklists Yet</h2>
+                            <h2 className={styles['dashboard-empty-title']}>No Checklists Found</h2>
                             <p className={styles['dashboard-empty-text']}>
-                                Create your first checklist to get started with your estimates.
+                                Checklists are automatically created when a Job is assigned.
+                                <br />Please check back later or contact support if you expect to see a checklist.
                             </p>
-                            <Button
-                                className={styles['dashboard-create-btn']}
-                                appearance="primary"
-                                icon={<Add24Regular />}
-                                onClick={() => setDialogOpen(true)}
-                            >
-                                Create First Checklist
-                            </Button>
                         </div>
                     ) : (
                         <div className={styles['checklist-grid']}>
