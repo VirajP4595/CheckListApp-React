@@ -109,8 +109,11 @@ export async function getDataverseToken(): Promise<string> {
         return response.accessToken;
     } catch (error) {
         // Check if it's a browser auth error that we can handle
-        if (error instanceof InteractionRequiredAuthError) {
+        // We also handle 'monitor_window_timeout' which implies the silent iframe request failed (e.g. 3rd party cookies or network)
+        if (error instanceof InteractionRequiredAuthError ||
+            (error instanceof BrowserAuthError && (error.errorCode === 'monitor_window_timeout' || error.errorCode === 'token_renewal_error'))) {
             if (!isRedirectInProgress) {
+                console.warn("Silent token acquisition failed (interaction required or timeout). Redirecting for authentication...");
                 isRedirectInProgress = true;
                 await msalInstance.acquireTokenRedirect(request);
             }
@@ -122,7 +125,7 @@ export async function getDataverseToken(): Promise<string> {
             console.warn('Stale token cache detected. Clearing and redirecting to login...');
             // Clear all MSAL cache
             const accounts = msalInstance.getAllAccounts();
-            accounts.forEach(acc => msalInstance.setActiveAccount(null));
+            accounts.forEach(_ => msalInstance.setActiveAccount(null));
             localStorage.clear(); // Clear stale tokens
             if (!isRedirectInProgress) {
                 isRedirectInProgress = true;
@@ -164,8 +167,10 @@ export async function getGraphToken(): Promise<string> {
         const response = await msalInstance.acquireTokenSilent(request);
         return response.accessToken;
     } catch (error) {
-        if (error instanceof InteractionRequiredAuthError) {
+        if (error instanceof InteractionRequiredAuthError ||
+            (error instanceof BrowserAuthError && (error.errorCode === 'monitor_window_timeout' || error.errorCode === 'token_renewal_error'))) {
             if (!isRedirectInProgress) {
+                console.warn("Silent token acquisition failed (interaction required or timeout). Redirecting for authentication...");
                 isRedirectInProgress = true;
                 await msalInstance.acquireTokenRedirect(request);
             }

@@ -305,50 +305,68 @@ foreach ($wg in $defaultWorkgroups) {
 
 Write-Host "`n[3/3] Seeding Default Rows..." -ForegroundColor Cyan
 
-foreach ($wgNumber in $defaultRows.Keys) {
-    $parentWgId = $workgroupIdMap[$wgNumber] 
-    
-    # Debug info if missing
-    if (-not $parentWgId) {
-        # Try exact string match if hash key behavior is weird
-        $parentWgId = $workgroupIdMap["$wgNumber"]
-    }
-
-    if (-not $parentWgId) {
-        Write-Host "  Skipping Rows for WG $wgNumber (Parent Workgroup ID not found)" -ForegroundColor Yellow
-        continue
-    }
+foreach ($wgNumber in $workgroupIdMap.Keys) {
+    $parentWgId = $workgroupIdMap[$wgNumber]
     
     $wgName = ($defaultWorkgroups | Where-Object { $_.Number -eq $wgNumber }).Name
     Write-Host "  Adding Rows for: $wgName..." -ForegroundColor White
     
     $order = 0
-    foreach ($desc in $defaultRows[$wgNumber]) {
-        # Check if row exists for this WG with this desc? Too many calls. Just create.
-        # Or better: Just create. Duplicates might happen if run twice. 
-        # Ideally clear all rows first for idempotency, but let's just insert.
-        
+    
+    # 1. Add Common Rows (User Requested)
+    $commonRows = @(
+        "From Meeting Transcript",
+        "By Checklist Filler / Client",
+        "By Estimator"
+    )
+
+    foreach ($desc in $commonRows) {
         $body = @{
-            "${PublisherPrefix}_description" = $desc
+            "${PublisherPrefix}_description_primary" = $desc
+            "${PublisherPrefix}_description" = ""
             "${PublisherPrefix}_order" = $order
             "${PublisherPrefix}_isactive" = $true
             "${PublisherPrefix}_defaultworkgroupid@odata.bind" = "/${PublisherPrefix}_defaultworkgroups($parentWgId)"
         }
         
-        # Suppress individual creation logs to reduce noise, just show errors
         $jsonBody = $body | ConvertTo-Json -Depth 5
         try {
             Invoke-RestMethod -Method Post -Uri "$ApiUrl/${PublisherPrefix}_defaultrows" -Headers $headers -Body $jsonBody -SkipHttpErrorCheck -StatusCodeVariable "sc" | Out-Null
             if ($sc -ne 204 -and $sc -ne 201) {
-                Write-Host "    Failed to add row '$desc': $sc" -ForegroundColor Red
+                Write-Host "    Failed to add common row '$desc': $sc" -ForegroundColor Red
             }
         } catch {
-             Write-Host "    Error adding row '$desc': $_" -ForegroundColor Red
+             Write-Host "    Error adding common row '$desc': $_" -ForegroundColor Red
         }
-        
         $order++
     }
-    Write-Host "    ✓ Added $($defaultRows[$wgNumber].Count) rows" -ForegroundColor Green
+
+    # 2. Add Specific Rows (if any matching)
+    # The map keys might be sensitive to string vs int, so we check carefully
+    if ($defaultRows.ContainsKey($wgNumber)) {
+        foreach ($desc in $defaultRows[$wgNumber]) {
+            $body = @{
+                "${PublisherPrefix}_description_primary" = $desc
+                "${PublisherPrefix}_description" = ""
+                "${PublisherPrefix}_order" = $order
+                "${PublisherPrefix}_isactive" = $true
+                "${PublisherPrefix}_defaultworkgroupid@odata.bind" = "/${PublisherPrefix}_defaultworkgroups($parentWgId)"
+            }
+            
+            $jsonBody = $body | ConvertTo-Json -Depth 5
+            try {
+                Invoke-RestMethod -Method Post -Uri "$ApiUrl/${PublisherPrefix}_defaultrows" -Headers $headers -Body $jsonBody -SkipHttpErrorCheck -StatusCodeVariable "sc" | Out-Null
+                if ($sc -ne 204 -and $sc -ne 201) {
+                    Write-Host "    Failed to add row '$desc': $sc" -ForegroundColor Red
+                }
+            } catch {
+                 Write-Host "    Error adding row '$desc': $_" -ForegroundColor Red
+            }
+            $order++
+        }
+    }
+    
+    Write-Host "    ✓ Added rows (Common + Specific)" -ForegroundColor Green
 }
 
 Write-Host "`n========================================" -ForegroundColor Green

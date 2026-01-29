@@ -6,7 +6,6 @@ import {
     ChevronRight20Regular,
     Edit20Regular,
     Delete20Regular,
-    MoreVertical20Regular,
     Checkmark20Regular
 } from '@fluentui/react-icons';
 import type { Workgroup } from '../../models';
@@ -25,7 +24,7 @@ interface WorkgroupSectionProps {
 
 export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
     workgroup,
-    onRowChange,
+
     filters,
     isCollapsed = false,
     expandTasks = true,
@@ -70,12 +69,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
         setIsEditing(false);
     };
 
-    const handleCancelEditing = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setTempName(workgroup.name);
-        setTempNumber(workgroup.number);
-        setIsEditing(false);
-    };
+
 
 
     const handleAddRow = () => {
@@ -105,11 +99,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
         return true;
     });
 
-    // Calculate answer summary for collapsed state
-    const answerCounts = workgroup.rows.reduce((acc, row) => {
-        acc[row.answer] = (acc[row.answer] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
+
 
     return (
         <section className={styles.workgroup}>
@@ -256,7 +246,6 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
                                         key={row.id}
                                         row={row}
                                         workgroupId={workgroup.id}
-                                        onRowChange={onRowChange}
                                         isCompact={!expandTasks}
                                     />
                                 ))}

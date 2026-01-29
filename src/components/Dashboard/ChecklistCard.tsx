@@ -1,5 +1,4 @@
 import React from 'react';
-import { Caption1 } from '@fluentui/react-components';
 import type { Checklist } from '../../models';
 import { STATUS_CONFIG } from '../../models';
 import styles from './Dashboard.module.scss';

@@ -1,4 +1,4 @@
-import { dataverseClient, entities, col } from './dataverseService';
+import { dataverseClient, col } from './dataverseService';
 
 // ─── TYPES ─────────────────────────────────────────────────
 

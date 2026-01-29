@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Checklist, ChecklistRow, AnswerState, ChecklistImage, Workgroup } from '../models';
-import { generateId, createEmptyRow } from '../models';
+
 import { getChecklistService, getImageService, getRevisionService } from '../services';
 
 interface ChecklistState {

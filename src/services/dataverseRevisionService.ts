@@ -12,6 +12,9 @@ interface DataverseRevision {
     pap_snapshotjson: string;
     _pap_checklistid_value: string;
     _createdby_value?: string;
+    createdby?: { // Navigation Property
+        fullname: string;
+    };
     createdon: string;
 }
 
@@ -31,7 +34,7 @@ function mapRevision(dv: DataverseRevision): Revision {
         number: dv.pap_number,
         summary: dv.pap_summary,
         snapshot,
-        createdBy: dv._createdby_value || '',
+        createdBy: dv.createdby?.fullname || '',
         createdAt: new Date(dv.createdon)
     };
 }
@@ -87,7 +90,7 @@ export class DataverseRevisionService implements IRevisionService {
         // Note: We do NOT download the file content here for list view to save bandwidth
         const response = await dataverseClient.get<{ value: DataverseRevision[] }>(
             entities.revisions,
-            `$filter=_${col('checklistid')}_value eq ${checklistId}&$orderby=${col('number')} desc&$select=${col('revisionid')},${col('number')},${col('summary')},createdon`
+            `$filter=_${col('checklistid')}_value eq ${checklistId}&$orderby=${col('number')} desc&$select=${col('revisionid')},${col('number')},${col('summary')},createdon&$expand=createdby($select=fullname)`
         );
 
         return response.value.map(dv => ({
@@ -96,7 +99,7 @@ export class DataverseRevisionService implements IRevisionService {
             number: dv.pap_number,
             summary: dv.pap_summary,
             snapshot: {} as Checklist, // Empty snapshot for list view
-            createdBy: '', // Expand if needed
+            createdBy: dv.createdby?.fullname || '',
             createdAt: new Date(dv.createdon)
         }));
     }
@@ -104,7 +107,12 @@ export class DataverseRevisionService implements IRevisionService {
     async getRevision(revisionId: string): Promise<Revision | null> {
         try {
             // 1. Get Metadata
-            const dv = await dataverseClient.getById<DataverseRevision>(entities.revisions, revisionId);
+            const dv = await dataverseClient.getById<DataverseRevision>(
+                entities.revisions,
+                revisionId,
+                undefined,
+                'createdby($select=fullname)'
+            );
 
             // 2. Download Snapshot File
             const jsonContent = await dataverseClient.downloadFile(

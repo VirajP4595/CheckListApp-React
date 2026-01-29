@@ -1,40 +1,7 @@
 import React from 'react';
-import {
-    makeStyles,
-    tokens,
-    Card,
-    Badge,
-    Text,
-    Caption1,
-} from '@fluentui/react-components';
-import type { Revision } from '../../models';
 
-const useStyles = makeStyles({
-    card: {
-        cursor: 'pointer',
-        padding: tokens.spacingVerticalM,
-        transition: 'background-color 0.15s ease',
-        ':hover': {
-            backgroundColor: tokens.colorNeutralBackground3,
-        },
-    },
-    header: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: tokens.spacingHorizontalS,
-        marginBottom: tokens.spacingVerticalXS,
-    },
-    badge: {
-        fontFamily: 'monospace',
-        fontWeight: tokens.fontWeightBold,
-    },
-    summary: {
-        marginBottom: tokens.spacingVerticalXS,
-    },
-    meta: {
-        color: tokens.colorNeutralForeground3,
-    },
-});
+import type { Revision } from '../../models';
+import styles from './RevisionPanel.module.scss';
 
 interface RevisionCardProps {
     revision: Revision;
@@ -42,7 +9,6 @@ interface RevisionCardProps {
 }
 
 export const RevisionCard: React.FC<RevisionCardProps> = ({ revision, onClick }) => {
-    const styles = useStyles();
 
     const formatDate = (date: Date) => {
         return new Date(date).toLocaleDateString('en-AU', {
@@ -55,16 +21,16 @@ export const RevisionCard: React.FC<RevisionCardProps> = ({ revision, onClick })
     };
 
     return (
-        <Card className={styles.card} onClick={onClick}>
-            <div className={styles.header}>
-                <Badge className={styles.badge} appearance="outline" color="informative">
-                    REV {revision.number}
-                </Badge>
+        <div className={styles['revision-card']} onClick={onClick}>
+            <span className={styles['revision-number']}>
+                REV {revision.number}
+            </span>
+            <div className={styles['revision-details']}>
+                <div className={styles['revision-summary']}>{revision.summary}</div>
+                <div className={styles['revision-meta']}>
+                    {formatDate(revision.createdAt)} • {revision.createdBy || 'Unknown'}
+                </div>
             </div>
-            <Text className={styles.summary}>{revision.summary}</Text>
-            <Caption1 className={styles.meta}>
-                {formatDate(revision.createdAt)} • {revision.createdBy}
-            </Caption1>
-        </Card>
+        </div>
     );
 };

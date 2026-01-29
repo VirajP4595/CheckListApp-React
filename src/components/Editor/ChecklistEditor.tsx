@@ -1,6 +1,6 @@
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react'; // Force refresh
 import { Button, Spinner } from '@fluentui/react-components';
-import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular } from '@fluentui/react-icons';
+import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular } from '@fluentui/react-icons';
 import { useChecklistStore } from '../../stores';
 import { STATUS_CONFIG, type Revision } from '../../models';
 import { WorkgroupSection } from './WorkgroupSection';
@@ -14,7 +14,7 @@ import { ChecklistInfoDialog } from './Sidebar/ChecklistInfoDialog';
 import { PdfGenerationProgressModal } from '../Checklist/PdfGenerationProgressModal';
 import { PdfGeneratorService } from '../../services/PdfGeneratorService';
 import { SharePointImageService } from '../../services/sharePointService';
-import { getChecklistService, getImageService } from '../../services';
+import { getChecklistService, getImageService, getRevisionService } from '../../services';
 import { ArrowDownload24Regular } from '@fluentui/react-icons';
 import styles from './ChecklistEditor.module.scss';
 
@@ -32,16 +32,17 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
         loadChecklist,
         saveChecklist,
         addWorkgroup,
-        updateChecklist,
         processingItems
     } = useChecklistStore();
 
     const [showRevisionPanel, setShowRevisionPanel] = useState(false);
     const [viewingRevision, setViewingRevision] = useState<Revision | null>(null);
+    // Renamed for generic usage: exportProgress -> loadingProgress
+    const [loadingProgress, setLoadingProgress] = useState<{ open: boolean; title: string; status: string; percent: number; cancelled: boolean }>({ open: false, title: 'Loading...', status: '', percent: 0, cancelled: false });
     const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, workgroupIds: [] });
     const [expandWorkgroups, setExpandWorkgroups] = useState(false);  // Collapsed by default
     const [expandTasks, setExpandTasks] = useState(false);  // Collapsed by default
-    const [exportProgress, setExportProgress] = useState<{ open: boolean; status: string; percent: number; cancelled: boolean }>({ open: false, status: '', percent: 0, cancelled: false });
+
     const isCancelledRef = useRef(false);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -66,31 +67,104 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
         };
     }, []);
 
-    const handleViewRevision = (revision: Revision) => {
-        setViewingRevision(revision);
+    const handleViewRevision = async (revision: Revision) => {
+        setLoadingProgress({ open: true, title: 'Loading Revision', status: 'Fetching data...', percent: 10, cancelled: false });
+        try {
+            // Simulated progress for better UX
+            setLoadingProgress(prev => ({ ...prev, percent: 40 }));
+
+            // Fetch full revision with snapshot
+            const fullRevision = await getRevisionService().getRevision(revision.id);
+            setLoadingProgress(prev => ({ ...prev, percent: 90, status: 'Preparing view...' }));
+
+            setViewingRevision(fullRevision || revision);
+        } catch (error) {
+            console.error("Failed to load revision", error);
+        } finally {
+            // Close progress modal
+            setLoadingProgress(prev => ({ ...prev, open: false }));
+        }
+    };
+
+    const handleViewPreview = async () => {
+        if (!activeChecklist) return;
+
+        // Fetch full checklist to get all server images (uncovering collapsed rows)
+        setLoadingProgress({ open: true, title: 'Generating Preview', status: 'Synchronizing data...', percent: 10, cancelled: false });
+
+        try {
+            // 1. Get Local Snapshot (has unsaved text/metadata changes)
+            const snapshot = JSON.parse(JSON.stringify(activeChecklist));
+
+            // 2. Fetch Server Data (has all images, including those not loaded locally)
+            const fullChecklist = await getChecklistService().getChecklist(activeChecklist.id, { includeImages: true });
+
+            if (isCancelledRef.current) return;
+
+            // 3. Merge Strategies
+            // reliable way to know if images are loaded: check store.loadedRowImages
+            const loadedRowImages = useChecklistStore.getState().loadedRowImages;
+
+            snapshot.workgroups.forEach((wg: any) => {
+                wg.rows.forEach((row: any) => {
+                    // Find corresponding server row
+                    const serverWg = fullChecklist.workgroups.find((swg: any) => swg.id === wg.id);
+                    const serverRow = serverWg?.rows.find((sr: any) => sr.id === row.id);
+
+                    if (serverRow) {
+                        // If we haven't explicitely loaded images for this row locally, trust the server
+                        // This handles collapsed rows or rows never expanded
+                        if (!loadedRowImages[row.id]) {
+                            row.images = serverRow.images;
+                        } else {
+                            // If loaded locally, trust local (might have unsaved additions/deletions)
+                            // row.images is already set from activeChecklist
+                        }
+                    }
+                });
+            });
+
+            const previewRevision: Revision = {
+                id: 'preview',
+                checklistId: activeChecklist.id,
+                number: 0,
+                summary: 'Current Preview',
+                createdAt: new Date(),
+                createdBy: activeChecklist.createdBy || '',
+                snapshot: snapshot
+            };
+
+            setLoadingProgress(prev => ({ ...prev, percent: 100, status: 'Ready!' }));
+
+            setTimeout(() => {
+                setViewingRevision(previewRevision);
+                setLoadingProgress(prev => ({ ...prev, open: false }));
+            }, 300);
+
+        } catch (error: any) {
+            console.error("Failed to load preview", error);
+            setLoadingProgress(prev => ({ ...prev, open: false }));
+        }
     };
 
     const handleCloseRevision = () => {
         setViewingRevision(null);
     };
 
-    const handleCancelExport = () => {
-        isCancelledRef.current = true;
-        setExportProgress(prev => ({ ...prev, cancelled: true }));
-    };
-
     const handleExportPdf = async () => {
         if (!activeChecklist) return;
 
         isCancelledRef.current = false;
-        setExportProgress({ open: true, status: 'Initializing...', percent: 0, cancelled: false });
+        setLoadingProgress({ open: true, title: 'Generating PDF Report', status: 'Initializing...', percent: 0, cancelled: false });
 
         try {
             // STEP 1: Retrieve all images (Pre-fetch for collapsed rows)
-            setExportProgress(prev => ({ ...prev, status: 'Retrieving all images...', percent: 5 }));
+            setLoadingProgress(prev => ({ ...prev, status: 'Retrieving all images...', percent: 5 }));
             const fullChecklist = await getChecklistService().getChecklist(activeChecklist.id, { includeImages: true });
 
             if (isCancelledRef.current) throw new Error("Cancelled");
+
+            // ... (rest of logic is similar but keeping existing flow)
 
             // STEP 2: Download Image Content (Bypass CORS)
             const allImages: { img: any, id: string }[] = [];
@@ -107,7 +181,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
             });
 
             if (allImages.length > 0) {
-                setExportProgress(prev => ({ ...prev, status: `Downloading ${allImages.length} images...`, percent: 10 }));
+                setLoadingProgress(prev => ({ ...prev, status: `Downloading ${allImages.length} images...`, percent: 10 }));
                 const imageService = getImageService();
                 const getImageContent = async (item: { img: any, id: string }) => {
                     try {
@@ -124,15 +198,17 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
             const generator = new PdfGeneratorService(fullChecklist);
 
+            // ... (rest of export logic)
+
             // STEP 3: Fetch Branding Logo (Securely via Graph)
             let logoBlob: Blob | null = null;
             if (fullChecklist.clientLogoUrl) {
                 try {
-                    setExportProgress(prev => ({ ...prev, status: 'Fetching branding...', percent: 15 }));
+                    setLoadingProgress(prev => ({ ...prev, status: 'Fetching branding...', percent: 15 }));
                     // Use secure download instead of fetch(url) to avoid CORS
                     logoBlob = await getImageService().downloadClientLogoContent(activeChecklist.id);
                 } catch (e) {
-                    console.warn("Could not fetch logo for PDF", e);
+                    // console.warn("Could not fetch logo for PDF", e);
                 }
             }
 
@@ -141,17 +217,17 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
                 // Remap percent (20-95%)
                 const adjustedPercent = 20 + (percent * 0.75);
-                setExportProgress(prev => ({ ...prev, status, percent: adjustedPercent }));
+                setLoadingProgress(prev => ({ ...prev, status, percent: adjustedPercent }));
                 return true;
             });
 
             // Upload
-            setExportProgress(prev => ({ ...prev, status: 'Uploading...', percent: 95 }));
+            setLoadingProgress(prev => ({ ...prev, status: 'Uploading...', percent: 95 }));
             const sharePointService = new SharePointImageService();
             const fileName = `${activeChecklist.title.replace(/[^a-z0-9]/gi, '_')}-REV${activeChecklist.currentRevisionNumber}.pdf`;
             await sharePointService.uploadFile(activeChecklist.id, new File([pdfBlob], fileName, { type: 'application/pdf' }));
 
-            setExportProgress(prev => ({ ...prev, status: 'Done!', percent: 100 }));
+            setLoadingProgress(prev => ({ ...prev, status: 'Done!', percent: 100 }));
 
             // Auto download for user convenience
             const url = URL.createObjectURL(pdfBlob);
@@ -161,17 +237,18 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
             a.click();
             URL.revokeObjectURL(url);
 
-            setTimeout(() => setExportProgress({ open: false, status: '', percent: 0, cancelled: false }), 2000);
+            setTimeout(() => setLoadingProgress({ open: false, title: '', status: '', percent: 0, cancelled: false }), 2000);
 
         } catch (error: any) {
             if (error.message === 'Cancelled' || error.message?.includes('Cancelled')) {
-                setExportProgress({ open: false, status: '', percent: 0, cancelled: false });
+                setLoadingProgress({ open: false, title: '', status: '', percent: 0, cancelled: false });
             } else {
                 console.error("PDF Generation Error", error);
-                setExportProgress(prev => ({ ...prev, status: 'Error: ' + error.message, percent: 0 }));
+                setLoadingProgress(prev => ({ ...prev, status: 'Error: ' + error.message, percent: 0 }));
             }
         }
     };
+
 
     const getStatusClass = () => {
         switch (activeChecklist?.status) {
@@ -222,6 +299,16 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                             onViewRevision={handleViewRevision}
                             triggerClassName={styles['editor-action-btn']}
                         />
+                        <Button
+                            className={styles['editor-action-btn']}
+                            appearance="subtle"
+                            icon={<Eye24Regular />}
+                            onClick={handleViewPreview}
+                            disabled={isSaving}
+                            title="Preview Checklist"
+                        >
+                            Preview
+                        </Button>
                         <Button
                             className={styles['editor-action-btn']}
                             appearance="subtle"
@@ -321,10 +408,21 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
             )}
 
             <PdfGenerationProgressModal
-                open={exportProgress.open}
-                status={exportProgress.status}
-                percent={exportProgress.percent}
-                onCancel={() => setExportProgress(prev => ({ ...prev, cancelled: true }))}
+                open={loadingProgress.open}
+                title={loadingProgress.title}
+                iconType={loadingProgress.title.includes('Preview') ? 'preview' : 'pdf'}
+                status={loadingProgress.status}
+                percent={loadingProgress.percent}
+                onCancel={() => {
+                    // Only cancel if it's the PDF export that's running
+                    if (loadingProgress.title.includes('PDF')) {
+                        isCancelledRef.current = true;
+                        setLoadingProgress(prev => ({ ...prev, cancelled: true }));
+                    } else {
+                        // For load operations, just close (though requests might continue in background)
+                        setLoadingProgress(prev => ({ ...prev, open: false }));
+                    }
+                }}
             />
         </div>
     );

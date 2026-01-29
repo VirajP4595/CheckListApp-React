@@ -93,7 +93,7 @@ const WorkgroupFilter: React.FC<{
                         />
                     </div>
                 </div>
-                <MenuList className={styles['search-list']}>
+                <MenuList className={styles['search-list']} checkedValues={{ workgroup: selectedIds }}>
                     {filtered.length === 0 ? (
                         <div style={{ padding: '8px', color: '#666', fontSize: '12px' }}>
                             No results found
@@ -104,7 +104,6 @@ const WorkgroupFilter: React.FC<{
                                 key={wg.id}
                                 name="workgroup"
                                 value={wg.id}
-                                checked={selectedIds.includes(wg.id)}
                                 onClick={(e) => {
                                     handleSelect(wg.id, !selectedIds.includes(wg.id));
                                     e.stopPropagation(); // Keep open? Or let it toggle? 

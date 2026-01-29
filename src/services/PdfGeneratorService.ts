@@ -1,15 +1,12 @@
 
 import jsPDF from 'jspdf';
-import autoTable, { UserOptions } from 'jspdf-autotable';
 import { Checklist, ANSWER_CONFIG } from '../models'; // Relative path check needed
 import { PdfRichTextRenderer, BRAND_COLORS } from '../utils/pdfRichTextRenderer';
-import { SharePointImageService } from './sharePointService';
 
 export class PdfGeneratorService {
 
     private checklist: Checklist;
     private renderer: PdfRichTextRenderer;
-    private progressCallback?: (status: string, progress: number) => boolean; // return false to cancel
 
     constructor(checklist: Checklist) {
         this.checklist = checklist;
@@ -24,7 +21,7 @@ export class PdfGeneratorService {
         brandingLogoBlob: Blob | null,
         onProgress: (status: string, percent: number) => boolean
     ): Promise<Blob> {
-        this.progressCallback = onProgress;
+
 
         // 1. Setup Document
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -133,6 +130,20 @@ export class PdfGeneratorService {
         let processedItems = 0;
 
         for (const wg of this.checklist.workgroups) {
+            // Pre-calculate visible rows for this workgroup
+            const visibleRows = wg.rows.filter(row => {
+                const rawDesc = this.stripHtml(row.description || '').trim();
+                const isUnanswered = row.answer === 'BLANK';
+                const isExcluded = row.answer === 'NO';
+                // Keep if description exists OR status is meaningful (not BLANK/NO)
+                return rawDesc || (!isUnanswered && !isExcluded);
+            });
+
+            // If no rows are visible, skip the entire workgroup (header included)
+            if (visibleRows.length === 0) {
+                continue;
+            }
+
             // -- Workgroup Header --
             checkPageBreak(15);
 
@@ -147,7 +158,11 @@ export class PdfGeneratorService {
 
             cursorY += 12;
 
-            for (const row of wg.rows) {
+            // Accumulate images for the workgroup
+            const workgroupImages: { data: string; ratio: number; caption?: string }[] = [];
+
+            for (const row of visibleRows) {
+
                 processedItems++;
                 // Calc Progress
                 if (!onProgress(`Section ${wg.number}...`, 10 + (processedItems / totalItems) * 80)) {
@@ -157,7 +172,7 @@ export class PdfGeneratorService {
                 // ... (Content Calc) ...
                 // Calculate Content Heights (Lookahead)
                 const answerBoxW = 12;
-                const col2X = margin.left + answerBoxW + 4;
+                // const col2X = margin.left + answerBoxW + 4; // Unused
                 const col2W = contentWidth - answerBoxW - 12;
 
                 let contentH = 0;
@@ -170,180 +185,206 @@ export class PdfGeneratorService {
                 const descH = this.renderer.measureHeight(row.description || '', col2W);
                 if (descH > 0) contentH += descH + 2;
 
-                // Notes
+                // Notes - MOVED UP
                 const notesH = row.notes ? this.renderer.measureHeight(row.notes, col2W) + 4 : 0;
                 contentH += notesH;
 
                 // Images
                 let imagesH = 0;
                 if (row.images && row.images.length > 0) {
-                    imagesH = (35 * row.images.length) + 4;
+                    // Grid math
+                    const gap = 4;
+                    const gridW = (col2W - gap) / 2;
+                    const avgRatio = 1.77;
+                    const avgRowH = gridW / avgRatio;
+                    const rows = Math.ceil(row.images.length / 2);
+                    imagesH = (rows * avgRowH) + (rows * 2) + 4;
                 }
                 contentH += imagesH;
 
                 // Min height for Status Box header + Title
-                // We keep a small atomic check for the START of the row (Status box + Title)
-                // But we let the description flow.
                 checkPageBreak(30);
 
                 // -- Draw Row --
                 const startRowY = cursorY;
 
-                // 1. Status Box
+                // 1. Status Pill (Inline) - UPDATED
+                // Replaces the left-column status box. Now we draw a pill next to title (or at start if no title)
+                // Actually, let's keep the row structure, but make the status pill inline with title.
+                // Status Box (Left Column) is REMOVED. Everything shifts LEFT? 
+                // Wait, "Inline Pill" usually means right of title.
+                // Re-defined layout: 
+                // Col 1: Content (Full Width)
+                // Row Header: Title + [Status Pill]
+
+                let drawY = startRowY + 4;
+                const fullW = contentWidth; // No more left column for status
+
                 const answerConf = ANSWER_CONFIG[row.answer];
-                doc.setFillColor(answerConf.color);
-                doc.setDrawColor(answerConf.color);
-                // Rounded rect
-                doc.roundedRect(margin.left, startRowY + 4, answerBoxW, 16, 1, 1, 'F');
 
-                doc.setTextColor(BRAND_COLORS.WHITE);
-                doc.setFontSize(7);
-                doc.setFont('helvetica', 'bold');
-                doc.text(answerConf.label, margin.left + (answerBoxW / 2), startRowY + 12, { align: 'center' });
-
-                // 2. Content
-                let drawY = startRowY + 5;
-
-                // Title
+                // Title Line (Title + Pill)
                 if (title) {
                     doc.setTextColor(BRAND_COLORS.BLACK);
-                    doc.setFontSize(10);
+                    doc.setFontSize(11);
                     doc.setFont('helvetica', 'bold');
-                    doc.text(title, col2X, drawY);
-                    drawY += 5;
+                    doc.text(title, margin.left, drawY + 3); // +3 baseline adjust
+
+                    const titleW = doc.getTextWidth(title);
+
+                    // Draw Pill
+                    const pillX = margin.left + titleW + 4;
+                    const pillW = doc.getTextWidth(answerConf.label) + 6;
+
+                    // Pill bg
+                    doc.setFillColor(answerConf.color);
+                    doc.roundedRect(pillX, drawY - 1, pillW, 5, 2, 2, 'F');
+
+                    // Pill text
+                    doc.setTextColor(BRAND_COLORS.WHITE);
+                    doc.setFontSize(7);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(answerConf.label, pillX + (pillW / 2), drawY + 2.5, { align: 'center' });
+
+                    drawY += 7;
+                } else {
+                    // No title, just draw pill at start?
+                    // Or fallback title was generated?
+                    // Let's assume fallback title exists if row.name missing
                 }
 
-                // Define Page Break Handler for Rich Text
-                const performPageBreak = () => {
-                    doc.addPage();
-                    cursorY = margin.top;
-                    // Header is only page 1, so just margin top.
-                    return margin.top;
-                };
-
-                const maxY = pageHeight - margin.bottom;
 
                 // Description (Paginated)
                 if (row.description) {
                     doc.setFontSize(10);
+                    doc.setFontSize(9); // Compact
                     doc.setTextColor('#323130');
-                    // Render with pagination
-                    drawY = this.renderer.render(
+                    const descY = this.renderer.render(
                         row.description,
-                        col2X,
+                        margin.left, // Full Width
                         drawY,
-                        col2W,
-                        maxY,
-                        performPageBreak
+                        fullW,
+                        pageHeight - margin.bottom,
+                        () => { doc.addPage(); cursorY = margin.top; return margin.top; }
                     );
-                    drawY += 3;
+                    drawY = descY + 2;
                 }
 
-                // Notes (Paginated)
+                // Notes (Compact & Full Width)
                 if (row.notes) {
-                    drawY += 2;
+                    drawY += 1;
+                    const notesH = this.renderer.measureHeight(row.notes, fullW);
+                    const boxH = notesH + 5; // Compact padding
+
+                    if (drawY + boxH > pageHeight - margin.bottom) {
+                        doc.addPage();
+                        cursorY = margin.top;
+                        drawY = cursorY + 2;
+                    }
+
+                    // Background & Border
+                    doc.setFillColor('#fff9e6');
+                    doc.rect(margin.left, drawY, fullW, boxH, 'F');
+                    doc.setFillColor('#fce100');
+                    doc.rect(margin.left, drawY, 1.5, boxH, 'F');
+
+                    // Label
+                    doc.setFontSize(8);
+                    doc.setTextColor('#8a6d3b');
+                    doc.setFont('helvetica', 'bold');
+                    doc.text("NOTES:", margin.left + 3, drawY + 3.5);
+
+                    // Content - Full Width (minor padding)
                     doc.setFontSize(9);
-                    doc.setTextColor('#605e5c');
-                    drawY = this.renderer.render(
+                    doc.setTextColor('#484644');
+                    doc.setFont('helvetica', 'normal');
+
+                    this.renderer.render(
                         row.notes,
-                        col2X,
-                        drawY,
-                        col2W,
-                        maxY,
-                        performPageBreak
+                        margin.left + 3,
+                        drawY + 5,
+                        fullW - 4,
+                        pageHeight - margin.bottom,
+                        () => { doc.addPage(); return margin.top; }
                     );
-                    drawY += 3;
+                    drawY += boxH + 2;
                 }
 
-                // Images
+                // Collect Images (Don't draw yet)
                 if (row.images && row.images.length > 0) {
-                    drawY += 2;
                     for (const img of row.images) {
-                        try {
-                            let imgData = img.source;
-
-                            // Handle HTTP or BLOB (Local Uploads)
-                            if (img.source.startsWith('http') || img.source.startsWith('blob:')) {
-                                try {
-                                    // FETCH WITH TIMEOUT
-                                    const fetchWithTimeout = (url: string, ms: number) => {
-                                        const controller = new AbortController();
-                                        const id = setTimeout(() => controller.abort(), ms);
-                                        return fetch(url, { mode: 'cors', signal: controller.signal }).finally(() => clearTimeout(id));
-                                    };
-
-                                    const resp = await fetchWithTimeout(img.source, 5000).catch(err => {
-                                        console.warn("Image fetch timeout/error:", err);
-                                        return null;
-                                    });
-
-                                    if (resp && resp.ok) {
-                                        const blob = await resp.blob();
-                                        imgData = await this.readBlobAsDataURL(blob);
-                                    } else {
-                                        console.warn("Skipping image (blocked/timeout):", img.source);
-                                        continue;
-                                    }
-                                } catch (e) {
-                                    continue;
-                                }
-                            }
-
-                            // Get Dimensions with Fallback
-                            // Get Dimensions with Fallback
-                            let ratio = 1.77; // Default 16:9
-                            let natWidthPx = 0;
-
-                            try {
-                                const props = await this.getImageProperties(imgData);
-                                ratio = props.ratio;
-                                natWidthPx = props.width;
-                            } catch (err) {
-                                console.warn("Could not determine image dimensions, using default.", err);
-                            }
-
-                            // Calc Render Size
-                            const maxW = Math.min(col2W, 120);
-                            let renderW = maxW;
-
-                            // If we have original dimensions, use them if smaller than maxW
-                            if (natWidthPx > 0) {
-                                const pxToMm = 0.264583; // 1px = 0.26mm (96 DPI)
-                                const natWidthMm = natWidthPx * pxToMm;
-                                renderW = Math.min(natWidthMm, maxW);
-                            }
-
-                            let renderH = renderW / ratio;
-
-                            // Check Page Break
-                            if (drawY + renderH > maxY) {
-                                cursorY = performPageBreak();
-                                drawY = cursorY + 5;
-                            }
-
-                            doc.addImage(imgData, 'JPEG', col2X, drawY, renderW, renderH);
-                            drawY += renderH + 2;
-
-                        } catch (e) {
-                            console.error("Error drawing image:", e);
-                        }
+                        workgroupImages.push({
+                            data: img.source,
+                            ratio: 1.77,
+                            caption: row.name
+                        });
                     }
                 }
 
-                // Divider Line (Check bounds)
-                cursorY = Math.max(drawY, startRowY + 20) + 4;
+                cursorY = drawY;
 
-                if (cursorY > maxY) {
-                    cursorY = performPageBreak();
-                }
-
+                // Divider
                 doc.setDrawColor('#e1dfdd');
                 doc.setLineWidth(0.1);
-                doc.line(margin.left, cursorY - 2, pageWidth - margin.right, cursorY - 2);
-            }
-        }
+                doc.line(margin.left, cursorY, pageWidth - margin.right, cursorY);
+                cursorY += 1;
+            } // End Row Loop
 
-        // Apply Footers (Moved BEFORE putTotalPages)
+            // --- Render Workgroup Images ---
+            if (workgroupImages.length > 0) {
+                checkPageBreak(30);
+                doc.setFontSize(9);
+                doc.setTextColor(BRAND_COLORS.BLUE);
+                doc.setFont('helvetica', 'bold');
+                doc.text("Workgroup Images", margin.left, cursorY + 5);
+                cursorY += 8;
+
+                const gap = 4;
+                const gridW = (contentWidth - gap) / 2;
+
+                // Fetch Loop for Collected Images
+                const loadedImages = [];
+                for (const item of workgroupImages) {
+                    try {
+                        let d = item.data;
+                        if (d.startsWith('http') || d.startsWith('blob:')) {
+                            // Use simple fetch for now, assuming CORS/Auth handled or public
+                            // For blob urls from preview, directly readable?
+                            // Actually blob urls work if same origin context.
+                            const r = await fetch(d).catch(() => null);
+                            if (r && r.ok) {
+                                const b = await r.blob();
+                                d = await this.readBlobAsDataURL(b);
+                            } else continue;
+                        }
+                        const props = await this.getImageProperties(d).catch(() => ({ ratio: 1.77 }));
+                        loadedImages.push({ data: d, ratio: props.ratio });
+                    } catch (e) { }
+                }
+
+                for (let i = 0; i < loadedImages.length; i += 2) {
+                    const img1 = loadedImages[i];
+                    const img2 = loadedImages[i + 1];
+
+                    const h1 = gridW / img1.ratio;
+                    const h2 = img2 ? (gridW / img2.ratio) : 0;
+                    const rowH = Math.max(h1, h2);
+
+                    if (cursorY + rowH > pageHeight - margin.bottom) {
+                        doc.addPage();
+                        cursorY = margin.top;
+                    }
+
+                    doc.addImage(img1.data, 'JPEG', margin.left, cursorY, gridW, h1);
+                    if (img2) {
+                        doc.addImage(img2.data, 'JPEG', margin.left + gridW + gap, cursorY, gridW, h2);
+                    }
+                    cursorY += rowH + 4;
+                }
+                cursorY += 5;
+            } // End Workgroup Images
+        } // End Workgroup Loop
+
+        // Apply Footers
         const totalPages = doc.getNumberOfPages();
         const totalPagesExp = '{total_pages_count_string}';
 
@@ -352,7 +393,7 @@ export class PdfGeneratorService {
             drawFooter(i, totalPagesExp);
         }
 
-        // Put Total Pages (Final Step)
+        // Put Total Pages
         if (typeof doc.putTotalPages === 'function') {
             doc.putTotalPages(totalPagesExp);
         }

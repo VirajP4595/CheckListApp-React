@@ -28,13 +28,11 @@ export class PdfRichTextRenderer {
     private doc: jsPDF;
     private lineHeight: number;
     private fontSize: number;
-    private maxWidth: number;
 
-    constructor(doc: jsPDF, fontSize = 10, lineHeight = 5, maxWidth = 180) {
+    constructor(doc: jsPDF, fontSize = 10, lineHeight = 5) {
         this.doc = doc;
         this.fontSize = fontSize;
         this.lineHeight = lineHeight;
-        this.maxWidth = maxWidth;
     }
 
     /**

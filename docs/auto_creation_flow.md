@@ -47,9 +47,11 @@ This document outlines the steps to create a Power Automate flow that automatica
              - **Inside Loop**:
                  - **Action**: `Add a new row`
                      - Table Name: `Checklist Rows` (`pap_checklistrows`)
-                     - `Description`: `@{items('Apply_to_each_2')?['title']}`
+                     - `Item Name`: `@{items('Apply_to_each_2')?['pap_description_primary']}`  (Previously 'Description')
                      - `Order`: `@{items('Apply_to_each_2')?['pap_order']}`
                      - `Workgroup (Bind)`: `pap_workgroups(@{outputs('Add_a_new_row_2')?['body/pap_workgroupid']})`
+                     
+        - **Note**: The seed script now adds 3 common default rows ("From Meeting Transcript", "By Checklist Filler / Client", "By Estimator") to *every* workgroup, in addition to any specific rows. Ensure your flow takes all rows from `pap_defaultrows`.
 
 ## Validation
 - Create a new Job in the Dataverse Model-Driven App.

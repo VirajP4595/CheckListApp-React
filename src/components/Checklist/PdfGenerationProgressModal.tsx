@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
     Dialog,
     DialogSurface,
@@ -8,15 +8,16 @@ import {
     DialogActions,
     Button,
     ProgressBar,
-    Text,
-    Spinner
+    Text
 } from '@fluentui/react-components';
-import { Dismiss24Regular, DocumentPdf24Regular } from '@fluentui/react-icons';
+import { DocumentPdf24Regular, Eye24Regular } from '@fluentui/react-icons';
 import styles from './PdfGenerationProgressModal.module.scss';
 
 interface PdfGenerationProgressModalProps {
     open: boolean;
     onCancel: () => void;
+    title?: string;         // e.g. "Generating PDF Report"
+    iconType?: 'pdf' | 'preview';
     status: string;         // e.g. "Processing image 5/20..."
     percent: number;        // 0-100
 }
@@ -24,6 +25,8 @@ interface PdfGenerationProgressModalProps {
 export const PdfGenerationProgressModal: React.FC<PdfGenerationProgressModalProps> = ({
     open,
     onCancel,
+    title = 'Generating PDF Report',
+    iconType = 'pdf',
     status,
     percent
 }) => {
@@ -32,13 +35,17 @@ export const PdfGenerationProgressModal: React.FC<PdfGenerationProgressModalProp
             <DialogSurface className={styles.surface}>
                 <DialogBody>
                     <div className={styles.header}>
-                        <DialogTitle>Generating PDF Report</DialogTitle>
+                        <DialogTitle>{title}</DialogTitle>
                         {/* We don't show close button, must either finish or cancel */}
                     </div>
 
                     <DialogContent className={styles.content}>
                         <div className={styles.iconArea}>
-                            <DocumentPdf24Regular className={styles.pdfIcon} />
+                            {iconType === 'pdf' ? (
+                                <DocumentPdf24Regular className={styles.pdfIcon} />
+                            ) : (
+                                <Eye24Regular className={styles.pdfIcon} />
+                            )}
                         </div>
 
                         <div className={styles.progressArea}>

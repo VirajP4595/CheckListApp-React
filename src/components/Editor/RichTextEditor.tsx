@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TaskList from '@tiptap/extension-task-list';
@@ -21,10 +21,12 @@ import styles from './RichTextEditor.module.scss';
 
 interface RichTextEditorProps {
     content: string;
-    onChange: (html: string) => void;
+    onChange?: (html: string) => void;
     onBlur?: () => void;
     onFocus?: () => void;
     placeholder?: string;
+    readOnly?: boolean;
+    className?: string; // Allow custom styles
 }
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
@@ -32,9 +34,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     onChange,
     onBlur,
     onFocus,
-    placeholder = 'Add notes, assumptions, or explanations...',
+    readOnly = false,
+    placeholder,
+    className,
 }) => {
     const editor = useEditor({
+        editable: !readOnly,
         extensions: [
             StarterKit.configure({
                 heading: false,
@@ -48,12 +53,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 openOnClick: false,
             }),
             Placeholder.configure({
-                placeholder,
+                placeholder: readOnly ? '' : placeholder,
             }),
         ],
         content,
         onUpdate: ({ editor }) => {
-            onChange(editor.getHTML());
+            onChange?.(editor.getHTML());
         },
         onBlur: () => {
             // Smart Save Trigger
@@ -68,79 +73,86 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         return null;
     }
 
+    // Update editable state if prop changes
+    useEffect(() => {
+        editor.setEditable(!readOnly);
+    }, [editor, readOnly]);
+
     return (
-        <div className={styles['editor-container']}>
-            <div className={styles['editor-toolbar']}>
-                <Tooltip content="Bold (Ctrl+B)" relationship="label">
-                    <Button
-                        className={`${styles['toolbar-btn']} ${editor.isActive('bold') ? styles['toolbar-btn--active'] : ''}`}
-                        appearance="subtle"
-                        size="small"
-                        icon={<TextBold20Regular />}
-                        onClick={() => editor.chain().focus().toggleBold().run()}
-                    />
-                </Tooltip>
-                <Tooltip content="Italic (Ctrl+I)" relationship="label">
-                    <Button
-                        className={`${styles['toolbar-btn']} ${editor.isActive('italic') ? styles['toolbar-btn--active'] : ''}`}
-                        appearance="subtle"
-                        size="small"
-                        icon={<TextItalic20Regular />}
-                        onClick={() => editor.chain().focus().toggleItalic().run()}
-                    />
-                </Tooltip>
-                <Tooltip content="Underline (Ctrl+U)" relationship="label">
-                    <Button
-                        className={`${styles['toolbar-btn']} ${editor.isActive('underline') ? styles['toolbar-btn--active'] : ''}`}
-                        appearance="subtle"
-                        size="small"
-                        icon={<TextUnderline20Regular />}
-                        onClick={() => editor.chain().focus().toggleUnderline().run()}
-                    />
-                </Tooltip>
+        <div className={`${styles['editor-container']} ${readOnly ? styles['editor-container--readonly'] : ''} ${className || ''}`}>
+            {!readOnly && (
+                <div className={styles['editor-toolbar']}>
+                    <Tooltip content="Bold (Ctrl+B)" relationship="label">
+                        <Button
+                            className={`${styles['toolbar-btn']} ${editor.isActive('bold') ? styles['toolbar-btn--active'] : ''}`}
+                            appearance="subtle"
+                            size="small"
+                            icon={<TextBold20Regular />}
+                            onClick={() => editor.chain().focus().toggleBold().run()}
+                        />
+                    </Tooltip>
+                    <Tooltip content="Italic (Ctrl+I)" relationship="label">
+                        <Button
+                            className={`${styles['toolbar-btn']} ${editor.isActive('italic') ? styles['toolbar-btn--active'] : ''}`}
+                            appearance="subtle"
+                            size="small"
+                            icon={<TextItalic20Regular />}
+                            onClick={() => editor.chain().focus().toggleItalic().run()}
+                        />
+                    </Tooltip>
+                    <Tooltip content="Underline (Ctrl+U)" relationship="label">
+                        <Button
+                            className={`${styles['toolbar-btn']} ${editor.isActive('underline') ? styles['toolbar-btn--active'] : ''}`}
+                            appearance="subtle"
+                            size="small"
+                            icon={<TextUnderline20Regular />}
+                            onClick={() => editor.chain().focus().toggleUnderline().run()}
+                        />
+                    </Tooltip>
 
-                <div className={styles['toolbar-divider']} />
+                    <div className={styles['toolbar-divider']} />
 
-                <Tooltip content="Normal Text (Exit list/checkbox)" relationship="label">
-                    <Button
-                        className={`${styles['toolbar-btn']} ${!editor.isActive('bulletList') && !editor.isActive('orderedList') && !editor.isActive('taskList') ? styles['toolbar-btn--active'] : ''}`}
-                        appearance="subtle"
-                        size="small"
-                        icon={<TextParagraph20Regular />}
-                        onClick={() => {
-                            editor.chain().focus().liftListItem('listItem').run();
-                            editor.chain().focus().liftListItem('taskItem').run();
-                        }}
-                    />
-                </Tooltip>
-                <Tooltip content="Bullet List" relationship="label">
-                    <Button
-                        className={`${styles['toolbar-btn']} ${editor.isActive('bulletList') ? styles['toolbar-btn--active'] : ''}`}
-                        appearance="subtle"
-                        size="small"
-                        icon={<TextBulletList20Regular />}
-                        onClick={() => editor.chain().focus().toggleBulletList().run()}
-                    />
-                </Tooltip>
-                <Tooltip content="Numbered List" relationship="label">
-                    <Button
-                        className={`${styles['toolbar-btn']} ${editor.isActive('orderedList') ? styles['toolbar-btn--active'] : ''}`}
-                        appearance="subtle"
-                        size="small"
-                        icon={<TextNumberListLtr20Regular />}
-                        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                    />
-                </Tooltip>
-                <Tooltip content="Checklist" relationship="label">
-                    <Button
-                        className={`${styles['toolbar-btn']} ${editor.isActive('taskList') ? styles['toolbar-btn--active'] : ''}`}
-                        appearance="subtle"
-                        size="small"
-                        icon={<CheckboxChecked20Regular />}
-                        onClick={() => editor.chain().focus().toggleTaskList().run()}
-                    />
-                </Tooltip>
-            </div>
+                    <Tooltip content="Normal Text (Exit list/checkbox)" relationship="label">
+                        <Button
+                            className={`${styles['toolbar-btn']} ${!editor.isActive('bulletList') && !editor.isActive('orderedList') && !editor.isActive('taskList') ? styles['toolbar-btn--active'] : ''}`}
+                            appearance="subtle"
+                            size="small"
+                            icon={<TextParagraph20Regular />}
+                            onClick={() => {
+                                editor.chain().focus().liftListItem('listItem').run();
+                                editor.chain().focus().liftListItem('taskItem').run();
+                            }}
+                        />
+                    </Tooltip>
+                    <Tooltip content="Bullet List" relationship="label">
+                        <Button
+                            className={`${styles['toolbar-btn']} ${editor.isActive('bulletList') ? styles['toolbar-btn--active'] : ''}`}
+                            appearance="subtle"
+                            size="small"
+                            icon={<TextBulletList20Regular />}
+                            onClick={() => editor.chain().focus().toggleBulletList().run()}
+                        />
+                    </Tooltip>
+                    <Tooltip content="Numbered List" relationship="label">
+                        <Button
+                            className={`${styles['toolbar-btn']} ${editor.isActive('orderedList') ? styles['toolbar-btn--active'] : ''}`}
+                            appearance="subtle"
+                            size="small"
+                            icon={<TextNumberListLtr20Regular />}
+                            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                        />
+                    </Tooltip>
+                    <Tooltip content="Checklist" relationship="label">
+                        <Button
+                            className={`${styles['toolbar-btn']} ${editor.isActive('taskList') ? styles['toolbar-btn--active'] : ''}`}
+                            appearance="subtle"
+                            size="small"
+                            icon={<CheckboxChecked20Regular />}
+                            onClick={() => editor.chain().focus().toggleTaskList().run()}
+                        />
+                    </Tooltip>
+                </div>
+            )}
 
             <EditorContent editor={editor} className={styles['editor-content']} />
         </div>

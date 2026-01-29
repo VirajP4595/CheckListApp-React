@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Button, Text, Spinner } from '@fluentui/react-components';
-import { ImageAdd24Regular, Delete24Regular } from '@fluentui/react-icons';
+import { ImageAdd24Regular } from '@fluentui/react-icons';
 import { Checklist } from '../../../models';
 import { useChecklistStore } from '../../../stores';
 import styles from './BrandingPanel.module.scss';

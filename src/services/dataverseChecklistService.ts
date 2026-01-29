@@ -22,6 +22,9 @@ interface DataverseChecklist {
         pap_clientname?: string;
         pap_number?: string;
     };
+    createdby?: {
+        fullname: string;
+    };
     createdon: string;
     modifiedon: string;
     // Navigation property - full relationship schema name
@@ -141,7 +144,7 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
         comments: [],  // Loaded separately
         files: [],     // Loaded from SharePoint
         jobDetails: jobDetails,
-        createdBy: '',
+        createdBy: dv.createdby?.fullname || '',
         createdAt: new Date(dv.createdon),
         updatedAt: new Date(dv.modifiedon)
     };
@@ -166,7 +169,7 @@ export class DataverseChecklistService implements IChecklistService {
         ].join(',');
 
         // Expand Job to get details
-        const expand = `pap_jobid($select=pap_name,pap_clientname,pap_number)`;
+        const expand = `pap_jobid($select=pap_name,pap_clientname,pap_number),createdby($select=fullname)`;
 
         const dv = await dataverseClient.getById<DataverseChecklist>(
             entities.checklists,
@@ -283,7 +286,7 @@ export class DataverseChecklistService implements IChecklistService {
         ].join(',');
 
         // Expand Job to get details
-        const expand = `pap_jobid($select=pap_name,pap_clientname,pap_number)`;
+        const expand = `pap_jobid($select=pap_name,pap_clientname,pap_number),createdby($select=fullname)`;
 
         const response = await dataverseClient.get<{ value: DataverseChecklist[] }>(
             entities.checklists,

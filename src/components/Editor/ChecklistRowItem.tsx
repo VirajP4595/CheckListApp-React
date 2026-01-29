@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Button, Tooltip, Input, Textarea, Spinner } from '@fluentui/react-components';
+import { Button, Tooltip, Input, Spinner } from '@fluentui/react-components';
 import {
     Delete20Regular,
     Flag20Regular,
@@ -17,19 +17,16 @@ import styles from './ChecklistRowItem.module.scss';
 interface ChecklistRowItemProps {
     row: ChecklistRow;
     workgroupId: string;
-    onRowChange: () => void;
     isCompact?: boolean;
 }
 
 export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
     row,
     workgroupId,
-    onRowChange,
     isCompact = false,
 }) => {
     const { updateRow, deleteRow, addRow, addImageToRow, removeImageFromRow, saveRow, processingItems } = useChecklistStore();
     const isDeleting = processingItems.includes(row.id);
-    const nameRef = useRef<HTMLInputElement>(null);
     const originalNameRef = useRef(row.name);
     const originalNotesRef = useRef(row.notes);
 
@@ -118,7 +115,7 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
                         <Input
                             className={styles['row-name']}
                             value={row.name || ''}
-                            onChange={(e, data) => {
+                            onChange={(_, data) => {
                                 updateRow(row.id, { name: data.value });
                             }}
                             onFocus={() => {

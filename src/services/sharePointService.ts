@@ -102,7 +102,7 @@ export class SharePointImageService implements IImageService {
      * Upload image to SharePoint with Resize
      * Path: /{checklistId}/images/{rowId}/{filename}
      */
-    async addImage(checklistId: string, workgroupId: string, rowId: string, source: string, caption?: string): Promise<ChecklistImage> {
+    async addImage(checklistId: string, _workgroupId: string, rowId: string, source: string, caption?: string): Promise<ChecklistImage> {
         const token = await getGraphToken();
         const { driveId } = await getCachedDriveInfo();
 
@@ -234,7 +234,6 @@ export class SharePointImageService implements IImageService {
     async getAllImageMetadata(checklistId: string): Promise<ChecklistImage[]> {
         const token = await getGraphToken();
         const { driveId } = await getCachedDriveInfo();
-        const images: ChecklistImage[] = [];
 
         try {
             // 1. List 'images' folder (Contains Row Folders)
@@ -373,6 +372,26 @@ export class SharePointImageService implements IImageService {
         }
 
         const data = await response.json();
+
+        // Update Metadata
+        try {
+            const fieldUpdateUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${data.id}/listItem/fields`;
+            await fetch(fieldUpdateUrl, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ChecklistId: checklistId,
+                    FileType: 'Report',
+                    Title: filename
+                })
+            });
+        } catch (e) {
+            console.warn("Failed to set PDF metadata", e);
+        }
+
         return data.webUrl;
     }
     async downloadImageContent(itemId: string): Promise<string> {

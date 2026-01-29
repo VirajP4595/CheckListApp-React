@@ -1,0 +1,31 @@
+src/components/Dashboard/ChecklistCard.tsx(2,1): error TS6133: 'Caption1' is declared but its value is never read.
+src/components/Dashboard/DashboardFilterBar.tsx(106,33): error TS2322: Type '{ children: Element; key: string; name: string; value: string; checked: boolean; onClick: (e: MouseEvent<HTMLDivElement, MouseEvent>) => void; }' is not assignable to type 'IntrinsicAttributes & Omit<ComponentProps<Partial<MenuItemSlots>>, "content"> & Pick<Partial<MenuItemSlots>, "content"> & { ...; } & MenuItemSelectableProps & RefAttributes<...>'.
+  Property 'checked' does not exist on type 'IntrinsicAttributes & Omit<ComponentProps<Partial<MenuItemSlots>>, "content"> & Pick<Partial<MenuItemSlots>, "content"> & { ...; } & MenuItemSelectableProps & RefAttributes<...>'.
+src/components/Editor/ChecklistRowItem.tsx(2,34): error TS6133: 'Textarea' is declared but its value is never read.
+src/components/Editor/ChecklistRowItem.tsx(27,5): error TS6133: 'onRowChange' is declared but its value is never read.
+src/components/Editor/ChecklistRowItem.tsx(32,11): error TS6133: 'nameRef' is declared but its value is never read.
+src/components/Editor/ChecklistRowItem.tsx(121,40): error TS6133: 'e' is declared but its value is never read.
+src/components/Editor/FilterBar.tsx(107,33): error TS2322: Type '{ children: (string | Element)[]; key: string; name: string; value: string; checked: boolean; onClick: (e: MouseEvent<HTMLDivElement, MouseEvent>) => void; }' is not assignable to type 'IntrinsicAttributes & Omit<ComponentProps<Partial<MenuItemSlots>>, "content"> & Pick<Partial<MenuItemSlots>, "content"> & { ...; } & MenuItemSelectableProps & RefAttributes<...>'.
+  Property 'checked' does not exist on type 'IntrinsicAttributes & Omit<ComponentProps<Partial<MenuItemSlots>>, "content"> & Pick<Partial<MenuItemSlots>, "content"> & { ...; } & MenuItemSelectableProps & RefAttributes<...>'.
+src/components/Editor/RichTextEditor.tsx(53,46): error TS2552: Cannot find name 'placeholder'. Did you mean 'Placeholder'?
+src/components/Editor/Sidebar/BrandingPanel.tsx(3,29): error TS6133: 'Delete24Regular' is declared but its value is never read.
+src/components/Editor/WorkgroupSection.tsx(9,5): error TS6133: 'MoreVertical20Regular' is declared but its value is never read.
+src/components/Editor/WorkgroupSection.tsx(73,11): error TS6133: 'handleCancelEditing' is declared but its value is never read.
+src/components/Editor/WorkgroupSection.tsx(109,11): error TS6133: 'answerCounts' is declared but its value is never read.
+src/components/Revision/RevisionCard.tsx(2,1): error TS6133: 'Card' is declared but its value is never read.
+src/services/authService.ts(125,30): error TS6133: 'acc' is declared but its value is never read.
+src/services/dataverseJobService.ts(1,27): error TS6133: 'entities' is declared but its value is never read.
+src/services/PdfGeneratorService.ts(5,1): error TS6133: 'SharePointImageService' is declared but its value is never read.
+src/services/PdfGeneratorService.ts(11,13): error TS6133: 'progressCallback' is declared but its value is never read.
+src/services/pdfService.ts(2,1): error TS6133: 'autoTable' is declared but its value is never read.
+src/services/pdfService.ts(3,21): error TS6133: 'ChecklistImage' is declared but its value is never read.
+src/services/pdfService.ts(3,37): error TS6133: 'Workgroup' is declared but its value is never read.
+src/services/pdfService.ts(3,48): error TS6133: 'AnswerState' is declared but its value is never read.
+src/services/pdfService.ts(3,61): error TS6133: 'ANSWER_CONFIG' is declared but its value is never read.
+src/services/pdfService.ts(4,1): error TS6192: All imports in import declaration are unused.
+src/services/pdfService.ts(82,13): error TS6133: 'stripHtml' is declared but its value is never read.
+src/services/pdfService.ts(108,15): error TS6133: 'pageCount' is declared but its value is never read.
+src/services/sharePointService.ts(105,41): error TS6133: 'workgroupId' is declared but its value is never read.
+src/services/sharePointService.ts(237,15): error TS6133: 'images' is declared but its value is never read.
+src/stores/checklistStore.ts(3,1): error TS6192: All imports in import declaration are unused.
+src/utils/pdfRichTextRenderer.ts(31,13): error TS6133: 'maxWidth' is declared but its value is never read.
