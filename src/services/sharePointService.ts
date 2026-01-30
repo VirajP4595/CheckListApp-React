@@ -217,6 +217,35 @@ export class SharePointImageService implements IImageService {
     }
 
     /**
+     * Check which rows have image folders to prevent 404s
+     */
+    async listImageFolders(checklistId: string): Promise<string[]> {
+        const token = await getGraphToken();
+        const { driveId } = await getCachedDriveInfo();
+
+        try {
+            const folderPath = `${checklistId}/images`;
+            const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${folderPath}:/children?select=name,folder`;
+
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.status === 404) return []; // Images root folder doesn't exist
+
+            const data = await response.json();
+            // Return names of folders (which are rowIds)
+            return (data.value || [])
+                .filter((item: any) => item.folder)
+                .map((item: any) => item.name);
+
+        } catch (error) {
+            console.warn(`[SharePoint] Failed to list image folders`, error);
+            return [];
+        }
+    }
+
+    /**
      * Upload generic file (e.g. PDF report)
      */
     async uploadFile(checklistId: string, file: File): Promise<string> {

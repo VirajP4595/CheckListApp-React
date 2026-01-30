@@ -12,6 +12,7 @@
 | **List Processing** | Filtering and Sorting of rows happens on *every render* of `WorkgroupSection`. | CPU waste on every interaction. |
 | **Initial Bundle** | The heavy `ChecklistEditor` and `TipTap` dependencies are loaded even when just viewing the Dashboard. | Slower initial page load. |
 | **State Updates** | The `checklistStore` triggers updates of the entire `activeChecklist` object, potentially causing tree-wide re-renders if not memoized. | Global lag on local updates. |
+| **Network Noise** | `ChecklistRowItem` attempting to fetch images for every row resulted in hundreds of 404 errors for empty rows. | Browser console pollution and unnecessary network bandwidth. |
 
 ## 2. Proposed Changes
 
@@ -33,6 +34,11 @@
 *   **Action:** Implement `React.lazy` for routes.
 *   **Logic:** Dynamically import `ChecklistEditor` only when creating or opening a checklist.
 *   **Benefit:** Keeps the critical rendering path for the Dashboard lightweight.
+
+### 2.3 Network Optimization
+*   **Action:** Implemented Smart Image Loading.
+*   **Logic:** `SharePointService` now performs a single directory listing (`listImageFolders`) to identify which rows have images. The Store uses this allowable list to block fetch requests for empty rows.
+*   **Benefit:** Eliminates 404 (Not Found) errors and reduces network request count by N-M (where N=rows, M=rows with images).
 
 ### 2.3 Dataverse Batching (Future/Foundation)
 *   **Action:** (Note only) Ensure `dataverseService` is ready for batching.

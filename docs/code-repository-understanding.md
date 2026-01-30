@@ -51,7 +51,7 @@ src/
 │   │   ├── ChecklistRowItem.tsx  # Atomic row component (Input + Actions)
 │   │   ├── RichTextEditor.tsx    # TipTap wrapper
 │   │   └── WorkgroupSection.tsx  # Collapsible section container
-│   ├── Export/          # PDF rendering UI controls
+
 │   └── Revision/        # Revision viewing UI
 ├── config/              # Static Configuration
 │   └── environment.ts   # URLs, Client IDs, Tenant IDs
@@ -157,7 +157,8 @@ When a user clicks "YES", we do not wait for the server.
 1.  **Drop/Paste:** Event captures the `File` object.
 2.  **Preview:** `FileReader` creates a local Data URL (Base64) for immediate display.
 3.  **Upload:** `SharePointService` uploads the binary to `PAP Attachments/{checklistId}/images/`.
-4.  **Reference:** The returned SharePoint URL is saved to the Dataverse Row record (or a related `pap_checklistimage` table if 1:N).
+4.  **Reference:** The returned SharePoint URL is saved to the Dataverse Row record.
+5.  **Smart Loading:** To prevent 404 errors for rows without images, the `SharePointService` pre-fetches the list of existing image folders (`listImageFolders`) when the checklist loads. The Store then only attempts to fetch detailed image metadata for rows that are known to have folders.
 
 ---
 

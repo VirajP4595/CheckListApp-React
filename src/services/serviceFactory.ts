@@ -41,14 +41,7 @@ export function getImageService(): IImageService {
     return imageServiceInstance;
 }
 
-import { PDFService } from './pdfService';
-let pdfServiceInstance: PDFService | null = null;
-export function getPDFService(): PDFService {
-    if (!pdfServiceInstance) {
-        pdfServiceInstance = new PDFService();
-    }
-    return pdfServiceInstance;
-}
+
 
 // ─── RESET (for testing) ───────────────────────────────────
 

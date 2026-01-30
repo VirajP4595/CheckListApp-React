@@ -16,6 +16,7 @@ interface ChecklistState {
     processingItems: string[]; // IDs of items currently being processed (adding/deleting)
 
     loadedRowImages: Record<string, boolean>;
+    availableImageFolders: string[]; // Cache of rows that actually have image folders
 
     // Actions - Data Loading
     loadChecklists: () => Promise<void>;
@@ -66,6 +67,7 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
     error: null,
     processingItems: [],
     loadedRowImages: {},
+    availableImageFolders: [],
 
     // Data Loading
     loadChecklists: async () => {
@@ -83,14 +85,30 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         try {
             const checklist = await getChecklistService().getChecklist(id);
             set({ activeChecklist: checklist, isLoading: false });
+
+            // [New] Check which rows actually have images to prevent 404 spam
+            try {
+                const folders = await getImageService().listImageFolders(id);
+                set({ availableImageFolders: folders });
+            } catch (e) {
+                console.warn('[Store] Failed to list image folders', e);
+            }
+
         } catch (err) {
             set({ error: (err as Error).message, isLoading: false });
         }
     },
 
     fetchRowImages: async (rowId: string) => {
-        const { activeChecklist, loadedRowImages } = get();
+        const { activeChecklist, loadedRowImages, availableImageFolders } = get();
         if (!activeChecklist || loadedRowImages[rowId]) return;
+
+        // Skip fetch if we know there are no images for this row
+        if (!availableImageFolders.includes(rowId)) {
+            // Mark as loaded so we don't keep checking
+            set(state => ({ loadedRowImages: { ...state.loadedRowImages, [rowId]: true } }));
+            return;
+        }
 
         // Mark as loading/loaded to prevent duplicate fetches
         // Ideally we'd have a 'loading' state per row, but simple boolean is okay if we assume fast enough or debounce
@@ -360,6 +378,7 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
                 return {
                     processingItems: state.processingItems.filter(p => p !== processId),
                     loadedRowImages: { ...state.loadedRowImages, [rowId]: true },
+                    availableImageFolders: [...state.availableImageFolders, rowId], // Mark as having images
                     activeChecklist: {
                         ...state.activeChecklist,
                         workgroups: updatedWorkgroups,
