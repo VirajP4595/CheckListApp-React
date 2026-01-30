@@ -1,8 +1,0 @@
-
-> pap-checklist-react@1.0.0 build
-> tsc && vite build
-
-src/components/Editor/ChecklistEditor.tsx(165,11): error TS2451: Cannot redeclare block-scoped variable 'handleCloseRevision'.
-src/components/Editor/ChecklistEditor.tsx(169,11): error TS2451: Cannot redeclare block-scoped variable 'handleExportPdf'.
-src/components/Editor/ChecklistEditor.tsx(295,11): error TS2451: Cannot redeclare block-scoped variable 'handleCloseRevision'.
-src/components/Editor/ChecklistEditor.tsx(299,11): error TS2451: Cannot redeclare block-scoped variable 'handleExportPdf'.

@@ -4,7 +4,7 @@ Provision Dataverse tables and columns using the Web API.
 
 .DESCRIPTION
 This script uses the Dataverse Web API to create tables and columns for the PAP Checklist application.
-It uses 'pac auth token' to retrieve the access token, so ensure you are authenticated via 'pac auth create'.
+It uses 'az account get-access-token' to retrieve the access token, so ensure you are authenticated via 'az login'.
 
 .EXAMPLE
 .\provision-dataverse-api.ps1 -EnvironmentUrl "https://your-org.crm.dynamics.com" --PublisherPrefix "pap"

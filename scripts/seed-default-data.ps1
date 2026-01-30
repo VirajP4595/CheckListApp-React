@@ -7,6 +7,14 @@ param(
     [string]$EnvironmentUrl  # e.g., https://org35f22684.crm.dynamics.com
 )
 
+# -------------------------------------------------------------------------
+# IMPORTANT: The list of workgroups defined below ($defaultWorkgroups) is 
+# HARDCODED. If the business requirements for the default checklist structure 
+# change, you must update the array below. This script skips existing Items 
+# by Number, so updates to Names/Orders of existing items require manual data 
+# correction or deletion before running this script.
+# -------------------------------------------------------------------------
+
 # ============================================
 # 1. Authentication (Using Azure CLI)
 # ============================================

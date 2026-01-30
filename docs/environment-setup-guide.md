@@ -1,5 +1,7 @@
 # PAP Checklist - Environment Setup Guide
 
+> **Note:** This guide is for setting up a **Development Environment**. For Production deployment, see the [Migration Guide](migration-guide.md).
+
 This guide provides step-by-step instructions to set up all prerequisites for the PAP Checklist application using the provided **automation scripts**.
 
 ---
@@ -26,7 +28,7 @@ Before starting, ensure you have:
 - [ ] Node.js 18+ and npm installed
 - [ ] PowerShell 7+ with modules installed:
   - `PnP.PowerShell` (for SharePoint)
-  - `Microsoft.PowerApps.CLI` (PAC CLI for Dataverse auth)
+  - `Azure CLI` (`az`) (for Dataverse auth)
 
 ### Install Required Tools
 
@@ -34,12 +36,14 @@ Before starting, ensure you have:
 # Install PnP PowerShell module
 Install-Module -Name PnP.PowerShell -Scope CurrentUser -Force
 
-# Install Power Platform CLI (PAC)
-winget install Microsoft.PowerPlatformCLI
+# Install Azure CLI (if not installed)
+# Download from: https://aka.ms/installazurecli
+# Or via Winget:
+winget install Microsoft.AzureCLI
 
 # Verify installations
 Get-Module PnP.PowerShell -ListAvailable
-pac --version
+az version
 ```
 
 ---
@@ -81,8 +85,8 @@ We use the Dataverse Web API via PowerShell to create all 7 tables, columns, and
 ### Step 1: Authenticate
 
 ```powershell
-# Authenticate to your Power Platform environment
-pac auth create --environment "https://[your-org].crm.dynamics.com"
+# Authenticate to Azure CLI (used by the script)
+az login --allow-no-subscriptions
 ```
 
 ### Step 2: Run Provisioning Script
@@ -139,30 +143,34 @@ The script now automatically authenticates and seeds all 144 default workgroups 
 
 ---
 
-## SPFx Solution Configuration
+## Application Configuration
 
-### Step 1: Update package-solution.json
+### Step 1: Update Environment Config
 
-The `config/package-solution.json` must request permissions matching your Azure AD app:
-
-```json
-"webApiPermissionRequests": [
-  { "resource": "Microsoft Graph", "scope": "User.Read" },
-  { "resource": "Microsoft Graph", "scope": "Sites.ReadWrite.All" },
-  { "resource": "https://[your-org].crm.dynamics.com", "scope": "user_impersonation" }
-]
-```
-
-### Step 2: Environment Config
-
-Update `src/config/environment.ts` with your specific URLs:
+The application uses a configuration file to connect to your specific environment.
+Update `src/config/environment.ts` with your Dataverse and SharePoint details:
 
 ```typescript
-export const devConfig: IEnvironmentConfig = {
-    dataverseUrl: "https://[your-org].crm.dynamics.com",
-    sharePointSiteUrl: "https://[tenant].sharepoint.com/sites/pap-checklist",
-    attachmentsLibrary: "PAPAttachments", // Internal name
-    clientId: "[your-azure-ad-client-id]"
+export const AppConfig = {
+    dataverse: {
+        url: "https://[your-org].crm.dynamics.com",
+        apiPath: "/api/data/v9.2",
+        publisherPrefix: "pap_"
+    },
+    sharepoint: {
+        siteUrl: "https://[tenant].sharepoint.com/sites/pap-checklist",
+        documentLibrary: "PAPAttachments"
+    },
+    auth: {
+        clientId: "[your-azure-ad-client-id]",
+        tenantId: "[your-tenant-id]",
+        authority: "https://login.microsoftonline.com/[your-tenant-id]",
+        redirectUri: "http://localhost:5173",
+        scopes: {
+            dataverse: ["https://[your-org].crm.dynamics.com/.default"],
+            graph: ["User.Read", "Sites.ReadWrite.All"]
+        }
+    }
 };
 ```
 
@@ -170,11 +178,12 @@ export const devConfig: IEnvironmentConfig = {
 
 ## App Verification
 
-After deployment, verify:
-1. **App Loads:** SPFx web part loads on SharePoint page
-2. **Dataverse Connection:** Can fetch the list of jobs (or empty list) without 403 Forbidden
-3. **SharePoint Connection:** logic-app/flow creates folders in "PAP Attachments"
-4. **Templates:** Creating a new Checklist auto-populates Workgroups from the seeded data
+After configuration, verify locally:
+1. **Start App:** Run `npm install` then `npm run dev` and open `http://localhost:5173`
+2. **Login:** Authenticate with your Azure AD account
+3. **Dataverse Connection:** Dashboard should load checklist data (or empty state)
+4. **SharePoint Connection:** Uploading an image should create files in the "PAP Attachments" library
+5. **Templates:** Creating a new Checklist should auto-populate Workgroups from the seeded data
 
 ---
 

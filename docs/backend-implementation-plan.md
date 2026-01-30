@@ -116,6 +116,7 @@ graph TB
 |--------|------|----------|-------------|
 | `pap_checklistrowid` | GUID (PK) | Yes | Primary key |
 | `pap_workgroupid` | Lookup → pap_workgroup | Yes | Parent workgroup |
+| `pap_description_primary` | String (100) | Yes | Item name / Primary description |
 | `pap_description` | Multiline Text | No | Item description (rich text) |
 | `pap_answer` | Choice | Yes | YES \| NO \| BLANK \| PS \| PC \| SUB \| OTS |
 | `pap_notes` | Multiline Text | No | Detailed notes |
@@ -179,6 +180,7 @@ graph TB
 |--------|------|----------|-------------|
 | `pap_defaultrowid` | GUID (PK) | Yes | Primary key |
 | `pap_defaultworkgroupid` | Lookup → pap_defaultworkgroup | Yes | Parent template workgroup |
+| `pap_description_primary` | String (100) | Yes | Default item name |
 | `pap_description` | Multiline Text | Yes | Default item description |
 | `pap_order` | Whole Number | Yes | Default order |
 | `pap_isactive` | Yes/No | Yes | Active for new checklists |
