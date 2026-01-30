@@ -1,0 +1,88 @@
+// AnswerSelector Styles
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+// ============================================
+// Trigger Button
+// ============================================
+
+.answer-trigger {
+    min-width: 90px; // Slightly wider for comfort
+    justify-content: space-between;
+    font-weight: $font-weight-semibold;
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-2;
+    padding: $spacing-1 $spacing-3;
+
+    // Match "Filled Input" style exactly
+    background-color: $color-gray-100 !important;
+    border: 1px solid transparent !important;
+    border-radius: $border-radius-md !important;
+    min-height: 40px;
+    height: 40px;
+
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    // Fluent button override
+    color: $color-gray-900 !important;
+
+    &:hover {
+        background-color: $color-gray-200 !important;
+        border-color: transparent !important;
+    }
+
+    &:active,
+    &[aria-expanded="true"] {
+        background-color: $color-gray-200 !important;
+    }
+}
+
+// ============================================
+// Color Dot
+// ============================================
+
+.answer-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+// ============================================
+// Answer Label
+// ============================================
+
+.answer-label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+}
+
+// ============================================
+// Menu Item
+// ============================================
+
+.answer-menu-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+}
+
+.answer-menu-label {
+    flex: 1;
+    font-weight: $font-weight-medium;
+}
+
+.answer-menu-desc {
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+}
+
+// ============================================
+// Color variants (dynamic, use inline style)
+// ============================================
+
+// Answer states have dynamic colors from ANSWER_CONFIG
+// These are applied via inline style attributes
+// Only structural styles are defined here

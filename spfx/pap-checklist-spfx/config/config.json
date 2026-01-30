@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "pap-checklist-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/papChecklist/PapChecklistWebPart.js",
+          "manifest": "./src/webparts/papChecklist/PapChecklistWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "PapChecklistWebPartStrings": "lib/webparts/papChecklist/loc/{locale}.js"
+  }
+}

@@ -1,0 +1,108 @@
+// ChecklistHeaderFields Styles
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+// ============================================
+// Container
+// ============================================
+
+.header-fields {
+    margin-bottom: $spacing-4;
+    background-color: $color-white;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-lg;
+    padding: $spacing-4;
+}
+
+// ============================================
+// Header Row
+// ============================================
+
+.header-row {
+    display: flex;
+    gap: $spacing-4;
+    margin-bottom: $spacing-4;
+
+    @include mobile {
+        flex-direction: column;
+    }
+}
+
+// ============================================
+// Section
+// ============================================
+
+.header-section {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-3;
+}
+
+.header-label {
+    @include label;
+    min-width: 140px;
+    flex-shrink: 0;
+}
+
+// ============================================
+// Chip Group
+// ============================================
+
+.chip-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-2;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-1;
+    padding: $spacing-1 $spacing-3;
+    border-radius: $border-radius-md;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    border: 1px solid $color-gray-300;
+    background-color: $color-white;
+    color: $color-gray-600;
+    transition: all $transition-fast;
+    user-select: none;
+    -webkit-user-select: none;
+
+    &:hover {
+        background-color: $color-gray-50;
+        border-color: $color-primary;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $color-primary;
+        outline-offset: 2px;
+    }
+}
+
+.chip--selected {
+    background-color: rgba($color-primary, 0.15);
+    border-color: $color-primary;
+    color: $color-primary;
+}
+
+.chip--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.chip-check-icon {
+    color: $color-primary;
+}
+
+// ============================================
+// Divider
+// ============================================
+
+.header-divider {
+    height: 1px;
+    background-color: $color-gray-200;
+    margin: $spacing-1 0;
+}

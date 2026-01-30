@@ -1,0 +1,125 @@
+/* TipTap Editor Styles */
+.ProseMirror {
+  outline: none;
+  min-height: 60px;
+}
+
+.ProseMirror p {
+  margin: 0 0 0.5em 0;
+}
+
+.ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+
+/* Placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Task List (Checkboxes) */
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+  margin: 0.5em 0;
+}
+
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.ProseMirror ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #0078d4;
+}
+
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  color: #8a8886;
+}
+
+/* Nested task lists */
+.ProseMirror ul[data-type="taskList"] ul[data-type="taskList"] {
+  margin-left: 24px;
+}
+
+/* Bullet and Number Lists */
+.ProseMirror ul:not([data-type="taskList"]),
+.ProseMirror ol {
+  padding-left: 24px;
+  margin: 0.5em 0;
+}
+
+.ProseMirror ul:not([data-type="taskList"]) li,
+.ProseMirror ol li {
+  margin: 4px 0;
+}
+
+/* Inline Images */
+.ProseMirror .inline-image {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 4px 0;
+  transition: opacity 0.15s ease, box-shadow 0.15s ease;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.ProseMirror .inline-image:hover {
+  opacity: 0.9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Links */
+.ProseMirror a {
+  color: #0078d4;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ProseMirror a:hover {
+  color: #106ebe;
+}
+
+/* Bold, Italic, Underline */
+.ProseMirror strong {
+  font-weight: 600;
+}
+
+.ProseMirror em {
+  font-style: italic;
+}
+
+.ProseMirror u {
+  text-decoration: underline;
+}
+
+/* Selection */
+.ProseMirror ::selection {
+  background: #cce4f7;
+}
+
+/* Focus styles */
+.ProseMirror-focused {
+  outline: none;
+}

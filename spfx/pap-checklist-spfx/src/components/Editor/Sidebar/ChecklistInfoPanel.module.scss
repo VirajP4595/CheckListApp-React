@@ -1,0 +1,163 @@
+@use "sass:color";
+// ChecklistInfoPanel Styles
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+// ============================================
+// Container
+// ============================================
+
+.info-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: $spacing-3;
+  overflow-y: auto;
+  @include scrollbar;
+}
+
+// ============================================
+// Section
+// ============================================
+
+.info-section {
+  margin-bottom: $spacing-4;
+}
+
+.info-section-title {
+  @include label;
+  text-transform: uppercase;
+  margin-bottom: $spacing-2;
+}
+
+// ============================================
+// Chip Group
+// ============================================
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-1;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-1;
+  padding: $spacing-1 $spacing-2;
+  border-radius: $border-radius-md;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+
+  // Filled Style (Base)
+  background-color: $color-gray-100;
+  border: 1px solid transparent;
+  color: $color-gray-700;
+  transition: all $transition-fast;
+  user-select: none;
+
+  &:hover {
+    background-color: $color-gray-200;
+    // border-color: transparent; // Keep border transparent
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-primary;
+    outline-offset: 2px;
+  }
+}
+
+.chip--selected {
+  background-color: rgba($color-primary, 0.15);
+  border-color: $color-primary;
+  color: $color-primary;
+}
+
+.chip--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+// Status-specific chip colors
+.chip--draft {
+  &.chip--selected {
+    background-color: rgba($color-gray-500, 0.15);
+    border-color: $color-gray-500;
+    color: $color-gray-700;
+  }
+}
+
+.chip--in-review {
+  &.chip--selected {
+    background-color: rgba($color-status-review, 0.15);
+    border-color: $color-status-review;
+    color: color.adjust($color-status-review, $lightness: -10%);
+  }
+
+  .chip-icon {
+    color: $color-status-review;
+  }
+}
+
+.chip--final {
+  &.chip--selected {
+    background-color: rgba($color-success, 0.15);
+    border-color: $color-success;
+    color: color.adjust($color-success, $lightness: -10%);
+  }
+
+  .chip-icon {
+    color: $color-success;
+  }
+}
+
+.chip-icon {
+  color: $color-primary;
+}
+
+// ============================================
+// Field Group
+// ============================================
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-2;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+}
+
+.field-label {
+  @include label;
+  min-width: 100px;
+}
+
+.field-value {
+  flex: 1;
+  font-size: $font-size-sm;
+  color: $color-gray-700;
+}
+
+.action-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start !important; // Force Left align
+  justify-content: flex-start !important;
+  gap: $spacing-2;
+  margin-top: $spacing-4;
+  width: 100%;
+
+  // Target the button directly ensuring no auto margins
+  &>button {
+    margin: 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+}

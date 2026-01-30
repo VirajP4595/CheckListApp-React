@@ -1,0 +1,181 @@
+// ChecklistRowItem Styles (Reference Style - 3 Column Layout)
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+// ============================================
+// Row Item Container
+// ============================================
+
+.row-item {
+    @include surface;
+    background-color: $color-white;
+    border: 1px solid $color-border;
+    padding: $spacing-3; // Reduced from 1.25rem (p-5) to closer match compact
+    border-radius: $border-radius-lg;
+    margin-bottom: $spacing-3;
+    transition: box-shadow $transition-base;
+
+    &:hover {
+        box-shadow: $shadow-md;
+    }
+
+    &--compact {
+        padding: $spacing-2;
+    }
+
+    &--review {
+        border-left: 4px solid $color-status-review;
+    }
+}
+
+// ============================================
+// Main Flex Layout (3 Columns)
+// ============================================
+
+.row-main-flex {
+    display: flex;
+    gap: $spacing-4; // gap-4
+}
+
+// Column 1: Expand Button
+.row-left-col {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 0.75rem; // items-start pt-3 from reference
+    flex-shrink: 0;
+}
+
+.row-expand-btn {
+    color: $color-gray-400 !important;
+    min-width: 20px !important;
+    padding: 0 !important;
+    height: 20px !important;
+
+    &:hover {
+        color: $color-gray-600 !important;
+    }
+}
+
+// Column 2: Content Stack
+.row-center-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3; // space-y-3
+}
+
+// Column 3: Actions
+.row-right-col {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 0.75rem; // items-start pt-3
+    gap: $spacing-1;
+    flex-shrink: 0;
+}
+
+// ============================================
+// Content Row: Answer + Name
+// ============================================
+
+.row-inputs-row {
+    display: flex;
+    gap: $spacing-3; // gap-3
+    align-items: center;
+}
+
+.row-answer {
+    width: 128px; // w-32
+    flex-shrink: 0;
+}
+
+$input-border: $color-border;
+$input-focus-border: $color-primary-light; // blue-500
+$input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
+
+.row-name {
+    flex: 1;
+    font-weight: $font-weight-normal;
+    color: $color-gray-900;
+
+    @include input-filled;
+}
+
+// ============================================
+// Description
+// ============================================
+
+.row-description-container {
+    width: 100%;
+    // No indentation needed, flex column handles alignment
+}
+
+.row-description {
+    width: 100%;
+    font-family: $font-family-body;
+    font-size: $font-size-base;
+    color: $color-gray-700;
+
+    border: 1px solid $input-border;
+    background-color: $color-input-bg;
+    border-radius: $border-radius-md;
+    padding: $spacing-3;
+    transition: all $transition-fast;
+
+    // Fluent UI Textarea wrapper
+    &>textarea {
+        background-color: transparent !important;
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    &:hover {
+        border-color: $color-gray-300;
+    }
+
+    &:focus,
+    &:focus-within {
+        border-color: $input-focus-border;
+        box-shadow: 0 0 0 4px $input-focus-ring;
+    }
+
+    &::placeholder {
+        color: $color-gray-400;
+    }
+}
+
+// ============================================
+// Row Actions
+// ============================================
+
+.row-action-btn,
+.row-action-btn--delete,
+.row-action-btn--review {
+    color: $color-gray-400 !important;
+
+    &:hover {
+        color: $color-gray-600 !important;
+    }
+}
+
+.row-action-btn--delete:hover {
+    color: $color-error !important;
+    background: rgba($color-error, 0.1) !important;
+}
+
+.row-action-btn--review {
+    color: $color-status-review !important;
+}
+
+// ============================================
+// Extra (Images/Notes)
+// ============================================
+
+.row-notes {
+    margin-top: $spacing-1;
+    // border-top: 1px solid $color-border; // No border between desc and notes usually in stack? Reference didn't show notes. Keeping clean.
+}
+
+.row-images {
+    margin-top: $spacing-1;
+}

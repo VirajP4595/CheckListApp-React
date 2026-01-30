@@ -1,0 +1,23 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "whichFolder": "subdir",
+    "solutionName": "pap-checklist-spfx",
+    "environment": "spo",
+    "useGulp": false,
+    "componentType": "webpart",
+    "template": "react",
+    "componentName": "PapChecklist",
+    "componentDescription": "Checklist App",
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.14.0",
+    "sdksVersions": {},
+    "version": "1.22.1",
+    "libraryName": "pap-checklist-spfx",
+    "libraryId": "66a0ae51-5c1f-4d41-8308-c81822d1c9c4",
+    "packageManager": "npm",
+    "solutionShortDescription": "pap-checklist-spfx description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false
+  }
+}

@@ -1,0 +1,81 @@
+// RichTextEditor Styles
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+// ============================================
+// Container
+// ============================================
+
+.editor-container {
+    border: 1px solid transparent;
+    border-radius: $border-radius-md;
+    background-color: $color-gray-100; // Subtle grey when not focused
+    overflow: hidden;
+    transition: all $transition-fast;
+
+    &:hover {
+        background-color: $color-gray-200;
+    }
+
+    &:focus-within {
+        background-color: $color-white;
+        border-color: transparent;
+        box-shadow: 0 0 0 2px $input-focus-ring;
+        outline: none;
+    }
+}
+
+.editor-container--readonly {
+    border: 1px solid transparent;
+    border-radius: $border-radius-md;
+    background-color: transparent;
+    overflow: hidden;
+
+    // No hover/focus effects
+}
+
+// ============================================
+// Toolbar
+// ============================================
+
+.editor-toolbar {
+    display: flex;
+    gap: $spacing-1;
+    padding: $spacing-1;
+    border-bottom: 1px solid $color-gray-200;
+    background-color: $color-gray-50;
+    flex-wrap: wrap;
+}
+
+.toolbar-btn {
+    min-width: 32px;
+    padding: 4px;
+}
+
+.toolbar-btn--active {
+    background-color: rgba($color-primary, 0.15);
+}
+
+.toolbar-divider {
+    width: 1px;
+    background-color: $color-gray-200;
+    margin: 0 $spacing-1;
+}
+
+// ============================================
+// Editor Content
+// ============================================
+
+.editor-content {
+    min-height: 80px;
+    padding: $spacing-2;
+    cursor: text;
+
+    // Force inner editor to be clean
+    :global(.ProseMirror) {
+        outline: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+    }
+}

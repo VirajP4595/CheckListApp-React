@@ -1,0 +1,9 @@
+// App-level SCSS
+@use 'styles/variables' as *;
+
+.pap-app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: $color-background;
+}

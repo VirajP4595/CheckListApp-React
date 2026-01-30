@@ -1,0 +1,102 @@
+.immersiveMode {
+    // This class is just a hook to load the file.
+    // The real magic happens in the global scope.
+    display: none;
+}
+
+:global {
+
+    /* Hide SharePoint App Bar (Left Nav) */
+    #sp-appBar {
+        display: none !important;
+    }
+
+    /* Hide Suite Nav Wrapper (Top Bar with App Launcher, Search, Profile) */
+    #SuiteNavWrapper {
+        display: none !important;
+    }
+
+    /* Hide Page Header (Title, Edit, Publish) */
+    [data-automation-id="pageHeader"] {
+        display: none !important;
+    }
+
+    /* Hide Command Bar (New, details, etc - if present on page canvas) */
+    .ms-CommandBar {
+        display: none !important;
+    }
+
+    /* Hide Site Header */
+    #spSiteHeader {
+        display: none !important;
+    }
+
+    /* Hide Left Nav (if different from app bar) */
+    #spLeftNav {
+        display: none !important;
+    }
+
+    /* Hide Comments Wrapper */
+    #CommentsWrapper {
+        display: none !important;
+    }
+
+    /* Adjust Canvas Padding since headers are gone */
+    .CanvasZone,
+    [data-automation-id="CanvasZone"] {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: none !important;
+        width: 100% !important;
+        overflow: hidden !important;
+        /* Hide scrollbar */
+    }
+
+    /* Remove padding from Canvas Section */
+    .CanvasSection,
+    [data-automation-id="CanvasSection"] {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: none !important;
+        width: 100% !important;
+    }
+
+    /* Remove scroll from Content Scroll Region */
+    [data-automation-id="contentScrollRegion"] {
+        overflow: hidden !important;
+    }
+
+    /* Remove margin/padding from Canvas Controls */
+    [data-automation-id="CanvasControl"] {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    /* Hide SharePoint Command Bar */
+    #spCommandBar {
+        display: none !important;
+    }
+
+    /* Force Full Width/Height on Section Container */
+    [data-automation-id="CanvasZone-SectionContainer"] {
+        width: 100% !important;
+        max-width: none !important;
+        /* height: 100vh !important; // Use cautiously, might break scroll */
+        /* display: flex; // might help children expand */
+    }
+
+    /* Target the main workbench layout to remove constraints */
+    .CanvasComponent {
+        max-width: none !important;
+    }
+
+    /* Ensure WebPart takes full height if possible */
+    .ControlZone {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Reset body/scroll behavior if needed */
+    /* Often the sp-appBar adds left padding to the body, strictly we might want to unset it */
+}

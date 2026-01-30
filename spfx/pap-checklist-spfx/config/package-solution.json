@@ -1,0 +1,50 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "pap-checklist-spfx-client-side-solution",
+    "id": "66a0ae51-5c1f-4d41-8308-c81822d1c9c4",
+    "version": "1.1.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.22.1"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "pap-checklist-spfx description"
+      },
+      "longDescription": {
+        "default": "pap-checklist-spfx description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "pap-checklist-spfx Feature",
+        "description": "The feature that activates elements of the pap-checklist-spfx solution.",
+        "id": "0d9ef2ec-7ca6-43c9-a1b3-8cd1dc8fb115",
+        "version": "1.0.0.0"
+      }
+    ],
+    "webApiPermissionRequests": [
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Sites.ReadWrite.All"
+      },
+      {
+        "resource": "Dataverse",
+        "scope": "user_impersonation"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/pap-checklist-spfx.sppkg"
+  }
+}

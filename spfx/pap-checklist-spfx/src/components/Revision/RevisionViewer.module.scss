@@ -1,0 +1,330 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.revision-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: $color-gray-50;
+    overflow: hidden;
+}
+
+// Header
+.revision-header {
+    background: #fff;
+    padding: $spacing-4 $spacing-5;
+    border-bottom: 1px solid $color-border;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.revision-header-content {
+    display: flex;
+    align-items: center;
+    gap: $spacing-4;
+}
+
+.revision-title {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-gray-900;
+    margin: 0;
+}
+
+.revision-badges {
+    display: flex;
+    gap: $spacing-2;
+}
+
+.revision-badge {
+    padding: 2px 8px;
+    border-radius: $border-radius-full;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    border: 1px solid transparent;
+
+    &--rev {
+        background: $color-accent-subtle;
+        color: $color-accent-dark;
+        border-color: rgba($color-accent-dark, 0.2);
+    }
+
+    &--snapshot {
+        background: $color-gray-100;
+        color: $color-gray-600;
+        border-color: $color-gray-300;
+    }
+}
+
+.revision-close-btn {
+    color: $color-gray-500 !important;
+
+    &:hover {
+        color: $color-gray-800 !important;
+    }
+}
+
+// Content
+.revision-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-5;
+    display: flex;
+    justify-content: center;
+}
+
+// Summary
+.revision-summary {
+    background: $color-info;
+    // Fallback if variable missing, use light blue
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    padding: $spacing-3;
+    border-radius: $border-radius-md;
+    margin-bottom: $spacing-4;
+    display: flex;
+    gap: $spacing-2;
+    align-items: baseline;
+    max-width: 1000px;
+    width: 100%;
+}
+
+.revision-summary-label {
+    font-weight: bold;
+    color: $color-gray-700;
+    white-space: nowrap;
+}
+
+.revision-summary-text {
+    color: $color-gray-800;
+}
+
+
+// Workgroup
+.revision-workgroup {
+    @include card;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-lg;
+    overflow: hidden;
+    margin-bottom: $spacing-6;
+    background: white;
+    width: 100%;
+    max-width: 1000px;
+}
+
+.revision-workgroup-header {
+    background: $color-gray-100;
+    padding: $spacing-3 $spacing-4;
+    border-bottom: 1px solid $color-border;
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+}
+
+.revision-workgroup-number {
+    background: $color-gray-300;
+    color: $color-gray-700;
+    font-weight: bold;
+    font-size: $font-size-xs;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.revision-workgroup-name {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-800;
+}
+
+// Row
+.revision-row {
+    padding: $spacing-3 $spacing-4;
+    border-bottom: 1px dashed $color-gray-200;
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+.revision-row-content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+}
+
+.revision-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: $spacing-4;
+}
+
+.revision-row-name {
+    font-weight: $font-weight-medium;
+    color: $color-gray-900;
+    flex: 1;
+}
+
+.revision-status-pill {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    white-space: nowrap;
+    // Colors handled inline or we can map here if we remove inline styles
+}
+
+.revision-row-description {
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+}
+
+.compact-rte {
+    font-size: $font-size-sm;
+
+    :global(.ProseMirror) {
+        padding: 0 !important;
+        min-height: auto !important;
+    }
+}
+
+.revision-row-notes {
+    background: $color-gray-50;
+    padding: $spacing-2;
+    border-radius: $border-radius-sm;
+    margin-top: $spacing-1;
+}
+
+.revision-notes-label {
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: $color-gray-400;
+    display: block;
+    margin-bottom: 2px;
+}
+
+// Images
+.revision-images {
+    margin-top: $spacing-2;
+    display: flex;
+    gap: $spacing-2;
+    flex-wrap: wrap;
+}
+
+.revision-image-card {
+    display: flex;
+    flex-direction: column;
+    width: 80px;
+    gap: 2px;
+}
+
+.revision-image {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid $color-border;
+    cursor: pointer;
+    transition: transform $transition-fast;
+
+    &:hover {
+        transform: scale(1.05);
+        border-color: $color-primary;
+    }
+}
+
+.revision-image-caption {
+    font-size: 0.65rem;
+    color: $color-gray-500;
+    @include truncate;
+}
+
+
+// Lightbox
+.lightbox-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.lightbox-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    img {
+        max-width: 100%;
+        max-height: 80vh;
+        border-radius: 4px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+}
+
+.lightbox-actions {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    display: flex;
+    gap: $spacing-2;
+}
+
+.lightbox-close,
+.lightbox-download {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.4);
+    }
+}
+
+.lightbox-loading {
+    color: white;
+}
+
+.lightbox-caption {
+    margin-top: $spacing-2;
+    color: white;
+    font-size: $font-size-base;
+    text-align: center;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
