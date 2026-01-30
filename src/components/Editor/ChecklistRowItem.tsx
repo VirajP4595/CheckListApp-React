@@ -20,13 +20,20 @@ interface ChecklistRowItemProps {
     isCompact?: boolean;
 }
 
-export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
+export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
     row,
     workgroupId,
     isCompact = false,
 }) => {
-    const { updateRow, deleteRow, addRow, addImageToRow, removeImageFromRow, saveRow, processingItems } = useChecklistStore();
-    const isDeleting = processingItems.includes(row.id);
+    const updateRow = useChecklistStore(state => state.updateRow);
+    const deleteRow = useChecklistStore(state => state.deleteRow);
+    const addRow = useChecklistStore(state => state.addRow);
+    const addImageToRow = useChecklistStore(state => state.addImageToRow);
+    const removeImageFromRow = useChecklistStore(state => state.removeImageFromRow);
+    const saveRow = useChecklistStore(state => state.saveRow);
+
+    const isDeleting = useChecklistStore(state => state.processingItems.includes(row.id));
+
     const originalNameRef = useRef(row.name);
     const originalNotesRef = useRef(row.notes);
 
@@ -50,12 +57,11 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
 
     const handleToggleReview = () => {
         updateRow(row.id, { markedForReview: !row.markedForReview });
-        saveRow(row.id); // Granular save
+        saveRow(row.id);
     };
 
     const handleDelete = () => {
         deleteRow(row.id);
-        // onRowChange(); // REMOVED: Granular delete updates store and server directly. Calling this triggers unnecessary parent re-renders/saves.
     };
 
     const handleImageAdd = (source: string) => {
@@ -67,13 +73,11 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
         };
         addImageToRow(row.id, newImage);
 
-        // saveRow(row.id); // Store handles server call now
     };
 
     const handleImageRemove = (imageId: string) => {
         removeImageFromRow(row.id, imageId);
 
-        // saveRow(row.id); // Store handles server call now
     };
 
     return (
@@ -103,7 +107,7 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
                                 value={row.answer}
                                 onChange={(answer) => {
                                     updateRow(row.id, { answer });
-                                    saveRow(row.id); // Immediate granular save
+                                    saveRow(row.id);
                                 }}
                             />
                         </div>
@@ -139,7 +143,7 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
                         />
                     </div>
 
-                    {/* Description (Simple Textarea) Removed - User prefers Rich Text Editor */}
+
 
                     {/* Notes & Images (Visible if expanded) */}
                     {expanded && (
@@ -200,4 +204,4 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = ({
             </div>
         </div>
     );
-};
+});

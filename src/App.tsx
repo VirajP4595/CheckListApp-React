@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useUserStore } from './stores';
 import { Dashboard } from './components/Dashboard/Dashboard';
-import { ChecklistEditor } from './components/Editor/ChecklistEditor';
+
 import { useAuth } from './providers/AuthProvider';
 import './App.scss';
+
+
+const ChecklistEditor = React.lazy(() => import('./components/Editor/ChecklistEditor').then(module => ({ default: module.ChecklistEditor })));
 
 type View = 'dashboard' | 'editor';
 
@@ -48,10 +51,17 @@ const App: React.FC = () => {
             {currentView === 'dashboard' ? (
                 <Dashboard onOpenChecklist={handleOpenChecklist} />
             ) : (
-                <ChecklistEditor
-                    checklistId={activeChecklistId!}
-                    onBack={handleBackToDashboard}
-                />
+                <Suspense fallback={
+                    <div className="app-loading">
+                        <div className="spinner"></div>
+                        <span>Loading Editor...</span>
+                    </div>
+                }>
+                    <ChecklistEditor
+                        checklistId={activeChecklistId!}
+                        onBack={handleBackToDashboard}
+                    />
+                </Suspense>
             )}
         </div>
     );

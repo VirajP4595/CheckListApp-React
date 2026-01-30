@@ -6,7 +6,7 @@ export interface DataverseJob {
     [key: string]: unknown;
     pap_jobid: string;
     pap_name: string;        // Primary name column (used as reference)
-    // Note: pap_jobreference, pap_number columns were not created (commented in provision script)
+    pap_name: string;        // Primary name column (used as reference)
 }
 
 export interface Job {
@@ -24,7 +24,6 @@ export class DataverseJobService {
      */
     async getAllJobs(): Promise<Job[]> {
         // Only select columns that exist - pap_name is the primary column
-        // pap_jobreference doesn't exist (creation was commented in provision script)
         const select = `$select=${col('jobid')},${col('name')}`;
         const filter = `$filter=statecode eq 0`; // Active jobs only
         const order = `$orderby=${col('name')} desc`;
@@ -37,7 +36,7 @@ export class DataverseJobService {
 
             return response.value.map(dv => ({
                 id: dv.pap_jobid,
-                reference: dv.pap_name || '',  // Using name as reference since jobreference doesn't exist
+                reference: dv.pap_name || '',
                 name: dv.pap_name || ''
             }));
         } catch (error) {

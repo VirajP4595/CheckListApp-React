@@ -467,5 +467,6 @@ PAP-CheckList-React/
 - [x] Update Environment Setup Guide.
 - [x] Refine provisioning and seeding scripts.
 - [x] Create Migration/Deployment Guide.
+- [x] Create Code Repository Understanding Document.
 
 

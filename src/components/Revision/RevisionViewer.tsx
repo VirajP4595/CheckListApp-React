@@ -15,7 +15,7 @@ interface RevisionViewerProps {
 
 export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClose }) => {
     const snapshot = revision.snapshot;
-    // Updated state to track loading and ID
+
     const [previewImage, setPreviewImage] = useState<{ src: string, caption?: string, id?: string, loading?: boolean } | null>(null);
 
     React.useEffect(() => {
@@ -55,7 +55,7 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
         }
     };
 
-    // No longer need click-outside-to-close for full page
+
 
     const getAnswerStyle = (answer: AnswerState) => {
         const config = ANSWER_CONFIG[answer];
@@ -73,7 +73,7 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
             aria-modal="true"
             aria-label="Revision View"
         >
-            {/* Header - Now Full Width */}
+            {/* Header */}
             <header className={styles['revision-header']}>
                 <Button
                     className={styles['revision-close-btn']}
@@ -106,7 +106,7 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
                 </div>
             </header>
 
-            {/* Content Container - No extra modal wrapper */}
+            {/* Content Container */}
             <div className={styles['revision-content']}>
                 <div> {/* Centering Container */}
                     {/* Summary (Only show if present) */}
@@ -176,8 +176,6 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
                                                             key={idx}
                                                             className={styles['revision-image-card']}
                                                             onClick={() => {
-                                                                // If it's a server image (has ID and logical source is not data/blob), mark as loading
-                                                                // Note: if source is already data/blob (local), we don't need to load
                                                                 const needsLoad = img.id && !img.source.startsWith('data:') && !img.source.startsWith('blob:');
                                                                 setPreviewImage({
                                                                     src: img.source,

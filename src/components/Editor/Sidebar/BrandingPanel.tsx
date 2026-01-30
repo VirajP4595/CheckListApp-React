@@ -26,8 +26,7 @@ export const BrandingPanel: React.FC<BrandingPanelProps> = ({ checklist }) => {
         }
     };
 
-    // Note: Remove logo not yet implemented in store/service.
-    // For now, allow overwrite.
+
 
     return (
         <div className={styles['branding-panel']}>

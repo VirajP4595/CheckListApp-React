@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button, Input, Tooltip, Spinner } from '@fluentui/react-components';
 import {
     Add20Regular,
@@ -22,15 +22,19 @@ interface WorkgroupSectionProps {
     expandTasks?: boolean;
 }
 
-export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
+export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
     workgroup,
 
     filters,
     isCollapsed = false,
     expandTasks = true,
 }) => {
-    const { addRow, updateWorkgroup, deleteWorkgroup, processingItems } = useChecklistStore();
-    const isAdding = processingItems.includes(workgroup.id);
+    const addRow = useChecklistStore(state => state.addRow);
+    const updateWorkgroup = useChecklistStore(state => state.updateWorkgroup);
+    const deleteWorkgroup = useChecklistStore(state => state.deleteWorkgroup);
+
+    const isAdding = useChecklistStore(state => state.processingItems.includes(workgroup.id));
+
     const [localCollapsed, setLocalCollapsed] = useState(isCollapsed);
     const [isEditing, setIsEditing] = useState(false);
     const [tempName, setTempName] = useState(workgroup.name);
@@ -74,30 +78,32 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
 
     const handleAddRow = () => {
         addRow(workgroup.id);
-        // onRowChange(); // REMOVED: Granular action handles save
+        addRow(workgroup.id);
     };
 
     const handleDelete = () => {
         if (window.confirm(`Delete workgroup "${workgroup.name}"? This will also delete all ${workgroup.rows.length} items.`)) {
             deleteWorkgroup(workgroup.id);
-            // onRowChange(); // REMOVED: Granular action handles save
+            deleteWorkgroup(workgroup.id);
         }
     };
 
     // Filter rows based on filters
-    const filteredRows = workgroup.rows.filter(row => {
-        if (filters?.answerStates && filters.answerStates.length > 0) {
-            if (!filters.answerStates.includes(row.answer)) {
-                return false;
+    const filteredRows = useMemo(() => {
+        return workgroup.rows.filter(row => {
+            if (filters?.answerStates && filters.answerStates.length > 0) {
+                if (!filters.answerStates.includes(row.answer)) {
+                    return false;
+                }
             }
-        }
-        if (filters?.markedForReview !== null && filters?.markedForReview !== undefined) {
-            if (row.markedForReview !== filters.markedForReview) {
-                return false;
+            if (filters?.markedForReview !== null && filters?.markedForReview !== undefined) {
+                if (row.markedForReview !== filters.markedForReview) {
+                    return false;
+                }
             }
-        }
-        return true;
-    });
+            return true;
+        });
+    }, [workgroup.rows, filters]);
 
 
 
@@ -229,44 +235,46 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = ({
                 </div>
             </header>
 
-            {/* Legacy Collapsed Summary Removed - Status is now in header */}
+        </header>
 
-            {!collapsed && (
-                <div className={styles['workgroup-content']}>
-                    {filteredRows.length === 0 ? (
-                        <div className={styles['workgroup-empty']}>
-                            <span>{workgroup.rows.length === 0 ? 'No items in this workgroup yet.' : 'No items match the current filters.'}</span>
-                        </div>
-                    ) : (
-                        <div className={styles['workgroup-rows']}>
-                            {filteredRows
-                                .sort((a, b) => a.order - b.order)
-                                .map(row => (
-                                    <ChecklistRowItem
-                                        key={row.id}
-                                        row={row}
-                                        workgroupId={workgroup.id}
-                                        isCompact={!expandTasks}
-                                    />
-                                ))}
-                        </div>
-                    )}
+            {
+        !collapsed && (
+            <div className={styles['workgroup-content']}>
+                {filteredRows.length === 0 ? (
+                    <div className={styles['workgroup-empty']}>
+                        <span>{workgroup.rows.length === 0 ? 'No items in this workgroup yet.' : 'No items match the current filters.'}</span>
+                    </div>
+                ) : (
+                    <div className={styles['workgroup-rows']}>
+                        {filteredRows
+                            .sort((a, b) => a.order - b.order)
+                            .map(row => (
+                                <ChecklistRowItem
+                                    key={row.id}
+                                    row={row}
+                                    workgroupId={workgroup.id}
+                                    isCompact={!expandTasks}
+                                />
+                            ))}
+                    </div>
+                )}
 
-                    <Button
-                        className={styles['workgroup-add-row']}
-                        appearance="subtle"
-                        icon={isAdding ? <Spinner size="extra-tiny" /> : <Add20Regular />}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (!isAdding) handleAddRow();
-                        }}
-                        disabled={isAdding}
-                    >
-                        {isAdding ? 'Adding...' : 'Add checklist item'}
-                    </Button>
-                </div>
-            )}
-        </section>
+                <Button
+                    className={styles['workgroup-add-row']}
+                    appearance="subtle"
+                    icon={isAdding ? <Spinner size="extra-tiny" /> : <Add20Regular />}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isAdding) handleAddRow();
+                    }}
+                    disabled={isAdding}
+                >
+                    {isAdding ? 'Adding...' : 'Add checklist item'}
+                </Button>
+            </div>
+        )
+    }
+        </section >
     );
-};
+});
 

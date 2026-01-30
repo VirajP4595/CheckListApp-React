@@ -146,11 +146,7 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         }
     },
 
-    saveRow: async (rowId: string) => { // Renaming to updateRow in interface, keeping public action name loose or aligning? User asked "use updateRow instead of saveRow". Let's align.
-        // Actually, interface has updateRow. Store action can be updateRow too, or stick to saveRow for compat if we don't want to refactor all components yet.
-        // But user said "use updateRow".
-        // Let's implement updateRow action and deprecate saveRow? Or just replace body.
-        // I will replace body and call service.updateRow.
+    saveRow: async (rowId: string) => {
         const { activeChecklist } = get();
         if (!activeChecklist) return;
 
@@ -174,10 +170,15 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
             const updatedRow = await getChecklistService().updateRow(rowToSave);
             set(state => {
                 if (!state.activeChecklist) return state;
-                const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => ({
-                    ...wg,
-                    rows: wg.rows.map(r => r.id === rowId ? updatedRow : r)
-                }));
+                const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => {
+                    const rowExists = wg.rows.some(r => r.id === rowId);
+                    if (!rowExists) return wg;
+
+                    return {
+                        ...wg,
+                        rows: wg.rows.map(r => r.id === rowId ? updatedRow : r)
+                    };
+                });
                 return {
                     isSaving: false,
                     lastSaved: new Date(),
@@ -200,12 +201,21 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         set(state => {
             if (!state.activeChecklist) return state;
 
-            const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => ({
-                ...wg,
-                rows: wg.rows.map(row =>
-                    row.id === rowId ? { ...row, ...updates } : row
-                ),
-            }));
+            let hasChanges = false;
+            const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => {
+                const rowExists = wg.rows.some(r => r.id === rowId);
+                if (!rowExists) return wg;
+
+                hasChanges = true;
+                return {
+                    ...wg,
+                    rows: wg.rows.map(row =>
+                        row.id === rowId ? { ...row, ...updates } : row
+                    ),
+                };
+            });
+
+            if (!hasChanges) return state;
 
             return {
                 activeChecklist: {
@@ -215,7 +225,6 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
                 },
             };
         });
-        // Note: We do NOT auto-save here to allow debouncing/controlled saves via saveRow (onBlur)
     },
 
     addRow: async (workgroupId: string, afterRowId?: string) => {
@@ -252,8 +261,6 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
                     if (afterRowId) {
                         const idx = newRows.findIndex(r => r.id === afterRowId);
                         newRows.splice(idx + 1, 0, newRow);
-                        // Note: We might need to re-index subsequent orders on server if we insert mid-list.
-                        // For now, minimal viable insert.
                     } else {
                         newRows.push(newRow);
                     }
@@ -316,7 +323,6 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
     },
 
     // Image Operations
-    // Image Operations
     addImageToRow: async (rowId: string, image: ChecklistImage) => {
         const processId = `img-add-${rowId}`;
         set(state => ({ processingItems: [...state.processingItems, processId] }));
@@ -335,7 +341,7 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
 
         try {
             // Server Call
-            // Note: 'image.source' is expected to be the base64/blob data here
+
             const savedImage = await getImageService().addImage(activeChecklist.id, workgroupId, rowId, image.source, image.caption);
 
             set(state => {
@@ -522,14 +528,11 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
 
             return {
                 activeChecklist: updatedChecklist,
-                lastSaved: null, // Reset last saved until confirmed? Or just rely on optimistic update. 
-                // Actually, saveChecklist handles set({ isSaving: false, lastSaved: new Date() }).
-                // But here we are calling service directly.
-                // Let's try to reuse saveChecklist logic or just set state and let separate save call handle it?
-                // Simplified approach: Update state, and trigger background save.
-                // We'll optimistically update activeChecklist.
-            };
-        });
+                return {
+                    activeChecklist: updatedChecklist,
+                    lastSaved: null,
+                };
+            });
     },
 
     // Revision Operations
@@ -539,7 +542,7 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
 
         set({ isSaving: true });
         try {
-            // Note: Service relies on Image Service which is already handled via service factory
+
             const revision = await getRevisionService().createRevision(activeChecklist.id, summary);
 
             set(state => {

@@ -14,7 +14,7 @@ interface DataverseChecklist {
     pap_clientcorrespondence?: string;
     pap_estimatetype?: string;
     pap_commonnotes?: string;
-    pap_clientlogourl?: string; // [New]
+    pap_clientlogourl?: string;
     _pap_jobid_value?: string;
     // Navigation property for Job lookup
     pap_jobid?: {
@@ -162,7 +162,7 @@ export class DataverseChecklistService implements IChecklistService {
             'pap_clientcorrespondence',
             'pap_estimatetype',
             'pap_commonnotes',
-            'pap_clientlogourl', // [New]
+            'pap_clientlogourl',
             '_pap_jobid_value',
             'createdon',
             'modifiedon'
@@ -215,11 +215,6 @@ export class DataverseChecklistService implements IChecklistService {
         let checklistImages: any[] = [];
         if (options?.includeImages) {
             try {
-                // Use the getAllImageMetadata for completeness if available, or getImages
-                // In step 318 we added getAllImageMetadata to IImageService? 
-                // Let's check imports. Yes.
-                // But getImages implementation in SharePointService uses search which is fine.
-                // For Snapshot, we likely want Metadata + Thumbnails.
                 checklistImages = await getImageService().getAllImageMetadata(id);
             } catch (err) {
                 console.warn('[DataverseService] Failed to load images from SharePoint', err);
@@ -258,7 +253,7 @@ export class DataverseChecklistService implements IChecklistService {
             clientCorrespondence: dv.pap_clientcorrespondence ? JSON.parse(dv.pap_clientcorrespondence) : [],
             estimateType: dv.pap_estimatetype ? JSON.parse(dv.pap_estimatetype) : [],
             commonNotes: dv.pap_commonnotes || '',
-            clientLogoUrl: dv.pap_clientlogourl, // [New]
+            clientLogoUrl: dv.pap_clientlogourl,
             jobDetails: dv.pap_jobid ? {
                 jobName: dv.pap_jobid.pap_name,
                 jobNumber: dv.pap_jobid.pap_number || '',
@@ -304,7 +299,7 @@ export class DataverseChecklistService implements IChecklistService {
             [col('clientcorrespondence')]: JSON.stringify(checklist.clientCorrespondence),
             [col('estimatetype')]: JSON.stringify(checklist.estimateType),
             [col('commonnotes')]: checklist.commonNotes,
-            [col('clientlogourl')]: checklist.clientLogoUrl // [New]
+            [col('clientlogourl')]: checklist.clientLogoUrl
         });
         return checklist;
     }

@@ -328,13 +328,13 @@ interface ISharePointFileService {
 
 ---
 
-## Next Steps
+## Implementation Status
 
-1. [ ] Create Dataverse tables in development environment
-2. [ ] Create SharePoint document library with metadata columns
-3. [ ] Build Power Automate flows for auto-creation
-4. [ ] Implement `DataverseChecklistService` in React app
-5. [ ] Implement `SharePointFileService` for attachments
-6. [ ] Configure authentication (MSAL.js / Azure AD)
-7. [ ] End-to-end testing
+1. [x] Create Dataverse tables in development environment
+2. [x] Create SharePoint document library with metadata columns
+3. [x] Build Power Automate flows for auto-creation
+4. [x] Implement `DataverseChecklistService` in React app
+5. [x] Implement `SharePointFileService` for attachments
+6. [x] Configure authentication (MSAL.js / Azure AD)
+7. [x] End-to-end testing
 8. [ ] User acceptance testing

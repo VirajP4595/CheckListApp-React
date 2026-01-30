@@ -64,7 +64,7 @@ export class DataverseRevisionService implements IRevisionService {
         const created = await dataverseClient.create<DataverseRevision>(entities.revisions, {
             [col('number')]: nextNumber,
             [col('summary')]: summary,
-            // [col('snapshotjson')]: null, // No longer string field
+
             [`${col('checklistid')}@odata.bind`]: `/${entities.checklists}(${checklistId})`
         });
 
@@ -87,7 +87,6 @@ export class DataverseRevisionService implements IRevisionService {
 
     async getRevisions(checklistId: string): Promise<Revision[]> {
         // List revisions (Metadata only, minimal payload)
-        // Note: We do NOT download the file content here for list view to save bandwidth
         const response = await dataverseClient.get<{ value: DataverseRevision[] }>(
             entities.revisions,
             `$filter=_${col('checklistid')}_value eq ${checklistId}&$orderby=${col('number')} desc&$select=${col('revisionid')},${col('number')},${col('summary')},createdon&$expand=createdby($select=fullname)`

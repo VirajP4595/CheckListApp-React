@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef, useState } from 'react'; // Force refresh
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { Button, Spinner } from '@fluentui/react-components';
 import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular } from '@fluentui/react-icons';
 import { useChecklistStore } from '../../stores';
@@ -37,7 +37,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
     const [showRevisionPanel, setShowRevisionPanel] = useState(false);
     const [viewingRevision, setViewingRevision] = useState<Revision | null>(null);
-    // Renamed for generic usage: exportProgress -> loadingProgress
+
     const [loadingProgress, setLoadingProgress] = useState<{ open: boolean; title: string; status: string; percent: number; cancelled: boolean }>({ open: false, title: 'Loading...', status: '', percent: 0, cancelled: false });
     const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, workgroupIds: [] });
     const [expandWorkgroups, setExpandWorkgroups] = useState(false);  // Collapsed by default
@@ -369,7 +369,6 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                         onClick={() => {
                             const nextNumber = Math.max(...activeChecklist.workgroups.map(w => w.number), 0) + 10;
                             addWorkgroup(nextNumber, 'New Workgroup');
-                            // triggerAutoSave(); // REMOVED: Granular action handles save
                         }}
                         disabled={processingItems.includes(`add-wg-${activeChecklist.id}`)}
                     >
