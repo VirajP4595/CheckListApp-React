@@ -235,45 +235,45 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                 </div>
             </header>
 
-        </header>
+
 
             {
-        !collapsed && (
-            <div className={styles['workgroup-content']}>
-                {filteredRows.length === 0 ? (
-                    <div className={styles['workgroup-empty']}>
-                        <span>{workgroup.rows.length === 0 ? 'No items in this workgroup yet.' : 'No items match the current filters.'}</span>
-                    </div>
-                ) : (
-                    <div className={styles['workgroup-rows']}>
-                        {filteredRows
-                            .sort((a, b) => a.order - b.order)
-                            .map(row => (
-                                <ChecklistRowItem
-                                    key={row.id}
-                                    row={row}
-                                    workgroupId={workgroup.id}
-                                    isCompact={!expandTasks}
-                                />
-                            ))}
-                    </div>
-                )}
+                !collapsed && (
+                    <div className={styles['workgroup-content']}>
+                        {filteredRows.length === 0 ? (
+                            <div className={styles['workgroup-empty']}>
+                                <span>{workgroup.rows.length === 0 ? 'No items in this workgroup yet.' : 'No items match the current filters.'}</span>
+                            </div>
+                        ) : (
+                            <div className={styles['workgroup-rows']}>
+                                {filteredRows
+                                    .sort((a, b) => a.order - b.order)
+                                    .map(row => (
+                                        <ChecklistRowItem
+                                            key={row.id}
+                                            row={row}
+                                            workgroupId={workgroup.id}
+                                            isCompact={!expandTasks}
+                                        />
+                                    ))}
+                            </div>
+                        )}
 
-                <Button
-                    className={styles['workgroup-add-row']}
-                    appearance="subtle"
-                    icon={isAdding ? <Spinner size="extra-tiny" /> : <Add20Regular />}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (!isAdding) handleAddRow();
-                    }}
-                    disabled={isAdding}
-                >
-                    {isAdding ? 'Adding...' : 'Add checklist item'}
-                </Button>
-            </div>
-        )
-    }
+                        <Button
+                            className={styles['workgroup-add-row']}
+                            appearance="subtle"
+                            icon={isAdding ? <Spinner size="extra-tiny" /> : <Add20Regular />}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (!isAdding) handleAddRow();
+                            }}
+                            disabled={isAdding}
+                        >
+                            {isAdding ? 'Adding...' : 'Add checklist item'}
+                        </Button>
+                    </div>
+                )
+            }
         </section >
     );
 });

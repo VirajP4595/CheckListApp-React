@@ -6,7 +6,7 @@ export interface DataverseJob {
     [key: string]: unknown;
     pap_jobid: string;
     pap_name: string;        // Primary name column (used as reference)
-    pap_name: string;        // Primary name column (used as reference)
+
 }
 
 export interface Job {

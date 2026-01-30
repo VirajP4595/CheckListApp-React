@@ -528,11 +528,9 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
 
             return {
                 activeChecklist: updatedChecklist,
-                return {
-                    activeChecklist: updatedChecklist,
-                    lastSaved: null,
-                };
-            });
+                lastSaved: null,
+            };
+        });
     },
 
     // Revision Operations
