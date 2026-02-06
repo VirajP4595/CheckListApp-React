@@ -41,9 +41,18 @@ export const usePdfExport = () => {
 
             if (isCancelledRef.current) throw new Error("Cancelled");
 
+            // Filter out internal-only rows from PDF export
+            const exportableChecklist: Checklist = {
+                ...fullChecklist,
+                workgroups: fullChecklist.workgroups.map(wg => ({
+                    ...wg,
+                    rows: wg.rows.filter(row => !row.internalOnly)
+                }))
+            };
+
             // STEP 2: Download Image Content (Bypass CORS)
             const allImages: { img: any, id: string }[] = [];
-            fullChecklist.workgroups.forEach(wg => {
+            exportableChecklist.workgroups.forEach(wg => {
                 wg.rows.forEach(r => {
                     if (r.images) {
                         r.images.forEach(img => {
@@ -72,7 +81,7 @@ export const usePdfExport = () => {
                 await Promise.all(allImages.map(getImageContent));
             }
 
-            const generator = new PdfGeneratorService(fullChecklist);
+            const generator = new PdfGeneratorService(exportableChecklist);
 
             // STEP 3: Fetch Branding Logo (Securely via Graph)
             let logoBlob: Blob | null = null;

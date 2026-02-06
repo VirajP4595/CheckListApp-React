@@ -48,8 +48,10 @@
         margin: 0 !important;
         max-width: none !important;
         width: 100% !important;
-        overflow: hidden !important;
-        /* Hide scrollbar */
+        height: 100vh !important;
+        /* Force full height so overflow works */
+        overflow: auto !important;
+        /* Allow scrollbar */
     }
 
     /* Remove padding from Canvas Section */
@@ -61,9 +63,9 @@
         width: 100% !important;
     }
 
-    /* Remove scroll from Content Scroll Region */
+    /* Allow scroll from Content Scroll Region */
     [data-automation-id="contentScrollRegion"] {
-        overflow: hidden !important;
+        overflow: auto !important;
     }
 
     /* Remove margin/padding from Canvas Controls */

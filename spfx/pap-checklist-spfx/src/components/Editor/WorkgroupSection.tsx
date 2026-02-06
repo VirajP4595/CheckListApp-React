@@ -101,6 +101,11 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                     return false;
                 }
             }
+            if (filters?.internalOnly !== null && filters?.internalOnly !== undefined) {
+                if (row.internalOnly !== filters.internalOnly) {
+                    return false;
+                }
+            }
             return true;
         });
     }, [workgroup.rows, filters]);

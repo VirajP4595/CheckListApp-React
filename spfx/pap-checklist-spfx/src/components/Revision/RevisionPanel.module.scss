@@ -97,6 +97,13 @@
     @include truncate;
 }
 
+.revision-title {
+    font-weight: $font-weight-medium;
+    color: $color-gray-900;
+    margin-bottom: $spacing-1;
+    @include truncate;
+}
+
 .revision-meta {
     font-size: $font-size-xs;
     color: $color-gray-500;
@@ -123,4 +130,66 @@
     padding: $spacing-8;
     color: $color-gray-400;
     text-align: center;
+}
+
+// ============================================
+// Create Revision Dialog
+// ============================================
+
+.create-revision-dialog {
+    min-width: 600px;
+    max-width: 95vw !important;
+    width: 95vw;
+    height: 90vh !important;
+    max-height: 95vh !important;
+
+    @include mobile {
+        min-width: 100%;
+        max-width: 100%;
+        height: 100vh;
+        max-height: 100vh;
+    }
+}
+
+.dialog-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden; // Prevent outer scroll
+}
+
+.dialog-content {
+    flex: 1;
+    display: flex; // Allows child form to fill
+    flex-direction: column;
+    overflow-y: hidden; // Prevent double scrollbar, inner editor scrolls
+    padding: 0; // Remove default padding that might interfere
+    margin-bottom: $spacing-2;
+    min-height: 0;
+}
+
+.revision-form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-4;
+    height: 100%;
+    padding: $spacing-1; // Tiny padding to prevent focus ring clipping
+}
+
+.revision-title-input {
+    @include input-filled;
+    width: 100%;
+}
+
+.notes-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px; // Ensure visible
+}
+
+.full-height-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }

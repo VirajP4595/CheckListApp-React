@@ -4,6 +4,8 @@ import {
     Delete20Regular,
     Flag20Regular,
     Flag20Filled,
+    LockClosed20Regular,
+    LockClosed20Filled,
     ChevronRight20Regular,
     ChevronDown20Regular
 } from '@fluentui/react-icons';
@@ -60,6 +62,11 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
         void saveRow(row.id);
     };
 
+    const handleToggleInternalOnly = () => {
+        updateRow(row.id, { internalOnly: !row.internalOnly });
+        void saveRow(row.id);
+    };
+
     const handleDelete = () => {
         void deleteRow(row.id);
     };
@@ -81,7 +88,7 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
     };
 
     return (
-        <div className={`${styles['row-item']} ${row.markedForReview ? styles['row-item--review'] : ''} ${!expanded ? styles['row-item--compact'] : ''}`}>
+        <div className={`${styles['row-item']} ${row.markedForReview ? styles['row-item--review'] : ''} ${row.internalOnly ? styles['row-item--internal'] : ''} ${!expanded ? styles['row-item--compact'] : ''}`}>
 
             {/* Main Flex Container (3 Columns) */}
             <div className={styles['row-main-flex']}>
@@ -151,7 +158,7 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                             <div className={styles['row-notes']}>
                                 <RichTextEditor
                                     content={row.notes}
-                                    onChange={(html) => updateRow(row.id, { notes: html })}
+                                    onChange={(html: string) => updateRow(row.id, { notes: html })}
                                     onFocus={() => {
                                         originalNotesRef.current = row.notes;
                                     }}
@@ -184,6 +191,15 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                             size="small"
                             icon={row.markedForReview ? <Flag20Filled /> : <Flag20Regular />}
                             onClick={handleToggleReview}
+                        />
+                    </Tooltip>
+                    <Tooltip content={row.internalOnly ? 'Remove internal flag' : 'Mark as internal only'} relationship="label">
+                        <Button
+                            className={row.internalOnly ? styles['row-action-btn--internal'] : styles['row-action-btn']}
+                            appearance="subtle"
+                            size="small"
+                            icon={row.internalOnly ? <LockClosed20Filled /> : <LockClosed20Regular />}
+                            onClick={handleToggleInternalOnly}
                         />
                     </Tooltip>
                     <Tooltip content="Delete item" relationship="label">

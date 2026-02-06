@@ -8,9 +8,10 @@
 
 .info-dialog {
   min-width: 600px;
-  max-width: 800px;
-  height: 800px !important; // Fixed height
-  max-height: 90vh !important;
+  max-width: 95vw !important; // Use almost full width
+  width: 95vw; // Ensure it tries to be wide
+  height: 90vh !important; // Taller
+  max-height: 95vh !important;
 
   @include mobile {
     min-width: 100%;
@@ -37,11 +38,12 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: $spacing-3;
-  padding: $spacing-4;
+  padding: $spacing-3 $spacing-5;
   border-bottom: 1px solid $color-gray-200;
   background: linear-gradient(to right, rgba($color-primary, 0.08), transparent);
   flex-shrink: 0;
+  min-height: 60px;
+  box-sizing: border-box;
 }
 
 .dialog-header-content {
@@ -50,7 +52,7 @@
 
 .dialog-title {
   font-family: $font-family-heading;
-  font-size: $font-size-lg;
+  font-size: $font-size-xl;
   font-weight: $font-weight-bold;
   color: $color-gray-900;
   margin: 0;
@@ -64,39 +66,27 @@
 
 // Button overrides
 .close-button {
-  // Reset all potential default button styles
-  appearance: none !important;
-  -webkit-appearance: none !important;
+  // Reset dangerous overrides that might break the icon
+  // appearance: none !important; // Don't use this
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
 
   // Dimensions
-  min-width: 32px !important;
-  width: 32px !important;
-  height: 32px !important;
+  min-width: 40px !important; // Slightly larger touch target
+  width: 40px !important;
+  height: 40px !important;
 
   // Visuals
-  color: $color-gray-600 !important;
-  background: transparent !important;
   background-color: transparent !important;
   border: none !important;
-  border-radius: $border-radius-sm !important;
-  box-shadow: none !important;
-  outline: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  border-radius: $border-radius-md !important;
   cursor: pointer !important;
-
-  // Icon sizing
-  & svg {
-    width: 20px !important;
-    height: 20px !important;
-  }
+  flex-shrink: 0 !important;
 
   &:hover {
+    background-color: rgba($color-gray-900, 0.05) !important;
     color: $color-gray-900 !important;
-    background-color: rgba($color-gray-900, 0.1) !important;
   }
 }
 

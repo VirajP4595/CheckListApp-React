@@ -25,7 +25,7 @@
 .editor-header {
     position: sticky;
     top: 0;
-    z-index: $z-index-sticky;
+    z-index: 100;
     // Modern Glassmorphism Background
     background: linear-gradient(135deg, rgba($color-primary, 0.95) 0%, rgba($color-primary-dark, 0.98) 100%);
     backdrop-filter: blur(12px);

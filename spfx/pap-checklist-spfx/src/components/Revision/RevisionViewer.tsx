@@ -106,12 +106,23 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
 
             {/* Content Container */}
             <div className={styles['revision-content']}>
-                <div> {/* Centering Container */}
-                    {/* Summary (Only show if present) */}
-                    {revision.summary && (
+                <div style={{ width: '100%' }}> {/* Full Width Container */}
+                    {/* Revision Title (Always show) */}
+                    {revision.title && (
                         <div className={styles['revision-summary']}>
-                            <span className={styles['revision-summary-label']}>Revision Summary: </span>
-                            <span className={styles['revision-summary-text']}>{revision.summary}</span>
+                            <span className={styles['revision-summary-label']}>Revision: </span>
+                            <span className={styles['revision-summary-text']}>{revision.title}</span>
+                        </div>
+                    )}
+
+                    {/* Revision Notes (Rich Text) */}
+                    {revision.notes && (
+                        <div className={styles['revision-notes-section']}>
+                            <RichTextEditor
+                                content={revision.notes}
+                                readOnly={true}
+                                className={styles['compact-rte']}
+                            />
                         </div>
                     )}
 

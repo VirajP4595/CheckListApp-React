@@ -53,6 +53,7 @@ interface DataverseRow {
     pap_answer: number;  // Choice field
     pap_notes?: string;
     pap_markedforreview: boolean;
+    pap_internalonly: boolean;
     pap_order: number;
     _pap_workgroupid_value: string;
 }
@@ -100,6 +101,7 @@ function mapRow(dv: DataverseRow): ChecklistRow {
         answer: ANSWER_MAP[dv.pap_answer] || 'BLANK',
         notes: dv.pap_notes || '',
         markedForReview: dv.pap_markedforreview || false,
+        internalOnly: dv.pap_internalonly || false,
         images: [],  // Loaded separately from SharePoint
         order: dv.pap_order
     };
@@ -200,6 +202,7 @@ export class DataverseChecklistService implements IChecklistService {
                 col('answer'),
                 col('notes'),
                 col('markedforreview'),
+                col('internalonly'),
                 col('order'),
                 `_${col('workgroupid')}_value`
             ].join(',');
@@ -356,6 +359,7 @@ export class DataverseChecklistService implements IChecklistService {
             [col('answer')]: ANSWER_VALUE_MAP[rowData.answer || 'BLANK'],
             [col('notes')]: rowData.notes || '',
             [col('markedforreview')]: rowData.markedForReview || false,
+            [col('internalonly')]: rowData.internalOnly || false,
             [col('order')]: rowData.order || 0,
             [`${col('workgroupid')}@odata.bind`]: `/${entities.workgroups}(${workgroupId})`
         };
@@ -372,6 +376,7 @@ export class DataverseChecklistService implements IChecklistService {
             answer: rowData.answer || 'BLANK',
             notes: rowData.notes || '',
             markedForReview: rowData.markedForReview || false,
+            internalOnly: rowData.internalOnly || false,
             images: [],
             order: rowData.order || 0
         };
@@ -385,6 +390,7 @@ export class DataverseChecklistService implements IChecklistService {
             [col('answer')]: ANSWER_VALUE_MAP[row.answer],
             [col('notes')]: row.notes,
             [col('markedforreview')]: row.markedForReview,
+            [col('internalonly')]: row.internalOnly,
             [col('order')]: row.order
         });
         return row;

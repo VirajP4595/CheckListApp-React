@@ -28,7 +28,7 @@ interface ChecklistState {
     // Actions - Checklist CRUD
     saveChecklist: () => Promise<void>;
     saveRow: (rowId: string) => Promise<void>;
-    createRevision: (summary: string) => Promise<void>;
+    createRevision: (title: string, notes: string) => Promise<void>;
     uploadClientLogo: (file: File) => Promise<void>;
 
     // Actions - Row Operations
@@ -553,14 +553,13 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
     },
 
     // Revision Operations
-    createRevision: async (summary: string) => {
+    createRevision: async (title: string, notes: string) => {
         const { activeChecklist } = get();
         if (!activeChecklist) return;
 
         set({ isSaving: true });
         try {
-
-            const revision = await getRevisionService().createRevision(activeChecklist.id, summary);
+            const revision = await getRevisionService().createRevision(activeChecklist.id, title, notes);
 
             set(state => {
                 if (!state.activeChecklist) return { isSaving: false };

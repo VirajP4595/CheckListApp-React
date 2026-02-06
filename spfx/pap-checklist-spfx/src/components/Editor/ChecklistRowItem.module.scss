@@ -26,6 +26,11 @@
     &--review {
         border-left: 4px solid $color-status-review;
     }
+
+    &--internal {
+        border-right: 4px solid $color-gray-500;
+        background-color: rgba($color-gray-100, 0.5);
+    }
 }
 
 // ============================================
@@ -165,6 +170,10 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
 
 .row-action-btn--review {
     color: $color-status-review !important;
+}
+
+.row-action-btn--internal {
+    color: $color-gray-600 !important;
 }
 
 // ============================================

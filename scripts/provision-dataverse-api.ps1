@@ -414,6 +414,7 @@ Create-Column -TableName "checklistrow" -SchemaName "description" -DisplayName "
 Create-Column -TableName "checklistrow" -SchemaName "answer" -DisplayName "Answer" -Type "Choice" -Options @("YES", "NO", "BLANK", "PS", "PC", "SUB", "OTS")
 Create-Column -TableName "checklistrow" -SchemaName "notes" -DisplayName "Notes" -Type "MultilineText"
 Create-Column -TableName "checklistrow" -SchemaName "markedforreview" -DisplayName "Marked for Review" -Type "Boolean"
+Create-Column -TableName "checklistrow" -SchemaName "internalonly" -DisplayName "Internal Only" -Type "Boolean"
 Create-Column -TableName "checklistrow" -SchemaName "order" -DisplayName "Order" -Type "Integer"
 Create-Column -TableName "checklistrow" -SchemaName "isdefault" -DisplayName "Is Default" -Type "Boolean"
 Create-Column -TableName "checklistrow" -SchemaName "iscustom" -DisplayName "Is Custom" -Type "Boolean"

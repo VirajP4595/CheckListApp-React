@@ -13,6 +13,14 @@
     height: 100%;
     background: $color-gray-50;
     overflow: hidden;
+    font-family: $font-family-body;
+    font-style: normal;
+
+    // Reset all text to prevent SharePoint style inheritance
+    * {
+        font-family: inherit;
+        font-style: normal;
+    }
 }
 
 // Header
@@ -75,10 +83,9 @@
 // Content
 .revision-content {
     flex: 1;
-    overflow-y: auto;
-    padding: $spacing-5;
-    display: flex;
-    justify-content: center;
+    overflow: auto;
+    padding: 1.25rem;
+    overflow-x: hidden;
 }
 
 // Summary
@@ -93,8 +100,6 @@
     display: flex;
     gap: $spacing-2;
     align-items: baseline;
-    max-width: 1000px;
-    width: 100%;
 }
 
 .revision-summary-label {
@@ -108,6 +113,15 @@
 }
 
 
+// Revision Notes Section (Rich Text)
+.revision-notes-section {
+    background: $color-gray-50;
+    border: 1px solid $color-gray-200;
+    padding: $spacing-3;
+    border-radius: $border-radius-md;
+    margin-bottom: $spacing-4;
+}
+
 // Workgroup
 .revision-workgroup {
     @include card;
@@ -117,7 +131,6 @@
     margin-bottom: $spacing-6;
     background: white;
     width: 100%;
-    max-width: 1000px;
 }
 
 .revision-workgroup-header {
@@ -162,15 +175,15 @@
 
 .revision-row-header {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: $spacing-4;
+    justify-content: flex-start;
+    align-items: center;
+    gap: $spacing-2;
 }
 
 .revision-row-name {
     font-weight: $font-weight-medium;
     color: $color-gray-900;
-    flex: 1;
+    flex: 0 1 auto;
 }
 
 .revision-status-pill {
@@ -189,26 +202,44 @@
 }
 
 .compact-rte {
-    font-size: $font-size-sm;
+    background-color: transparent !important;
+    border: none !important;
+    min-height: 0 !important;
+    overflow: visible !important; // Ensure no scrollbars if tiny
+
+    // The inner content div (Tiptap/ProseMirror renders this)
+    >div {
+        min-height: 0 !important;
+        padding: 0 !important;
+    }
 
     :global(.ProseMirror) {
+        min-height: 0 !important;
         padding: 0 !important;
-        min-height: auto !important;
+        background: transparent !important;
+
+        p {
+            margin: 0;
+        }
     }
 }
 
 .revision-row-notes {
-    background: $color-gray-50;
-    padding: $spacing-2;
-    border-radius: $border-radius-sm;
-    margin-top: $spacing-1;
+    margin-top: 4px;
+    padding: 8px 12px;
+    background-color: #fff9e6;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #484644;
+    border-left: 3px solid #fce100;
 }
 
 .revision-notes-label {
     font-weight: 600;
-    font-size: 0.7rem;
+    margin-right: 6px;
+    font-size: 11px;
     text-transform: uppercase;
-    color: $color-gray-400;
+    color: #8a6d3b;
     display: block;
     margin-bottom: 2px;
 }
@@ -255,14 +286,15 @@
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
-    z-index: 10000;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.85); // Darker backdrop
     display: flex;
     justify-content: center;
     align-items: center;
-    animation: fadeIn 0.2s ease-out;
+    z-index: 200000; // Ensure it is above the header and overlay (100000+)
+    backdrop-filter: blur(5px);
+    cursor: zoom-out;
 }
 
 .lightbox-content {

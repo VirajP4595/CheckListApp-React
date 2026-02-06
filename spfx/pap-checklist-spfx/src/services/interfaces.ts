@@ -21,7 +21,7 @@ export interface IChecklistService {
 
 // ─── REVISION SERVICE ────────────────────────────────────
 export interface IRevisionService {
-    createRevision(checklistId: string, summary: string): Promise<Revision>;
+    createRevision(checklistId: string, title: string, notes: string): Promise<Revision>;
     getRevisions(checklistId: string): Promise<Revision[]>;
     getRevision(revisionId: string): Promise<Revision | null>;
 }

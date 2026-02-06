@@ -71,11 +71,22 @@
     padding: $spacing-2;
     cursor: text;
 
+    // Flex support for fixed-height scrolling
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0; // Essential for nested flex scrolling
+
     // Force inner editor to be clean
     :global(.ProseMirror) {
         outline: none !important;
         border: none !important;
         box-shadow: none !important;
         background: transparent !important;
+
+        mark {
+            background-color: #ffeb3b;
+            border-radius: 2px;
+            padding: 0 1px;
+        }
     }
 }

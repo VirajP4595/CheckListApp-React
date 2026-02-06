@@ -18,6 +18,7 @@ import styles from './FilterBar.module.scss';
 export interface FilterState {
     answerStates: AnswerState[];
     markedForReview: boolean | null;
+    internalOnly: boolean | null;
     workgroupIds: string[];
 }
 
@@ -149,11 +150,18 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         });
     };
 
-    const clearFilters = () => {
-        onFiltersChange({ answerStates: [], markedForReview: null, workgroupIds: [] });
+    const handleInternalOnlyChange = (checked: boolean) => {
+        onFiltersChange({
+            ...filters,
+            internalOnly: checked ? true : null,
+        });
     };
 
-    const hasActiveFilters = filters.answerStates.length > 0 || filters.markedForReview !== null || filters.workgroupIds.length > 0;
+    const clearFilters = () => {
+        onFiltersChange({ answerStates: [], markedForReview: null, internalOnly: null, workgroupIds: [] });
+    };
+
+    const hasActiveFilters = filters.answerStates.length > 0 || filters.markedForReview !== null || filters.internalOnly !== null || filters.workgroupIds.length > 0;
 
     return (
         <div className={styles['filter-bar']}>
@@ -232,6 +240,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                         label="Review"
                         checked={filters.markedForReview === true}
                         onChange={(_, data) => handleReviewChange(!!data.checked)}
+                    />
+                </div>
+
+                <div className={styles['filter-review']}>
+                    <Checkbox
+                        label="Internal Only"
+                        checked={filters.internalOnly === true}
+                        onChange={(_, data) => handleInternalOnlyChange(!!data.checked)}
                     />
                 </div>
             </div>

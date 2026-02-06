@@ -6,7 +6,16 @@ import TaskItem from '@tiptap/extension-task-item';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Button, Tooltip } from '@fluentui/react-components';
+import Highlight from '@tiptap/extension-highlight';
+import {
+    Button,
+    Tooltip,
+    Menu,
+    MenuTrigger,
+    MenuList,
+    MenuItem,
+    MenuPopover,
+} from '@fluentui/react-components';
 import {
     TextBold20Regular,
     TextItalic20Regular,
@@ -15,9 +24,14 @@ import {
     TextNumberListLtr20Regular,
     CheckboxChecked20Regular,
     TextParagraph20Regular,
+    TextEffects20Regular,
+    Circle20Filled,
+    Color20Regular,
 } from '@fluentui/react-icons';
 import './RichTextEditor.css';
 import styles from './RichTextEditor.module.scss';
+
+// ... (existing imports)
 
 interface RichTextEditorProps {
     content: string;
@@ -28,6 +42,16 @@ interface RichTextEditorProps {
     readOnly?: boolean;
     className?: string; // Allow custom styles
 }
+
+// ... (existing constants)
+
+const HIGHLIGHT_COLORS = [
+    { label: 'Yellow', value: '#FFEB3B', border: '#FBC02D' },
+    { label: 'Green', value: '#8BC34A', border: '#689F38' },
+    { label: 'Blue', value: '#03A9F4', border: '#0288D1' },
+    { label: 'Pink', value: '#E91E63', border: '#C2185B' },
+    { label: 'Red', value: '#F44336', border: '#D32F2F' },
+];
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     content,
@@ -45,6 +69,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 heading: false,
             }),
             Underline,
+            Highlight.configure({
+                multicolor: true,
+            }),
             TaskList,
             TaskItem.configure({
                 nested: true,
@@ -57,11 +84,11 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             }),
         ],
         content,
+        // ... (existing handlers)
         onUpdate: ({ editor }) => {
             onChange?.(editor.getHTML());
         },
         onBlur: () => {
-            // Smart Save Trigger
             if (onBlur) onBlur();
         },
         onFocus: () => {
@@ -82,6 +109,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <div className={`${styles['editor-container']} ${readOnly ? styles['editor-container--readonly'] : ''} ${className || ''}`}>
             {!readOnly && (
                 <div className={styles['editor-toolbar']}>
+                    {/* ... (existing Bold, Italic, Underline buttons) */}
                     <Tooltip content="Bold (Ctrl+B)" relationship="label">
                         <Button
                             className={`${styles['toolbar-btn']} ${editor.isActive('bold') ? styles['toolbar-btn--active'] : ''}`}
@@ -110,6 +138,39 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                         />
                     </Tooltip>
 
+                    <Menu>
+                        <MenuTrigger disableButtonEnhancement>
+                            <Tooltip content="Highlight Color" relationship="label">
+                                <Button
+                                    className={`${styles['toolbar-btn']} ${editor.isActive('highlight') ? styles['toolbar-btn--active'] : ''}`}
+                                    appearance="subtle"
+                                    size="small"
+                                    icon={<TextEffects20Regular />}
+                                />
+                            </Tooltip>
+                        </MenuTrigger>
+                        <MenuPopover>
+                            <MenuList>
+                                <MenuItem
+                                    onClick={() => editor.chain().focus().unsetHighlight().run()}
+                                    icon={<Color20Regular />}
+                                >
+                                    No Color
+                                </MenuItem>
+                                {HIGHLIGHT_COLORS.map((color) => (
+                                    <MenuItem
+                                        key={color.value}
+                                        onClick={() => editor.chain().focus().toggleHighlight({ color: color.value }).run()}
+                                        icon={<Circle20Filled primaryFill={color.value} />}
+                                    >
+                                        {color.label}
+                                    </MenuItem>
+                                ))}
+                            </MenuList>
+                        </MenuPopover>
+                    </Menu>
+
+                    {/* ... (existing List buttons) */}
                     <div className={styles['toolbar-divider']} />
 
                     <Tooltip content="Normal Text (Exit list/checkbox)" relationship="label">

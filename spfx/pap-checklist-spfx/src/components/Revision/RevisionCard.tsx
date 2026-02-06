@@ -26,7 +26,7 @@ export const RevisionCard: React.FC<RevisionCardProps> = ({ revision, onClick })
                 REV {revision.number}
             </span>
             <div className={styles['revision-details']}>
-                <div className={styles['revision-summary']}>{revision.summary}</div>
+                <div className={styles['revision-title']}>{revision.title}</div>
                 <div className={styles['revision-meta']}>
                     {formatDate(revision.createdAt)} • {revision.createdBy || 'Unknown'}
                 </div>

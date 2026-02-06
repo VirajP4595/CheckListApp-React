@@ -121,6 +121,7 @@ graph TB
 | `pap_answer` | Choice | Yes | YES \| NO \| BLANK \| PS \| PC \| SUB \| OTS |
 | `pap_notes` | Multiline Text | No | Detailed notes |
 | `pap_markedforreview` | Yes/No | Yes | Review flag (default: No) |
+| `pap_internalonly` | Yes/No | Yes | Internal only flag (default: No) - excluded from PDF exports |
 | `pap_order` | Whole Number | Yes | Display order |
 | `pap_isdefault` | Yes/No | Yes | From template |
 | `pap_iscustom` | Yes/No | Yes | User-added |
@@ -134,7 +135,8 @@ graph TB
 | `pap_revisionid` | GUID (PK) | Yes | Primary key |
 | `pap_checklistid` | Lookup → pap_checklist | Yes | Parent checklist |
 | `pap_number` | Whole Number | Yes | Revision number (1, 2, 3...) |
-| `pap_summary` | Multiline Text | Yes | Change description |
+| `pap_name` | String (Primary) | Yes | Revision title |
+| `pap_summary` | Multiline Text | No | Rich text notes/body |
 | `pap_snapshotfile` | File | Yes | JSON snapshot file (.json) |
 | `pap_createdby` | Lookup → systemuser | Auto | Creator |
 | `pap_createdon` | DateTime | Auto | Created timestamp |

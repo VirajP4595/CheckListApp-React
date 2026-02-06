@@ -10,6 +10,7 @@ import { RevisionViewer } from '../Revision/RevisionViewer';
 
 import { FilterBar, type FilterState } from './FilterBar';
 import { HelpGuide } from './HelpGuide';
+import { CommonNotes } from './Sidebar/CommonNotes';
 import { ChecklistInfoDialog } from './Sidebar/ChecklistInfoDialog';
 import { PdfGenerationProgressModal } from '../Checklist/PdfGenerationProgressModal';
 import { getChecklistService, getRevisionService } from '../../services';
@@ -28,6 +29,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
         lastSaved,
         loadChecklist,
         saveChecklist,
+        updateChecklist,
         addWorkgroup,
         processingItems
     } = useChecklistStore();
@@ -36,7 +38,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
     const [viewingRevision, setViewingRevision] = useState<Revision | null>(null);
 
     const [loadingProgress, setLoadingProgress] = useState<{ open: boolean; title: string; status: string; percent: number; cancelled: boolean }>({ open: false, title: 'Loading...', status: '', percent: 0, cancelled: false });
-    const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, workgroupIds: [] });
+    const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, workgroupIds: [] });
     const [expandWorkgroups, setExpandWorkgroups] = useState(false);  // Collapsed by default
     const [expandTasks, setExpandTasks] = useState(false);  // Collapsed by default
 
@@ -125,7 +127,8 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                 id: 'preview',
                 checklistId: activeChecklist.id,
                 number: 0,
-                summary: 'Current Preview',
+                title: 'Current Preview',
+                notes: '',
                 createdAt: new Date(),
                 createdBy: activeChecklist.createdBy || '',
                 snapshot: snapshot
@@ -225,6 +228,12 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
             {/* Main Layout */}
             < div className={styles['editor-layout']} >
                 <main className={styles['editor-main']}>
+                    <CommonNotes
+                        checklist={activeChecklist}
+                        onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
+                        onSave={saveChecklist}
+                    />
+
                     <FilterBar
                         filters={filters}
                         onFiltersChange={setFilters}

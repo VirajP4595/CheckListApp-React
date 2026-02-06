@@ -18,6 +18,8 @@ interface TextNode {
     listType?: 'bullet' | 'ordered' | 'checkbox';
     isChecked?: boolean; // For checkboxes
     indent: number;
+    isHighlighted?: boolean;
+    highlightColor?: string;
 }
 
 /**
@@ -109,6 +111,15 @@ export class PdfRichTextRenderer {
                     // Font Styles
                     if (tagName === 'strong' || tagName === 'b') newContext.isBold = true;
                     if (tagName === 'em' || tagName === 'i') newContext.isItalic = true;
+                    if (tagName === 'mark') {
+                        newContext.isHighlighted = true;
+                        // Extract color from style (or use default)
+                        const style = el.getAttribute('style') || '';
+                        const colorMatch = style.match(/background-color:\s*([^;]+)/i);
+                        if (colorMatch && colorMatch[1]) {
+                            newContext.highlightColor = colorMatch[1].trim();
+                        }
+                    }
 
                     // Block Elements (Paragraphs)
                     if (tagName === 'p' || tagName === 'div') {
@@ -273,6 +284,23 @@ export class PdfRichTextRenderer {
                 }
 
                 if (!dryRun) {
+                    // Highlight Background
+                    if (node.isHighlighted) {
+                        const _lineWidth = this.doc.getTextWidth(line);
+                        // Use parsed color or default yellow
+                        const hlColor = node.highlightColor || '#FFEB3B';
+                        this.doc.setFillColor(hlColor);
+                        // Approx offset for 10pt font. fontSize is in pt. 
+                        // 1pt = 0.35mm. 10pt = 3.5mm. 
+                        // Baseline is cursorY. Top is approx cursorY - 3.5.
+                        // We use lineHeight (5mm) to cover the full line area.
+                        // Offset Y: cursorY - 3.5 + adjustment
+                        this.doc.rect(cursorX, cursorY - 3.5, _lineWidth, 5, 'F');
+
+                        // Reset Text Color (rect changes fill color, text uses text color)
+                        this.doc.setTextColor(BRAND_COLORS.BLACK);
+                    }
+
                     this.doc.text(line, cursorX, cursorY);
                 }
 

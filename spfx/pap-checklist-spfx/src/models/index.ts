@@ -41,6 +41,7 @@ export interface ChecklistRow {
     answer: AnswerState;
     notes: string;
     markedForReview: boolean;
+    internalOnly: boolean;
     images: ChecklistImage[];
     references?: string[];
     order: number;
@@ -62,7 +63,8 @@ export interface Revision {
     id: string;
     checklistId: string;
     number: number;        // REV 1, REV 2...
-    summary: string;       // Human-written change description
+    title: string;         // Short revision title (pap_name)
+    notes: string;         // Rich text body (pap_summary)
     snapshot: Checklist;   // Read-only copy at time of revision
     createdBy: string;
     createdAt: Date;
@@ -139,6 +141,7 @@ export function createEmptyRow(workgroupId: string, order: number): ChecklistRow
         answer: 'BLANK',
         notes: '',
         markedForReview: false,
+        internalOnly: false,
         images: [],
         order,
     };

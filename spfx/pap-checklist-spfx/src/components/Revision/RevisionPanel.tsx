@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
     Button,
-    Textarea,
+    Input,
+    Label,
     Dialog,
     DialogTrigger,
     DialogSurface,
@@ -16,6 +17,7 @@ import type { Revision } from '../../models';
 import { getRevisionService } from '../../services';
 import { useChecklistStore } from '../../stores';
 import { RevisionCard } from './RevisionCard';
+import { RichTextEditor } from '../Editor/RichTextEditor';
 import styles from './RevisionPanel.module.scss';
 
 interface RevisionPanelProps {
@@ -31,7 +33,8 @@ export const RevisionPanel: React.FC<RevisionPanelProps> = ({
     const [revisions, setRevisions] = useState<Revision[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [summary, setSummary] = useState('');
+    const [title, setTitle] = useState('');
+    const [notes, setNotes] = useState('');
     const [isCreating, setIsCreating] = useState(false);
 
     const loadRevisions = async () => {
@@ -49,15 +52,16 @@ export const RevisionPanel: React.FC<RevisionPanelProps> = ({
     }, [checklistId]);
 
     const handleCreate = async () => {
-        if (!summary.trim()) return;
+        if (!title.trim()) return;
 
         setIsCreating(true);
         try {
             await saveChecklist();
-            const revision = await getRevisionService().createRevision(checklistId, summary);
+            const revision = await getRevisionService().createRevision(checklistId, title, notes);
             setRevisions(prev => [...prev, revision]);
             setDialogOpen(false);
-            setSummary('');
+            setTitle('');
+            setNotes('');
         } finally {
             setIsCreating(false);
         }
@@ -98,20 +102,33 @@ export const RevisionPanel: React.FC<RevisionPanelProps> = ({
                             Create Revision
                         </Button>
                     </DialogTrigger>
-                    <DialogSurface>
-                        <DialogBody>
+                    <DialogSurface className={styles['create-revision-dialog']}>
+                        <DialogBody className={styles['dialog-body']}>
                             <DialogTitle>Create Revision</DialogTitle>
-                            <DialogContent>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <DialogContent className={styles['dialog-content']}>
+                                <div className={styles['revision-form']}>
                                     <span>
                                         This will save the current state as REV {revisions.length + 1}.
                                     </span>
-                                    <Textarea
-                                        placeholder="Describe what changed in this revision..."
-                                        value={summary}
-                                        onChange={(_, data) => setSummary(data.value)}
-                                        resize="vertical"
-                                    />
+                                    <div>
+                                        <Label htmlFor="revision-title" required>Title</Label>
+                                        <Input
+                                            id="revision-title"
+                                            placeholder="e.g., Initial Release, Client Feedback Update..."
+                                            value={title}
+                                            onChange={(_, data) => setTitle(data.value)}
+                                            className={styles['revision-title-input']}
+                                        />
+                                    </div>
+                                    <div className={styles['notes-container']}>
+                                        <Label htmlFor="revision-notes">Notes</Label>
+                                        <RichTextEditor
+                                            content={notes}
+                                            onChange={(html: string) => setNotes(html)}
+                                            placeholder="Describe what changed in this revision..."
+                                            className={styles['full-height-editor']}
+                                        />
+                                    </div>
                                 </div>
                             </DialogContent>
                             <DialogActions>
@@ -121,7 +138,7 @@ export const RevisionPanel: React.FC<RevisionPanelProps> = ({
                                 <Button
                                     appearance="primary"
                                     onClick={handleCreate}
-                                    disabled={!summary.trim() || isCreating}
+                                    disabled={!title.trim() || isCreating}
                                 >
                                     {isCreating ? 'Creating...' : 'Create Revision'}
                                 </Button>
