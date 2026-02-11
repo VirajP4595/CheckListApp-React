@@ -130,7 +130,7 @@ const EntryRow: React.FC<{ entry: GroupedEntry; isLast: boolean }> = ({ entry, i
     }
 
     return (
-        <div className={styles['entry']}>
+        <div className={styles.entry}>
             <div className={styles['timeline-sidebar']}>
                 <div className={styles['timeline-icon']}>
                     {icon}

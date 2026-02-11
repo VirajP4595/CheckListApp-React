@@ -41,7 +41,7 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
             onUpdate({ commonNotes: notes });
 
             // 2. Log Activity
-            getActivityLogService().logAction(checklist.id, 'common_notes_updated', user?.name || 'Unknown', 'Updated Common Notes');
+            void getActivityLogService().logAction(checklist.id, 'common_notes_updated', user?.name || 'Unknown', 'Updated Common Notes');
 
             // 3. Save to Server
             onSave?.();

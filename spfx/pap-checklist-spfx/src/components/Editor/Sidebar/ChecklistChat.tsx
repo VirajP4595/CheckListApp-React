@@ -45,7 +45,7 @@ export const ChecklistChat: React.FC<ChecklistChatProps> = ({ checklist, onUpdat
 
         // Log activity
         // Log activity (Just "Added a comment" without details per user request)
-        getActivityLogService().logAction(
+        void getActivityLogService().logAction(
             checklist.id,
             'comment_added',
             user.name

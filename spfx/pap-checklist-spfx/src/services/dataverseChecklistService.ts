@@ -16,6 +16,7 @@ interface DataverseChecklist {
     pap_commonnotes?: string;
     pap_clientlogourl?: string;
     pap_chatdata?: string;
+    pap_ChatData?: string;
     pap_filedata?: string;
     _pap_jobid_value?: string;
     // Navigation property for Job lookup
@@ -167,7 +168,7 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
         commonNotes: dv.pap_commonnotes || '',
         // Try standard property, then fallback for case sensitivity
         comments: (() => {
-            const raw = dv.pap_chatdata || dv['pap_ChatData'] as string;
+            const raw = dv.pap_chatdata || (dv.pap_ChatData as unknown as string);
             const parsed = parseJsonField(raw);
             console.log('[DataverseService] Parsed Comments:', parsed, 'From Raw:', raw);
             return parsed;
@@ -293,7 +294,7 @@ export class DataverseChecklistService implements IChecklistService {
                 clientName: dv.pap_jobid.pap_clientname || ''
             } : undefined,
             comments: (() => {
-                const raw = dv.pap_chatdata || dv['pap_ChatData'] as string;
+                const raw = dv.pap_chatdata || (dv.pap_ChatData as unknown as string);
                 return parseJsonField(raw);
             })(),
             files: parseJsonField(dv.pap_filedata),
