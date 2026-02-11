@@ -383,6 +383,9 @@ Create-Table -SchemaName "defaultworkgroup" -DisplayName "Default Workgroup" -Pl
 # 7. Default Row (Template)
 Create-Table -SchemaName "defaultrow" -DisplayName "Default Row" -PluralName "Default Rows" -Description "Template Rows" -PrimaryColumnName "description_primary"
 
+# 8. Activity Log
+Create-Table -SchemaName "activitylog" -DisplayName "Activity Log" -PluralName "Activity Logs" -Description "Daily activity log entries per checklist" -PrimaryColumnName "name"
+
 # ============================================
 # 4. Create Columns
 # ============================================
@@ -401,6 +404,8 @@ Create-Column -TableName "checklist" -SchemaName "clientcorrespondence" -Display
 Create-Column -TableName "checklist" -SchemaName "estimatetype" -DisplayName "Estimate Type" -Type "MultilineText"
 Create-Column -TableName "checklist" -SchemaName "commonnotes" -DisplayName "Common Notes" -Type "MultilineText"
 Create-Column -TableName "checklist" -SchemaName "clientlogourl" -DisplayName "Client Logo URL" -Type "String" -MaxLength 2000
+Create-Column -TableName "checklist" -SchemaName "chatdata" -DisplayName "Chat Data" -Type "MultilineText"
+Create-Column -TableName "checklist" -SchemaName "filedata" -DisplayName "File Data" -Type "MultilineText"
 
 # --- Workgroup ---
 Create-Column -TableName "workgroup" -SchemaName "number" -DisplayName "Number" -Type "String" # String to handle "20.28"
@@ -438,6 +443,10 @@ Create-Column -TableName "defaultrow" -SchemaName "description" -DisplayName "De
 Create-Column -TableName "defaultrow" -SchemaName "order" -DisplayName "Order" -Type "Integer"
 Create-Column -TableName "defaultrow" -SchemaName "isactive" -DisplayName "Is Active" -Type "Boolean"
 
+# --- Activity Log ---
+Create-Column -TableName "activitylog" -SchemaName "date" -DisplayName "Date" -Type "DateOnly"
+Create-Column -TableName "activitylog" -SchemaName "entries" -DisplayName "Entries" -Type "MultilineText"
+
 # ============================================
 # 5. Create Relationships (Lookups)
 # ============================================
@@ -462,6 +471,9 @@ Create-Lookup -Table "comment" -TargetTable "checklist" -SchemaName "checklistid
 
 # Default Row -> Default Workgroup
 Create-Lookup -Table "defaultrow" -TargetTable "defaultworkgroup" -SchemaName "defaultworkgroupid" -DisplayName "Default Workgroup"
+
+# Activity Log -> Checklist
+Create-Lookup -Table "activitylog" -TargetTable "checklist" -SchemaName "checklistid" -DisplayName "Checklist"
 
 
 Write-Host "`n========================================" -ForegroundColor Green

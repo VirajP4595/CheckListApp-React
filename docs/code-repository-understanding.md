@@ -46,7 +46,11 @@ src/
 │   │   ├── ChecklistCard.tsx     # Individual card item
 │   │   └── Dashboard.tsx         # Main grid view
 │   ├── Editor/          # The Core Editing Interface
-│   │   ├── Sidebar/     # Info panels, revision history list
+│   │   ├── Sidebar/     # Info panels, revision history, activity log
+│   │   │   ├── ActivityLogPanel.tsx  # Timeline view of changes
+│   │   │   ├── ChecklistFiles.tsx    # File attachment manager
+│   │   │   ├── CommonNotes.tsx       # Shared notes with rich text
+│   │   │   └── CollaborationSidebar.tsx # Sidebar container
 │   │   ├── ChecklistEditor.tsx   # Main orchestrator
 │   │   ├── ChecklistRowItem.tsx  # Atomic row component (Input + Actions)
 │   │   ├── RichTextEditor.tsx    # TipTap wrapper
@@ -62,9 +66,10 @@ src/
 ├── services/            # API Communication Layer (The "Backend" logic)
 │   ├── dataverseService.ts          # Generic OData Client (GET/POST/PATCH)
 │   ├── dataverseChecklistService.ts # Domain logic for Checklists
+│   ├── activityLogService.ts        # Activity log (1-row/day JSON)
 │   ├── PdfGeneratorService.ts       # Manual PDF Layout Engine
 │   ├── serviceFactory.ts            # Dependency Injection container
-│   └── sharePointService.ts         # File upload handling
+│   └── sharePointService.ts         # Image & File upload handling
 ├── stores/              # Global State
 │   ├── checklistStore.ts # The "Brain" - Actions & State
 │   └── userStore.ts     # User profile data
@@ -118,6 +123,8 @@ The application maps frontend interfaces to specific Dataverse tables.
 | `pap_jobid` | Lookup | Link to `pap_job` (Source of Truth) |
 | `pap_status` | Choice | 1 (Draft), 2 (Review), 3 (Final) |
 | `pap_clientlogourl` | URL | Link to SharePoint branding asset |
+| `pap_chatdata` | Memo (JSON) | Chat comments persisted as JSON array |
+| `pap_filedata` | Memo (JSON) | File metadata + SharePoint URLs as JSON array |
 
 #### **Workgroup (`pap_workgroup`)**
 *Parent: Checklist*
@@ -150,14 +157,15 @@ When a user clicks "YES", we do not wait for the server.
 *   **State:** `checklist.workgroups[i].rows[j].answer` is set to 'YES'.
 *   **Debounce:** Rapid changes (typing notes) are debounced (2s) to prevent API flooding.
 *   **Sync:** The store maintains a `pendingChanges` queue to ensure order of operations.
+*   **Activity Logging:** Key mutations (row add/update/delete, workgroup add/delete, revision create) fire `logActivity()` which records events to the `pap_activitylog` table via a fire-and-forget service call.
 
-### 4.4. Image Pipeline
-**File:** `src/components/Editor/InlineImageArea.tsx`
+### 4.4. Image & File Pipeline
+**File:** `src/components/Editor/InlineImageArea.tsx` & `ChecklistFiles.tsx`
 
 1.  **Drop/Paste:** Event captures the `File` object.
-2.  **Preview:** `FileReader` creates a local Data URL (Base64) for immediate display.
-3.  **Upload:** `SharePointService` uploads the binary to `PAP Attachments/{checklistId}/images/`.
-4.  **Reference:** The returned SharePoint URL is saved to the Dataverse Row record.
+2.  **Preview:** `FileReader` creates a local Data URL (Base64) for immediate display (images only).
+3.  **Upload:** `SharePointService` uploads the binary to `PAP Attachments/{checklistId}/images/` or `/files/`.
+4.  **Reference:** The returned SharePoint URL is saved to the Dataverse record (`pap_checklistrow` or `pap_filedata` JSON).
 5.  **Smart Loading:** To prevent 404 errors for rows without images, the `SharePointService` pre-fetches the list of existing image folders (`listImageFolders`) when the checklist loads. The Store then only attempts to fetch detailed image metadata for rows that are known to have folders.
 
 ---

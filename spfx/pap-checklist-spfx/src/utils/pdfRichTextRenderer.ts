@@ -22,6 +22,37 @@ interface TextNode {
     highlightColor?: string;
 }
 
+// Sanitize Radioactive Unicode & Future Proofing
+// Replaces non-ASCII symbols that often cause jsPDF artifacts or buffer corruption.
+const REPLACEMENTS: { [key: string]: string } = {
+    // Checkboxes & Status
+    '☑': '[x]', '☐': '[ ]', '✅': '[x]', '✔': '[x]', '❌': '[ ]',
+    // Quotes & Punctuation
+    '“': '"', '”': '"', '‘': "'", '’': "'",
+    '–': '-', '—': '-', '…': '...',
+    // Bullets
+    '•': '-', '●': '-', '○': '-', '▪': '-', '◆': '-',
+    // Math
+    '½': '1/2', '¼': '1/4', '¾': '3/4',
+    '×': 'x', '÷': '/', '±': '+/-',
+    // Misc Symbols
+    '©': '(c)', '®': '(r)', '™': '(tm)',
+    'ðØ': '-',
+    '→': '->', '←': '<-', '↑': '^', '↓': 'v', '↔': '<->',
+    '⇒': '=>', '⇐': '<=', '⇑': '^', '⇓': 'v', '⇔': '<=>',
+    '➤': '>', '➢': '>', '➣': '>', '➔': '->',
+    '▶': '>', '◀': '<', '»': '>>', '«': '<<'
+};
+
+// Validated safe: logic is derived from constant keys above
+// eslint-disable-next-line @rushstack/security/no-unsafe-regexp
+const REPLACEMENT_PATTERN = new RegExp(
+    Object.keys(REPLACEMENTS)
+        .map(key => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .join('|'),
+    'g'
+);
+
 /**
  * PDF Rich Text Renderer
  * Parses HTML string (from TipTap) and maps it to PDF drawing commands.
@@ -54,36 +85,8 @@ export class PdfRichTextRenderer {
                         // 1. Decode generic entities
                         let decodedText = new DOMParser().parseFromString(text, 'text/html').body.textContent || text;
 
-                        // 2. Sanitize Radioactive Unicode & Future Proofing
-                        // Replaces non-ASCII symbols that often cause jsPDF artifacts or buffer corruption.
-                        const REPLACEMENTS: { [key: string]: string } = {
-                            // Checkboxes & Status
-                            '☑': '[x]', '☐': '[ ]', '✅': '[x]', '✔': '[x]', '❌': '[ ]',
-                            // Quotes & Punctuation
-                            '“': '"', '”': '"', '‘': "'", '’': "'",
-                            '–': '-', '—': '-', '…': '...',
-                            // Bullets
-                            '•': '-', '●': '-', '○': '-', '▪': '-', '◆': '-',
-                            // Math
-                            '½': '1/2', '¼': '1/4', '¾': '3/4',
-                            '×': 'x', '÷': '/', '±': '+/-',
-                            // Misc Symbols
-                            '©': '(c)', '®': '(r)', '™': '(tm)',
-                            'ðØ': '-',
-                            '→': '->', '←': '<-', '↑': '^', '↓': 'v', '↔': '<->',
-                            '⇒': '=>', '⇐': '<=', '⇑': '^', '⇓': 'v', '⇔': '<=>',
-                            '➤': '>', '➢': '>', '➣': '>', '➔': '->',
-                            '▶': '>', '◀': '<', '»': '>>', '«': '<<'
-                        };
-
-                        const pattern = new RegExp(
-                            Object.keys(REPLACEMENTS)
-                                .map(key => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-                                .join('|'),
-                            'g'
-                        );
-
-                        decodedText = decodedText.replace(pattern, (match) => REPLACEMENTS[match]);
+                        // 2. Apply Replacements
+                        decodedText = decodedText.replace(REPLACEMENT_PATTERN, (match) => REPLACEMENTS[match]);
                         decodedText = decodedText.replace(/ð/g, '');
 
                         nodes.push({

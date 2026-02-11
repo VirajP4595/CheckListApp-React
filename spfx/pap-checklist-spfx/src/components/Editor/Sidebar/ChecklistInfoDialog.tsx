@@ -38,8 +38,8 @@ export const ChecklistInfoDialog: React.FC<ChecklistInfoDialogProps> = ({ checkl
         setSelectedTab(data.value);
     };
 
-    const handleUpdate = (updates: Partial<Checklist>) => {
-        updateChecklist(checklist.id, updates);
+    const handleUpdate = (updates: Partial<Checklist>, logMessage?: string) => {
+        updateChecklist(checklist.id, updates, logMessage);
     };
 
     const handleViewRevision = (revision: any) => {

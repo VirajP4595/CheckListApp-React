@@ -68,13 +68,26 @@
     @include scrollbar;
 }
 
+// ... (rest of file)
+
+.files-upload--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+    background-color: $color-gray-50;
+    border-color: $color-gray-200;
+}
+
+// ...
+
 .files-item {
     display: flex;
     align-items: center;
     gap: $spacing-3;
-    padding: $spacing-2;
+    padding: $spacing-3; // Increased padding
     border-radius: $border-radius-sm;
     transition: background-color $transition-fast;
+    margin-bottom: $spacing-1; // Add margin between items
 
     &:hover {
         background-color: $color-gray-50;
@@ -98,12 +111,21 @@
     min-width: 0;
 }
 
+// ...
+
 .files-item-name {
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     color: $color-gray-900;
+    text-decoration: none;
     @include truncate;
+
+    &:hover {
+        text-decoration: underline;
+        color: $color-primary;
+    }
 }
+
 
 .files-item-meta {
     font-size: $font-size-xs;

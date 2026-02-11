@@ -358,7 +358,9 @@ export class PdfGeneratorService {
                         }
                         const props = await this.getImageProperties(d).catch(() => ({ ratio: 1.77 }));
                         loadedImages.push({ data: d, ratio: props.ratio });
-                    } catch (e) { }
+                    } catch (e) { 
+                        console.error("Error loading image", e);
+                    }
                 }
 
                 for (let i = 0; i < loadedImages.length; i += 2) {

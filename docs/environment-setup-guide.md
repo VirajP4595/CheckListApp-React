@@ -48,39 +48,35 @@ az version
 
 ---
 
-## Azure AD App Registration
+## Azure AD App Registration & API Permissions
 
-The SPFx solution requires an Azure AD App Registration to access Dataverse and SharePoint APIs.
+Since this is an SPFx solution, authentication is handled automatically by the SharePoint host. You **do NOT** need to manually create an Azure AD App Registration for the frontend.
 
-### Step 1: Create App Registration
+However, you must approve the API permissions requested by the solution.
 
-1. Navigate to [Azure Portal](https://portal.azure.com) → **Azure Active Directory** → **App registrations**
-2. Click **New registration**
-3. Configure:
-   - **Name:** `PAP Checklist App`
-   - **Supported account types:** Accounts in this organizational directory only (Single Tenant)
-   - **Platform:** Single-page application (SPA)
-   - **Redirect URI:** `http://localhost:5173`
-4. Click **Register**
-5. Note down the **Application (client) ID** and **Directory (tenant) ID**
+### Step 1: Deploy & Approve Permissions
 
-### Step 2: Configure API Permissions
+1.  **Build & Package**:
+    ```powershell
+    npm run build
+    # This creates sharepoint/solution/pap-checklist-spfx.sppkg
+    ```
+2.  **Upload to App Catalog**:
+    - Go to your SharePoint Admin Center -> **Apps**.
+    - Upload the `.sppkg` file.
+    - Check "Make this solution available to all sites in the organization".
+    - Click **Deploy**.
 
-Navigate to **API permissions** → **Add a permission**
-
-| API | Permission | Type | Purpose |
-|-----|------------|------|---------|
-| **Microsoft Graph** | `User.Read` | Delegated | Get current user info |
-| **Microsoft Graph** | `Sites.ReadWrite.All` | Delegated | SharePoint file operations |
-| **Dynamics CRM** | `user_impersonation` | Delegated | Access Dataverse tables |
-
-> **Important:** Click **Grant admin consent for [Tenant]** after adding all permissions.
+3.  **Approve API Access**:
+    - Go to SharePoint Admin Center -> **Advanced** -> **API access**.
+    - You will see pending requests for **Microsoft Graph** and **Dataverse**.
+    - Select them and click **Approve**.
 
 ---
 
 ## Dataverse Provisioning (Automated)
 
-We use the Dataverse Web API via PowerShell to create all 7 tables, columns, and relationships automatically.
+We use the Dataverse Web API via PowerShell to create all required tables, columns, and relationships automatically.
 
 ### Step 1: Authenticate
 
@@ -99,9 +95,9 @@ cd scripts
 ```
 
 *Expected Output:*
-- Creates 7 tables
+- Creates tables (Checklist, Workgroup, Row, Revision, ActivityLog, Templates)
 - Creates all columns
-- Creates 6 lookup relationships
+- Creates lookup relationships
 - Returns "Provisioning Logic Complete!"
 
 ---
@@ -125,7 +121,7 @@ This script creates the doc library and metadata columns for file attachments.
 
 ## Seed Default Data
 
-Populate the `pap_defaultworkgroup` and `pap_defaultrow` tables with the stakeholder-approved templates (144 workgroups).
+Populate the `pap_defaultworkgroup` and `pap_defaultrow` tables with the stakeholder-approved templates.
 
 ### Step 1: Run Automated Seeding Script
 
@@ -158,37 +154,40 @@ export const AppConfig = {
         publisherPrefix: "pap_"
     },
     sharepoint: {
-        siteUrl: "https://[tenant].sharepoint.com/sites/pap-checklist",
+        absoluteUrl: "https://[tenant].sharepoint.com/sites/pap-checklist", // Ensure this matches your site
         documentLibrary: "PAPAttachments"
-    },
-    auth: {
-        clientId: "[your-azure-ad-client-id]",
-        tenantId: "[your-tenant-id]",
-        authority: "https://login.microsoftonline.com/[your-tenant-id]",
-        redirectUri: "http://localhost:5173",
-        scopes: {
-            dataverse: ["https://[your-org].crm.dynamics.com/.default"],
-            graph: ["User.Read", "Sites.ReadWrite.All"]
-        }
     }
+    // Auth is handled automatically by SPFx
 };
 ```
 
 ---
 
-## App Verification
+## App Verification (Local Workbench)
 
-After configuration, verify locally:
-1. **Start App:** Run `npm install` then `npm run dev` and open `http://localhost:5173`
-2. **Login:** Authenticate with your Azure AD account
-3. **Dataverse Connection:** Dashboard should load checklist data (or empty state)
-4. **SharePoint Connection:** Uploading an image should create files in the "PAP Attachments" library
-5. **Templates:** Creating a new Checklist should auto-populate Workgroups from the seeded data
+Since SPFx 1.18+, the Local Workbench is deprecated. You must use the **Hosted Workbench**.
+
+1.  **Start Local Server**:
+    ```powershell
+    npm start
+    ```
+    This will start the local server on https://localhost:4321.
+
+2.  **Open Hosted Workbench**:
+    Navigate to your SharePoint site's workbench:
+    `https://[tenant].sharepoint.com/sites/[site]/_layouts/15/workbench.aspx`
+
+3.  **Add Web Part**:
+    - Search for `PAP Checklist` in the web part toolbox.
+    - Add it to the page.
+    - It should load data from Dataverse immediately (using your logged-in SharePoint user).
 
 ---
 
 ## Troubleshooting
 
-- **401/403 Error:** Check `pac auth` for scripts, or Azure AD "Grant Admin Consent" for the app.
+- **401/403 Error:**
+    - Ensure you approved API permissions in SharePoint Admin Center.
+    - Ensure your user has a security role in Dataverse.
 - **Missing Columns:** Re-run the provisioning scripts (they are idempotent/skip existing).
 - **Import Failures:** Check the import logs in Power Apps portal. Typically caused by lookup resolution failures (ensure names match exactly).

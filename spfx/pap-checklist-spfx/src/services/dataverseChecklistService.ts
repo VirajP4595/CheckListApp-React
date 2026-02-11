@@ -15,6 +15,8 @@ interface DataverseChecklist {
     pap_estimatetype?: string;
     pap_commonnotes?: string;
     pap_clientlogourl?: string;
+    pap_chatdata?: string;
+    pap_filedata?: string;
     _pap_jobid_value?: string;
     // Navigation property for Job lookup
     pap_jobid?: {
@@ -59,6 +61,21 @@ interface DataverseRow {
 }
 
 // ─── MAPPERS: DATAVERSE → FRONTEND ─────────────────────────
+
+function parseJsonField(val: string | undefined | null): any {
+    if (!val) return [];
+    try {
+        const parsed = JSON.parse(val);
+        // Handle double-encoding which can happen with Power Automate or manual edits
+        if (typeof parsed === 'string') {
+            try { return JSON.parse(parsed); } catch { return []; }
+        }
+        return parsed;
+    } catch (e) {
+        console.warn('[DataverseService] JSON Parse Error:', val);
+        return [];
+    }
+}
 
 const STATUS_MAP: Record<number, ChecklistStatus> = {
     1: 'draft',
@@ -122,6 +139,11 @@ function mapWorkgroup(dv: DataverseWorkgroup): Workgroup {
 }
 
 function mapChecklist(dv: DataverseChecklist): Checklist {
+    // DEBUG: Inspect raw data for chat issues
+    console.log('[DataverseService] Mapping Checklist:', dv.pap_checklistid);
+    console.log('[DataverseService] Raw Chat Data:', dv.pap_chatdata);
+    console.log('[DataverseService] All Keys:', Object.keys(dv));
+
     // Access child workgroups using the navigation property name from navprops
     const workgroups = (dv[navprops.checklist_workgroups] as DataverseWorkgroup[] | undefined) || [];
 
@@ -140,11 +162,17 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
         status: STATUS_MAP[dv.pap_status] || 'draft',
         workgroups: workgroups.map(mapWorkgroup).sort((a, b) => a.order - b.order),
         revisions: [],  // Loaded separately
-        clientCorrespondence: dv.pap_clientcorrespondence ? JSON.parse(dv.pap_clientcorrespondence) : [],
-        estimateType: dv.pap_estimatetype ? JSON.parse(dv.pap_estimatetype) : [],
+        clientCorrespondence: parseJsonField(dv.pap_clientcorrespondence),
+        estimateType: parseJsonField(dv.pap_estimatetype),
         commonNotes: dv.pap_commonnotes || '',
-        comments: [],  // Loaded separately
-        files: [],     // Loaded from SharePoint
+        // Try standard property, then fallback for case sensitivity
+        comments: (() => {
+            const raw = dv.pap_chatdata || dv['pap_ChatData'] as string;
+            const parsed = parseJsonField(raw);
+            console.log('[DataverseService] Parsed Comments:', parsed, 'From Raw:', raw);
+            return parsed;
+        })(),
+        files: parseJsonField(dv.pap_filedata),
         jobDetails: jobDetails,
         createdBy: dv.createdby?.fullname || '',
         createdAt: new Date(dv.createdon),
@@ -157,15 +185,17 @@ export class DataverseChecklistService implements IChecklistService {
     async getChecklist(id: string, options?: { includeImages?: boolean }): Promise<Checklist> {
         // Load checklist first with Job expansion
         const select = [
-            'pap_checklistid',
-            'pap_name',
-            'pap_currentrevisionnumber',
-            'pap_status',
-            'pap_clientcorrespondence',
-            'pap_estimatetype',
-            'pap_commonnotes',
-            'pap_clientlogourl',
-            '_pap_jobid_value',
+            col('checklistid'),
+            col('name'),
+            col('currentrevisionnumber'),
+            col('status'),
+            col('clientcorrespondence'),
+            col('estimatetype'),
+            col('commonnotes'),
+            col('clientlogourl'),
+            col('chatdata'),
+            col('filedata'),
+            `_${col('jobid')}_value`,
             'createdon',
             'modifiedon'
         ].join(',');
@@ -262,8 +292,11 @@ export class DataverseChecklistService implements IChecklistService {
                 jobNumber: dv.pap_jobid.pap_number || '',
                 clientName: dv.pap_jobid.pap_clientname || ''
             } : undefined,
-            comments: [],
-            files: [],
+            comments: (() => {
+                const raw = dv.pap_chatdata || dv['pap_ChatData'] as string;
+                return parseJsonField(raw);
+            })(),
+            files: parseJsonField(dv.pap_filedata),
             createdBy: '',
             createdAt: new Date(dv.createdon),
             updatedAt: new Date(dv.modifiedon)
@@ -278,6 +311,8 @@ export class DataverseChecklistService implements IChecklistService {
             col('currentrevisionnumber'),
             col('clientcorrespondence'),
             col('estimatetype'), // Added as likely needed for card details
+            col('chatdata'),
+            col('filedata'),
             'createdon',
             'modifiedon',
             `_${col('jobid')}_value`
@@ -302,7 +337,9 @@ export class DataverseChecklistService implements IChecklistService {
             [col('clientcorrespondence')]: JSON.stringify(checklist.clientCorrespondence),
             [col('estimatetype')]: JSON.stringify(checklist.estimateType),
             [col('commonnotes')]: checklist.commonNotes,
-            [col('clientlogourl')]: checklist.clientLogoUrl
+            [col('clientlogourl')]: checklist.clientLogoUrl,
+            [col('chatdata')]: JSON.stringify(checklist.comments || []),
+            [col('filedata')]: JSON.stringify(checklist.files || [])
         });
         return checklist;
     }

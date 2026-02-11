@@ -11,6 +11,7 @@ import { WebPartContext } from '@microsoft/sp-webpart-base';
 import { DataverseChecklistService } from './dataverseChecklistService';
 import { DataverseRevisionService } from './dataverseRevisionService';
 import { SharePointImageService } from './sharePointService';
+import { ActivityLogService } from './activityLogService';
 import { dataverseClient } from './dataverseService';
 
 // ─── SERVICE INSTANCES ─────────────────────────────────────
@@ -18,6 +19,7 @@ import { dataverseClient } from './dataverseService';
 let checklistServiceInstance: IChecklistService | null = null;
 let revisionServiceInstance: IRevisionService | null = null;
 let imageServiceInstance: SharePointImageService | null = null; // Concrete type for init
+let activityLogServiceInstance: ActivityLogService | null = null;
 
 // ─── INITIALIZATION ────────────────────────────────────────
 
@@ -59,10 +61,18 @@ export function getImageService(): IImageService {
     return imageServiceInstance;
 }
 
+export function getActivityLogService(): ActivityLogService {
+    if (!activityLogServiceInstance) {
+        activityLogServiceInstance = new ActivityLogService();
+    }
+    return activityLogServiceInstance;
+}
+
 // ─── RESET (for testing) ───────────────────────────────────
 
 export function resetServices(): void {
     checklistServiceInstance = null;
     revisionServiceInstance = null;
     imageServiceInstance = null;
+    activityLogServiceInstance = null;
 }

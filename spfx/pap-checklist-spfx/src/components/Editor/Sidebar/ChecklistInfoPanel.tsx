@@ -8,7 +8,7 @@ import styles from './ChecklistInfoPanel.module.scss';
 
 interface ChecklistInfoPanelProps {
     checklist: Checklist;
-    onUpdate: (updates: Partial<Checklist>) => void;
+    onUpdate: (updates: Partial<Checklist>, logMessage?: string) => void;
     readOnly?: boolean;
 }
 
@@ -29,7 +29,7 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
 
     const handleStatusChange = (status: ChecklistStatus) => {
         if (readOnly) return;
-        onUpdate({ status });
+        onUpdate({ status }, `Status changed to ${status}`);
     };
 
     const handleCorrespondenceChange = (option: string) => {
@@ -39,7 +39,8 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
         const updated = isSelected
             ? current.filter(item => item !== option)
             : [...current, option];
-        onUpdate({ clientCorrespondence: updated });
+        const action = isSelected ? 'Removed' : 'Added';
+        onUpdate({ clientCorrespondence: updated }, `${action} Client Correspondence: ${option}`);
     };
 
     const handleEstimateTypeChange = (option: string) => {
@@ -49,7 +50,8 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
         const updated = isSelected
             ? current.filter(item => item !== option)
             : [...current, option];
-        onUpdate({ estimateType: updated });
+        const action = isSelected ? 'Removed' : 'Added';
+        onUpdate({ estimateType: updated }, `${action} Estimate Type: ${option}`);
     };
 
     const isCorrespondenceSelected = (option: string) =>

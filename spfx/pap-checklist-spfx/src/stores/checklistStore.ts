@@ -1,7 +1,14 @@
 import { create } from 'zustand';
 import type { Checklist, ChecklistRow, AnswerState, ChecklistImage, Workgroup } from '../models';
 
-import { getChecklistService, getImageService, getRevisionService } from '../services';
+import { getChecklistService, getImageService, getRevisionService, getActivityLogService } from '../services';
+import { useUserStore } from './userStore';
+
+// Fire-and-forget activity logging helper
+function logActivity(checklistId: string, action: string, detail?: string): void {
+    const userName = useUserStore.getState().user?.name || 'Unknown';
+    getActivityLogService().logAction(checklistId, action, userName, detail).catch(() => { });
+}
 
 interface ChecklistState {
     // Data
@@ -48,7 +55,11 @@ interface ChecklistState {
     updateWorkgroup: (workgroupId: string, updates: Partial<Workgroup>) => Promise<void>;
 
     // Actions - General
-    updateChecklist: (id: string, updates: Partial<Checklist>) => void;
+    updateChecklist: (id: string, updates: Partial<Checklist>, logMessage?: string) => void;
+
+    // Actions - File Operations
+    uploadFile: (file: File) => Promise<void>;
+    deleteFile: (fileId: string) => Promise<void>;
 
     // Actions - Utility
     clearError: () => void;
@@ -186,6 +197,11 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         set({ isSaving: true });
         try {
             const updatedRow = await getChecklistService().updateRow(rowToSave);
+
+            // Find workgroup name for logging
+            const wgName = activeChecklist.workgroups.find(wg => wg.rows.some(r => r.id === rowId))?.name;
+            logActivity(activeChecklist.id, 'row_updated', wgName);
+
             set(state => {
                 if (!state.activeChecklist) return state;
                 const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => {
@@ -284,6 +300,11 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
                     }
                     return { ...w, rows: newRows };
                 });
+
+                // Log row addition
+                const wgName = updatedWorkgroups.find(w => w.id === workgroupId)?.name;
+                logActivity(activeChecklist.id, 'row_added', wgName);
+
                 return {
                     isSaving: false,
                     lastSaved: new Date(),
@@ -309,6 +330,12 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         set(state => ({ processingItems: [...state.processingItems, rowId], isSaving: true }));
         try {
             await getChecklistService().deleteRow(rowId);
+
+            // Log row deletion
+            const { activeChecklist: current } = get();
+            const wgName = current?.workgroups.find(wg => wg.rows.some(r => r.id === rowId))?.name;
+            if (current) logActivity(current.id, 'row_deleted', wgName);
+
             set(state => {
                 if (!state.activeChecklist) return { processingItems: state.processingItems.filter(id => id !== rowId), isSaving: false };
                 const updatedWorkgroups = state.activeChecklist.workgroups.map(wg => ({
@@ -440,6 +467,9 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         set(state => ({ processingItems: [...state.processingItems, `add-wg-${activeChecklist.id}`], isSaving: true }));
         try {
             const newWg = await getChecklistService().createWorkgroup(activeChecklist.id, number, name);
+
+            logActivity(activeChecklist.id, 'workgroup_added', name);
+
             set(state => {
                 if (!state.activeChecklist) return { processingItems: state.processingItems.filter(id => id !== `add-wg-${activeChecklist.id}`), isSaving: false };
                 return {
@@ -466,6 +496,11 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         set(state => ({ processingItems: [...state.processingItems, workgroupId], isSaving: true }));
         try {
             await getChecklistService().deleteWorkgroup(workgroupId);
+
+            // Log workgroup deletion
+            const wgName = get().activeChecklist?.workgroups.find(wg => wg.id === workgroupId)?.name;
+            if (get().activeChecklist) logActivity(get().activeChecklist!.id, 'workgroup_deleted', wgName);
+
             set(state => {
                 if (!state.activeChecklist) return { processingItems: state.processingItems.filter(id => id !== workgroupId), isSaving: false };
                 const updatedWorkgroups = state.activeChecklist.workgroups.filter(
@@ -534,14 +569,18 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         }
     },
 
-    updateChecklist: (id: string, updates: Partial<Checklist>) => {
+    updateChecklist: (id: string, updates: Partial<Checklist>, logMessage?: string) => {
         set(state => {
             if (!state.activeChecklist || state.activeChecklist.id !== id) return state;
 
             const updatedChecklist = { ...state.activeChecklist, ...updates, updatedAt: new Date() };
 
             // Trigger save asynchronously
-            getChecklistService().saveChecklist(updatedChecklist).catch(err => {
+            getChecklistService().saveChecklist(updatedChecklist).then(() => {
+                if (logMessage) {
+                    logActivity(id, 'checklist_metadata_updated', logMessage);
+                }
+            }).catch(err => {
                 set({ error: (err as Error).message });
             });
 
@@ -560,6 +599,8 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         set({ isSaving: true });
         try {
             const revision = await getRevisionService().createRevision(activeChecklist.id, title, notes);
+
+            logActivity(activeChecklist.id, 'revision_created', title);
 
             set(state => {
                 if (!state.activeChecklist) return { isSaving: false };
@@ -642,6 +683,84 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
                 lastSaved: new Date(),
                 activeChecklist: updatedChecklist
             });
+        } catch (err) {
+            set({ error: (err as Error).message, isSaving: false });
+        }
+    },
+
+    // File Operations
+    uploadFile: async (file: File) => {
+        const { activeChecklist } = get();
+        const user = useUserStore.getState().user;
+        if (!activeChecklist) return;
+
+        set({ isSaving: true });
+        try {
+            // 1. Upload to SharePoint
+            const result = await getImageService().uploadFile(activeChecklist.id, file);
+
+            // 2. Construct File Object
+            const newFile: import('../models').ChecklistFile = {
+                id: result.id, // SharePoint Item ID
+                name: result.name,
+                url: result.url,
+                type: file.type,
+                size: file.size,
+                uploadedBy: user?.name || 'Unknown',
+                uploadedAt: new Date()
+            };
+
+            // 3. Update Checklist Metadata
+            const updatedFiles = [...(activeChecklist.files || []), newFile];
+            const updatedChecklist = { ...activeChecklist, files: updatedFiles, updatedAt: new Date() };
+
+            set({ activeChecklist: updatedChecklist }); // Optimistic UI
+
+            await getChecklistService().saveChecklist(updatedChecklist);
+
+            // 4. Log Activity
+            logActivity(activeChecklist.id, 'file_uploaded', file.name);
+
+            set({ isSaving: false, lastSaved: new Date() });
+
+        } catch (err) {
+            console.error('[Store] File Upload Failed', err);
+            set({ error: (err as Error).message, isSaving: false });
+        }
+    },
+
+    deleteFile: async (fileId: string) => {
+        const { activeChecklist } = get();
+        if (!activeChecklist) return;
+
+        set({ isSaving: true });
+        try {
+            // 1. Delete from SharePoint
+            // Note: We need the SharePoint Item ID. If 'id' is generated locally (legacy), this might fail.
+            // But going forward we use SharePoint ID.
+            // For safety, we wrap in try-catch in case it doesn't exist or is legacy.
+            try {
+                await getImageService().removeImage(fileId); // removeImage is generic delete item
+            } catch (e) {
+                console.warn('[Store] Failed to delete file from SharePoint (might be legacy or already gone)', e);
+            }
+
+            // 2. Update Metadata
+            const fileToDelete = activeChecklist.files?.find(f => f.id === fileId);
+            const updatedFiles = (activeChecklist.files || []).filter(f => f.id !== fileId);
+            const updatedChecklist = { ...activeChecklist, files: updatedFiles, updatedAt: new Date() };
+
+            set({ activeChecklist: updatedChecklist }); // Optimistic
+
+            await getChecklistService().saveChecklist(updatedChecklist);
+
+            // 3. Log Activity
+            if (fileToDelete) {
+                logActivity(activeChecklist.id, 'file_deleted', fileToDelete.name);
+            }
+
+            set({ isSaving: false, lastSaved: new Date() });
+
         } catch (err) {
             set({ error: (err as Error).message, isSaving: false });
         }

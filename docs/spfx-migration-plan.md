@@ -1,4 +1,7 @@
-# SPFx Migration Plan
+> **Status: COMPLETED**
+> This migration plan has been executed. The project is now an SPFx solution located in `spfx/pap-checklist-spfx`. This document is preserved for historical context.
+
+---
 
 ## Goal
 Migrate the existing PAP Checklist React application (Vite-based) to a SharePoint Framework (SPFx) Web Part solution to enable native deployment to SharePoint Online and Microsoft Teams.

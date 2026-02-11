@@ -3,6 +3,8 @@ import { Button } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular, Notepad24Regular } from '@fluentui/react-icons';
 import { RichTextEditor } from '../RichTextEditor';
 import type { Checklist } from '../../../models';
+import { useUserStore } from '../../../stores';
+import { getActivityLogService } from '../../../services';
 import styles from './CommonNotes.module.scss';
 
 interface CommonNotesProps {
@@ -13,6 +15,7 @@ interface CommonNotesProps {
 }
 
 export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, onSave, readOnly }) => {
+    const user = useUserStore(state => state.user);
     const [notes, setNotes] = useState(checklist.commonNotes || '');
     const originalNotesRef = useRef(checklist.commonNotes || '');
 
@@ -23,19 +26,28 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
     useEffect(() => {
         setNotes(checklist.commonNotes || '');
         originalNotesRef.current = checklist.commonNotes || '';
-    }, [checklist.commonNotes]);
+    }, [checklist.id]); // Only reset when checklist changes, not on every keystroke
 
 
 
     const handleChange = (html: string) => {
         setNotes(html);
-        onUpdate({ commonNotes: html });
+        // Don't call onUpdate here to avoid spamming store/logs and resetting originalNotesRef
     };
 
     const handleBlur = () => {
         if (notes !== originalNotesRef.current) {
-            originalNotesRef.current = notes;
+            // 1. Update Store (State)
+            onUpdate({ commonNotes: notes });
+
+            // 2. Log Activity
+            getActivityLogService().logAction(checklist.id, 'common_notes_updated', user?.name || 'Unknown', 'Updated Common Notes');
+
+            // 3. Save to Server
             onSave?.();
+
+            // 4. Update Reference
+            originalNotesRef.current = notes;
         }
     };
 

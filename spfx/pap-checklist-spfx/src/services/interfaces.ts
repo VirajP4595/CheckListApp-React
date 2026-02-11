@@ -26,6 +26,14 @@ export interface IRevisionService {
     getRevision(revisionId: string): Promise<Revision | null>;
 }
 
+// ─── UTILS ────────────────────────────────────────────────
+export interface ChecklistFileResult {
+    id: string;
+    name: string;
+    url: string;
+    serverRelativeUrl: string;
+}
+
 // ─── IMAGE SERVICE ───────────────────────────────────────
 export interface IImageService {
     addImage(checklistId: string, workgroupId: string, rowId: string, source: string, caption?: string): Promise<ChecklistImage>;
@@ -34,6 +42,7 @@ export interface IImageService {
     getRowImages(checklistId: string, rowId: string): Promise<ChecklistImage[]>;
     getAllImageMetadata(checklistId: string): Promise<ChecklistImage[]>;
     uploadClientLogo(checklistId: string, file: File): Promise<string>;
+    uploadFile(checklistId: string, file: File): Promise<ChecklistFileResult>;
     uploadPDFReport(checklistId: string, filename: string, blob: Blob): Promise<string>;
     downloadImageContent(itemId: string): Promise<string>;
     downloadClientLogoContent(checklistId: string): Promise<Blob | null>;

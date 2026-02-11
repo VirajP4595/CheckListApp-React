@@ -115,7 +115,8 @@ export const entities = {
     comments: `${prefix}comments`,
     jobs: `${prefix}jobs`,
     defaultworkgroups: `${prefix}defaultworkgroups`,
-    defaultrows: `${prefix}defaultrows`
+    defaultrows: `${prefix}defaultrows`,
+    activitylogs: `${prefix}activitylogs`
 };
 
 export const navprops = {

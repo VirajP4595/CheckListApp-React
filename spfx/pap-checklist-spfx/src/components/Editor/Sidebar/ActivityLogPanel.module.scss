@@ -1,0 +1,177 @@
+// ActivityLogPanel Styles
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+// ============================================
+// Container
+// ============================================
+
+.activity-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+// ============================================
+// Activity Log List
+// ============================================
+
+.activity-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-0 $spacing-4 $spacing-4; // No top padding, let day header handle it
+    @include scrollbar;
+}
+
+// ============================================
+// Day Group
+// ============================================
+
+.day-group {
+    margin-bottom: $spacing-6;
+    position: relative;
+    padding-top: $spacing-6; // Space for header (if absolute) or just separation
+
+    &:first-child {
+        padding-top: $spacing-4;
+    }
+}
+
+.day-header {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: $spacing-4;
+    padding-left: 4px; // Align slightly
+    position: sticky;
+    top: 0;
+    background-color: $color-white; // Assuming white panel bg
+    z-index: 10;
+    padding-top: $spacing-2;
+    padding-bottom: $spacing-2;
+}
+
+.day-entries {
+    position: relative;
+    padding-left: $spacing-1; // Slightly indent entries
+}
+
+// ============================================
+// Entry
+// ============================================
+
+.entry {
+    display: flex;
+    gap: $spacing-3;
+    position: relative;
+    padding-bottom: $spacing-4; // Space between timeline items
+
+    &:last-child {
+        padding-bottom: 0;
+    }
+}
+
+// Timeline Elements
+
+.timeline-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 24px; // Fixed width for alignment
+    flex-shrink: 0;
+}
+
+.timeline-icon {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    color: $color-primary;
+    background-color: transparentize($color-primary, 0.9);
+    border-radius: 50%;
+
+    // Icon size adjustment
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+.timeline-line {
+    flex: 1;
+    width: 2px;
+    background-color: $color-gray-200;
+    margin-top: $spacing-1;
+    min-height: 12px; // Ensure visible line even for short items
+}
+
+// Content Elements
+
+.entry-content {
+    flex: 1;
+    padding-top: 4px; // Align text top with icon center visual
+}
+
+.entry-header {
+    margin-bottom: $spacing-1;
+    line-height: $line-height-normal;
+}
+
+.entry-user {
+    font-weight: $font-weight-semibold;
+    color: $color-gray-800;
+    margin-right: $spacing-1;
+}
+
+.entry-action-label {
+    color: $color-gray-600;
+}
+
+.entry-detail {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-primary; // Highlight what changed
+    background-color: $color-gray-50;
+    border-radius: $border-radius-sm;
+    padding: $spacing-1 $spacing-2;
+    display: inline-block;
+    border: 1px solid $color-gray-100;
+}
+
+
+// ============================================
+// Empty State
+// ============================================
+
+.activity-empty {
+    @include flex-center;
+    flex-direction: column;
+    height: 100%;
+    color: $color-gray-400;
+    text-align: center;
+    padding: $spacing-4;
+    gap: $spacing-2;
+
+    .empty-icon {
+        width: 48px;
+        height: 48px;
+        color: $color-gray-300;
+    }
+
+    p {
+        margin: 0;
+        font-size: $font-size-base;
+    }
+}
+
+// ============================================
+// Loading State
+// ============================================
+
+.activity-loading {
+    @include flex-center;
+    height: 100%;
+    color: $color-gray-400;
+    padding: $spacing-4;
+}

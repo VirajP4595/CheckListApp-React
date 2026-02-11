@@ -1,7 +1,7 @@
 import { MSGraphClientV3 } from '@microsoft/sp-http';
 import { WebPartContext } from '@microsoft/sp-webpart-base';
 import { AppConfig } from '../config/environment';
-import type { IImageService } from './interfaces';
+import type { IImageService, ChecklistFileResult } from './interfaces';
 import type { ChecklistImage } from '../models';
 
 // ─── HELPER: RESIZE IMAGE ──────────────────────────────────
@@ -181,11 +181,24 @@ export class SharePointImageService implements IImageService {
         }
     }
 
-    async uploadFile(checklistId: string, file: File): Promise<string> {
-        if (file.type === 'application/pdf') {
-            return this.uploadPDFReport(checklistId, file.name, file);
-        }
-        throw new Error("File type not supported for generic upload yet");
+    async uploadFile(checklistId: string, file: File): Promise<ChecklistFileResult> {
+        const { driveId } = await this.getDriveInfo();
+        const client = this.getClient();
+
+        // 1. Determine path
+        const folderPath = `${checklistId}/attachments`;
+        const uploadUrl = `/drives/${driveId}/root:/${folderPath}/${file.name}:/content`;
+
+        // 2. Upload
+        const data = await client.api(uploadUrl).put(file);
+
+        // 3. Return metadata needed for ChecklistFile
+        return {
+            id: data.id, // Use SharePoint Item ID
+            name: file.name,
+            url: data['@microsoft.graph.downloadUrl'] || data.webUrl,
+            serverRelativeUrl: data.webUrl // Store webUrl as fallback
+        };
     }
 
     async getAllImageMetadata(checklistId: string): Promise<ChecklistImage[]> {

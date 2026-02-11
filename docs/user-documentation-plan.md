@@ -161,6 +161,6 @@ Communicate changes and new features.
 | Phase 1 | Getting Started Guide | To be created |
 | Phase 1 | Quick Reference Card | To be created |
 | Phase 1 | Basic FAQ | To be created |
-| Phase 2 | Full User Guide | Planned |
+| Phase 2 | Full User Guide | **Completed** |
 | Phase 2 | Video Tutorials | Planned |
 | Ongoing | Release Notes | Per release |

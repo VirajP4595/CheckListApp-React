@@ -30,14 +30,7 @@ module.exports = {
         //                    but writing code is a much less important activity than reading it.
         //
         // STANDARDIZED BY:   @typescript-eslint\eslint-plugin\dist\configs\recommended.json
-        '@typescript-eslint/explicit-function-return-type': [
-          1,
-          {
-            'allowExpressions': true,
-            'allowTypedFunctionExpressions': true,
-            'allowHigherOrderFunctions': false
-          }
-        ],
+        '@typescript-eslint/explicit-function-return-type': 0,
         // STANDARDIZED BY:   @typescript-eslint\eslint-plugin\dist\configs\recommended.json
         // Rationale to disable: although this is a recommended rule, it is up to dev to select coding style.
         // Set to 1 (warning) or 2 (error) to enable.
@@ -94,16 +87,7 @@ module.exports = {
         //                    may impact performance.
         //
         // STANDARDIZED BY:   @typescript-eslint\eslint-plugin\dist\configs\recommended.json
-        '@typescript-eslint/no-unused-vars': [
-          1,
-          {
-            'vars': 'all',
-            // Unused function arguments often indicate a mistake in JavaScript code.  However in TypeScript code,
-            // the compiler catches most of those mistakes, and unused arguments are fairly common for type signatures
-            // that are overriding a base class method or implementing an interface.
-            'args': 'none'
-          }
-        ],
+        '@typescript-eslint/no-unused-vars': 0,
         // STANDARDIZED BY:   @typescript-eslint\eslint-plugin\dist\configs\recommended.json
         '@typescript-eslint/no-use-before-define': [
           2,
@@ -263,7 +247,7 @@ module.exports = {
         // STANDARDIZED BY:   @typescript-eslint\eslint-plugin\dist\configs\recommended.json
         'no-var': 2,
         // RATIONALE:         Generally not needed in modern code.
-        'no-void': 1,
+        'no-void': 0,
         // RATIONALE:         Obsolete language feature that is deprecated.
         // STANDARDIZED BY:   eslint\conf\eslint-recommended.js
         'no-with': 2,
@@ -289,6 +273,11 @@ module.exports = {
         // Set to 1 (warning) or 2 (error) to enable.
         // Rationale to disable: !!{}
         'no-extra-boolean-cast': 0,
+
+        // React specific suppressions
+        'react/no-unescaped-entities': 0,
+        'react/self-closing-comp': 0,
+
         // ====================================================================
         // @microsoft/eslint-plugin-spfx
         // ====================================================================

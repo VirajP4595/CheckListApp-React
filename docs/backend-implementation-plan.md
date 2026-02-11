@@ -26,6 +26,7 @@ graph TB
             ROW[pap_checklistrow]
             REV[pap_revision]
             COMMENT[pap_comment]
+            ACTLOG[pap_activitylog]
             DWG[pap_defaultworkgroup]
             DROW[pap_defaultrow]
         end
@@ -49,6 +50,7 @@ graph TB
     WG -->|1:N| ROW
     CL -->|1:N| REV
     CL -->|1:N| COMMENT
+    CL -->|1:N| ACTLOG
     
     DWG -->|Template| WG
     DROW -->|Template| ROW
@@ -85,6 +87,8 @@ graph TB
 | `pap_clientcorrespondence` | Multiline Text | No | JSON array: `["Builder Copy", "Client Copy"]` |
 | `pap_estimatetype` | Multiline Text | No | JSON array: `["FQE", "COM"]` |
 | `pap_commonnotes` | Multiline Text | No | General notes |
+| `pap_chatdata` | Multiline Text | No | JSON array of chat comments |
+| `pap_filedata` | Multiline Text | No | JSON array of file metadata (SharePoint URLs) |
 | `pap_createdby` | Lookup → systemuser | Auto | Creator |
 | `pap_createdon` | DateTime | Auto | Created timestamp |
 | `pap_modifiedon` | DateTime | Auto | Last modified |
@@ -143,15 +147,9 @@ graph TB
 
 ---
 
-### 6. `pap_comment` (New Table)
-
-| Column | Type | Required | Description |
-|--------|------|----------|-------------|
-| `pap_commentid` | GUID (PK) | Yes | Primary key |
-| `pap_checklistid` | Lookup → pap_checklist | Yes | Parent checklist |
-| `pap_text` | Multiline Text | Yes | Comment content |
-| `pap_author` | String (100) | Yes | Author name |
-| `pap_createdon` | DateTime | Auto | Created timestamp |
+### 6. `pap_comment` (Replaced by JSON)
+    
+> **Note:** Comments are now stored as a JSON array in the `pap_chatdata` column of the `pap_checklist` table, rather than a separate table. This improves performance and simplifies retrieval.
 
 ---
 
@@ -189,6 +187,20 @@ graph TB
 
 ---
 
+### 9. `pap_activitylog` (New Table)
+
+Stores one row per checklist per day. Activity entries are stored as a JSON array.
+
+| Column | Type | Required | Description |
+|--------|------|----------|-------------|
+| `pap_activitylogid` | GUID (PK) | Yes | Primary key |
+| `pap_checklistid` | Lookup → pap_checklist | Yes | Parent checklist |
+| `pap_name` | String (100) | Yes | Display name (auto: "Activity YYYY-MM-DD") |
+| `pap_date` | Date Only | Yes | The calendar day |
+| `pap_entries` | Multiline Text | No | JSON array of `{time, user, action, detail?}` |
+
+---
+
 ## SharePoint Integration
 
 ### Document Library: `PAP Attachments`
@@ -210,7 +222,6 @@ PAP Attachments/
 │   │   │   └── image-002.png
 │   ├── reports/
 │   │   └── {checklistName}-rev{number}.pdf
-│   ├── revisions/ (Backup/Legacy)
 ```
 
 ### Metadata Columns on Library
@@ -294,12 +305,11 @@ interface IDataverseChecklistService extends IChecklistService {
     getChecklistByJobId(jobId: string): Promise<Checklist>;
 }
 
-interface ISharePointFileService {
-    uploadFile(checklistId: string, file: File): Promise<ChecklistFile>;
-    uploadImage(checklistId: string, rowId: string, file: File, caption?: string): Promise<ChecklistImage>;
-    deleteFile(fileUrl: string): Promise<void>;
-    getFilesForChecklist(checklistId: string): Promise<ChecklistFile[]>;
-    getImagesForRow(rowId: string): Promise<ChecklistImage[]>;
+interface IImageService { // Handles Images AND Files
+    uploadFile(checklistId: string, file: File): Promise<ChecklistFileResult>;
+    uploadImage(checklistId: string, workgroupId: string, rowId: string, file: File, caption?: string): Promise<ChecklistImage>;
+    deleteFile(fileUrl: string): Promise<void>; // or removeImage
+    // ... validation and listing methods
 }
 ```
 
@@ -338,5 +348,7 @@ interface ISharePointFileService {
 4. [x] Implement `DataverseChecklistService` in React app
 5. [x] Implement `SharePointFileService` for attachments
 6. [x] Configure authentication (MSAL.js / Azure AD)
-7. [x] End-to-end testing
-8. [ ] User acceptance testing
+7. [x] Implement Activity Log service (`activityLogService.ts`)
+8. [x] Persist comments and files as JSON columns (`pap_chatdata`, `pap_filedata`)
+9. [x] End-to-end testing
+10. [ ] User acceptance testing

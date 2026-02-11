@@ -177,8 +177,8 @@
 }
 
 .revision-title-input {
-    @include input-filled;
     width: 100%;
+    @include input-filled;
 }
 
 .notes-container {

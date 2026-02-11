@@ -2,6 +2,8 @@
 
 OneNote-style checklist for construction estimators. React 17, TypeScript 5.8, Fluent UI 9.
 
+> **Note:** This document outlines the initial Phase 1 implementation plan. It is preserved for historical context. For the current system architecture and codebase details, please refer to [`code-repository-understanding.md`](code-repository-understanding.md) and [`backend-implementation-plan.md`](backend-implementation-plan.md).
+
 ---
 
 ## Phase 1.1: Project Foundation

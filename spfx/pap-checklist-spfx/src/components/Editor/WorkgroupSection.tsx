@@ -78,12 +78,10 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
 
     const handleAddRow = () => {
         void addRow(workgroup.id);
-        void addRow(workgroup.id);
     };
 
     const handleDelete = () => {
         if (window.confirm(`Delete workgroup "${workgroup.name}"? This will also delete all ${workgroup.rows.length} items.`)) {
-            void deleteWorkgroup(workgroup.id);
             void deleteWorkgroup(workgroup.id);
         }
     };

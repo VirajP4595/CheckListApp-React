@@ -4,7 +4,10 @@ import { Dashboard } from './components/Dashboard/Dashboard';
 // Auth provider removed - SPFx provides context
 import './App.scss';
 
-const ChecklistEditor = React.lazy(() => import('./components/Editor/ChecklistEditor').then(module => ({ default: module.ChecklistEditor })));
+const ChecklistEditor = React.lazy(() => import(
+    /* webpackChunkName: 'checklist-editor' */
+    './components/Editor/ChecklistEditor'
+).then(module => ({ default: module.ChecklistEditor })));
 
 type View = 'dashboard' | 'editor';
 

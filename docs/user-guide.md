@@ -93,7 +93,45 @@ You can upload a custom client logo for the PDF report:
 
 ---
 
-## 6. Frequently Asked Questions
+## 6. Activity Log
+
+The Activity Log tracks all changes made to a checklist, so you can see who did what and when.
+
+### Viewing Activity
+1.  Open the **Activity** tab (pulse icon) in the sidebar.
+2.  You will see a timeline of recent changes, grouped by day.
+3.  Each entry shows the **time**, **user**, and a description of the action (e.g., "Added rows to Preliminaries").
+
+The log automatically captures:
+- Row additions, updates, and deletions
+- Workgroup additions and deletions
+- Checklist metadata changes
+- Revision creation
+
+**Note:** The activity log shows the last 30 days of history by default.
+
+---
+    
+## 7. Managing Files & Attachments
+
+You can attach external documents (PDFs, Excel sheets, Word docs, etc.) to your checklist for reference.
+
+### Accessing Files
+1.  Open the **Files** tab (Paperclip icon) in the sidebar.
+2.  You will see a list of all files currently attached to this checklist.
+
+### Uploading a File
+1.  Click the **"Click to Upload File"** box.
+2.  Select a file from your computer.
+3.  The file will be uploaded to SharePoint and appear in the list.
+
+### Downloading or Deleting
+- **Download**: Click the **Download** (arrow) icon or the file name to open it.
+- **Delete**: Click the **Trash** icon to remove the file.
+
+---
+
+## 8. Frequently Asked Questions
 
 **Q: Do I need to click Save?**
 A: No! The application **auto-saves** your specific changes as you type. You will see a "Last saved..." message at the top right.

@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { Button, Spinner } from '@fluentui/react-components';
-import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular } from '@fluentui/react-icons';
+import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular, ClipboardPulse24Regular } from '@fluentui/react-icons';
+import { Panel, PanelType } from '@fluentui/react/lib/Panel';
 import { useChecklistStore } from '../../stores';
 import { STATUS_CONFIG, type Revision } from '../../models';
 import { WorkgroupSection } from './WorkgroupSection';
@@ -12,6 +13,7 @@ import { FilterBar, type FilterState } from './FilterBar';
 import { HelpGuide } from './HelpGuide';
 import { CommonNotes } from './Sidebar/CommonNotes';
 import { ChecklistInfoDialog } from './Sidebar/ChecklistInfoDialog';
+import ActivityLogPanel from './Sidebar/ActivityLogPanel';
 import { PdfGenerationProgressModal } from '../Checklist/PdfGenerationProgressModal';
 import { getChecklistService, getRevisionService } from '../../services';
 import styles from './ChecklistEditor.module.scss';
@@ -35,6 +37,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
     } = useChecklistStore();
 
     const [showRevisionPanel, setShowRevisionPanel] = useState(false);
+    const [showActivityPanel, setShowActivityPanel] = useState(false);
     const [viewingRevision, setViewingRevision] = useState<Revision | null>(null);
 
     const [loadingProgress, setLoadingProgress] = useState<{ open: boolean; title: string; status: string; percent: number; cancelled: boolean }>({ open: false, title: 'Loading...', status: '', percent: 0, cancelled: false });
@@ -211,6 +214,16 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                             Preview
                         </Button>
 
+                        <Button
+                            className={styles['editor-action-btn']}
+                            appearance="subtle"
+                            icon={<ClipboardPulse24Regular />}
+                            onClick={() => setShowActivityPanel(true)}
+                            title="Activity Log"
+                        >
+                            Activity
+                        </Button>
+
                         <HelpGuide triggerClassName={styles['editor-action-btn']} />
                         <Button
                             className={styles['editor-save-btn']}
@@ -305,6 +318,17 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                     />
                 )
             }
+
+            <Panel
+                isOpen={showActivityPanel}
+                onDismiss={() => setShowActivityPanel(false)}
+                type={PanelType.medium}
+                headerText="Activity Log"
+                closeButtonAriaLabel="Close"
+                isLightDismiss
+            >
+                <ActivityLogPanel checklistId={checklistId} />
+            </Panel>
 
             <PdfGenerationProgressModal
                 open={loadingProgress.open}

@@ -1,15 +1,15 @@
 {
   "name": "pap-checklist-spfx",
-  "version": "0.0.1",
+  "version": "1.0.1",
   "private": true,
   "engines": {
     "node": ">=22.14.0 < 23.0.0"
   },
   "scripts": {
-    "build": "heft test --clean --production && heft package-solution --production",
-    "start": "heft start --clean",
-    "clean": "heft clean",
-    "eject-webpack": "heft eject-webpack"
+    "build": "cls && heft test --clean --production && heft package-solution --production",
+    "start": "cls && heft start --clean --nobrowser",
+    "clean": "cls && heft clean",
+    "eject-webpack": "cls && heft eject-webpack"
   },
   "dependencies": {
     "@fluentui/react": "^8.106.4",

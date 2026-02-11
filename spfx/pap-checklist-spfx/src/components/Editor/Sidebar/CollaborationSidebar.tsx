@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { makeStyles, TabList, Tab, SelectTabData, TabValue, tokens, shorthands, SelectTabEvent } from '@fluentui/react-components';
-import { History24Regular, Chat24Regular, NoteEdit24Regular, Folder24Regular, Info24Regular } from '@fluentui/react-icons';
+import { History24Regular, Chat24Regular, NoteEdit24Regular, Folder24Regular, Info24Regular, ClipboardPulse24Regular } from '@fluentui/react-icons';
 import { Checklist } from '../../../models';
 import { RevisionPanel } from '../../Revision/RevisionPanel';
 import { ChecklistChat } from './ChecklistChat';
 import { CommonNotes } from './CommonNotes';
 import { ChecklistFiles } from './ChecklistFiles';
 import { ChecklistInfoPanel } from './ChecklistInfoPanel';
+import ActivityLogPanel from './ActivityLogPanel';
 import { useChecklistStore } from '../../../stores';
 
 const useStyles = makeStyles({
@@ -54,6 +55,7 @@ export const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({ chec
                     <Tab value="notes" icon={<NoteEdit24Regular />}>Notes</Tab>
                     <Tab value="files" icon={<Folder24Regular />}>Files</Tab>
                     <Tab value="revisions" icon={<History24Regular />}>Revisions</Tab>
+                    <Tab value="activity" icon={<ClipboardPulse24Regular />}>Activity</Tab>
                 </TabList>
             </div>
 
@@ -91,6 +93,9 @@ export const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({ chec
                         checklistId={checklist.id}
                         onViewRevision={onViewRevision}
                     />
+                )}
+                {selectedTab === 'activity' && (
+                    <ActivityLogPanel checklistId={checklist.id} />
                 )}
             </div>
         </aside>

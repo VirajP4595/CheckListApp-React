@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Input, Button } from '@fluentui/react-components';
 import { Send24Regular } from '@fluentui/react-icons';
 import { Checklist, ChecklistComment, generateId } from '../../../models';
-import { useUserStore } from '../../../stores';
+import { useUserStore, useChecklistStore } from '../../../stores';
+import { getActivityLogService } from '../../../services';
 import styles from './ChecklistChat.module.scss';
 
 interface ChecklistChatProps {
@@ -14,6 +15,10 @@ interface ChecklistChatProps {
 export const ChecklistChat: React.FC<ChecklistChatProps> = ({ checklist, onUpdate, readOnly }) => {
     const [newMessage, setNewMessage] = useState('');
     const user = useUserStore(state => state.user);
+    const activeChecklist = useChecklistStore(state => state.activeChecklist);
+    // Use store data if available and matches current ID, otherwise fallback to prop
+    const currentChecklist = (activeChecklist?.id === checklist.id ? activeChecklist : checklist);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -21,8 +26,9 @@ export const ChecklistChat: React.FC<ChecklistChatProps> = ({ checklist, onUpdat
     };
 
     useEffect(() => {
+        console.log('[ChecklistChat] Rendering with comments:', currentChecklist.comments);
         scrollToBottom();
-    }, [checklist.comments]);
+    }, [currentChecklist.comments]);
 
     const handleSend = () => {
         if (!newMessage.trim() || !user) return;
@@ -34,8 +40,17 @@ export const ChecklistChat: React.FC<ChecklistChatProps> = ({ checklist, onUpdat
             createdAt: new Date(),
         };
 
-        const updatedComments = [...(checklist.comments || []), comment];
+        const updatedComments = [...(currentChecklist.comments || []), comment];
         onUpdate({ comments: updatedComments });
+
+        // Log activity
+        // Log activity (Just "Added a comment" without details per user request)
+        getActivityLogService().logAction(
+            checklist.id,
+            'comment_added',
+            user.name
+        );
+
         setNewMessage('');
     };
 
@@ -49,17 +64,17 @@ export const ChecklistChat: React.FC<ChecklistChatProps> = ({ checklist, onUpdat
     return (
         <div className={styles['chat-container']}>
             <div className={styles['chat-messages']}>
-                {(checklist.comments || []).length === 0 && (
+                {(currentChecklist.comments || []).length === 0 && (
                     <div className={styles['chat-empty']}>
                         No comments yet. Start the conversation!
                     </div>
                 )}
-                {(checklist.comments || []).map(comment => (
+                {(currentChecklist.comments || []).map(comment => (
                     <div
                         key={comment.id}
                         className={`${styles['chat-message']} ${comment.author === user?.name || comment.author === 'John Smith'
-                                ? styles['chat-message--user']
-                                : styles['chat-message--system']
+                            ? styles['chat-message--user']
+                            : styles['chat-message--system']
                             }`}
                     >
                         <div className={styles['chat-message-sender']}>{comment.author}</div>

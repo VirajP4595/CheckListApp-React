@@ -2,7 +2,7 @@
 export * from './interfaces';
 
 // Factory functions for dependency injection
-export { getChecklistService, getRevisionService, getImageService } from './serviceFactory';
+export { getChecklistService, getRevisionService, getImageService, getActivityLogService } from './serviceFactory';
 
 // Auth exports
 
