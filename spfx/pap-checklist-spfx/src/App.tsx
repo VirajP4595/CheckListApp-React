@@ -23,6 +23,18 @@ const App: React.FC<AppProps> = ({ userDisplayName, userEmail, userId, siteUrl }
     const [activeChecklistId, setActiveChecklistId] = useState<string | null>(null);
     const setUser = useUserStore(state => state.setUser);
 
+    // Initialize state from URL query parameters
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const checklistId = params.get('checklistId');
+
+        if (checklistId) {
+            console.log('App: Found deep link checklistId', checklistId);
+            setActiveChecklistId(checklistId);
+            setCurrentView('editor');
+        }
+    }, []);
+
     // Initialize User Store from Props (SPFx Context)
     useEffect(() => {
         setUser({

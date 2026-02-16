@@ -21,9 +21,10 @@ interface DataverseChecklist {
     _pap_jobid_value?: string;
     // Navigation property for Job lookup
     pap_jobid?: {
-        pap_name: string;
-        pap_clientname?: string;
-        pap_number?: string;
+        vin_name: string;
+        _vin_account_value?: string;
+        "_vin_account_value@OData.Community.Display.V1.FormattedValue"?: string;
+        vin_jobnumber?: string;
     };
     createdby?: {
         fullname: string;
@@ -150,14 +151,14 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
 
     // Map job details if expanded
     const jobDetails = dv.pap_jobid ? {
-        jobName: dv.pap_jobid.pap_name,
-        jobNumber: dv.pap_jobid.pap_number || '',
-        clientName: dv.pap_jobid.pap_clientname || ''
+        jobName: dv.pap_jobid.vin_name,
+        jobNumber: dv.pap_jobid.vin_jobnumber || '',
+        clientName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || ''
     } : undefined;
     return {
         id: dv.pap_checklistid,
         // Prefer expanded job name as reference if available, otherwise just ID (or empty)
-        jobReference: dv.pap_jobid?.pap_name || dv._pap_jobid_value || '',
+        jobReference: dv.pap_jobid?.vin_name || dv._pap_jobid_value || '',
         title: dv.pap_name,
         currentRevisionNumber: dv.pap_currentrevisionnumber || 0,
         status: STATUS_MAP[dv.pap_status] || 'draft',
@@ -202,7 +203,7 @@ export class DataverseChecklistService implements IChecklistService {
         ].join(',');
 
         // Expand Job to get details
-        const expand = `pap_jobid($select=pap_name,pap_clientname,pap_number),createdby($select=fullname)`;
+        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber),createdby($select=fullname)`;
 
         const dv = await dataverseClient.getById<DataverseChecklist>(
             entities.checklists,
@@ -289,9 +290,9 @@ export class DataverseChecklistService implements IChecklistService {
             commonNotes: dv.pap_commonnotes || '',
             clientLogoUrl: dv.pap_clientlogourl,
             jobDetails: dv.pap_jobid ? {
-                jobName: dv.pap_jobid.pap_name,
-                jobNumber: dv.pap_jobid.pap_number || '',
-                clientName: dv.pap_jobid.pap_clientname || ''
+                jobName: dv.pap_jobid.vin_name,
+                jobNumber: dv.pap_jobid.vin_jobnumber || '',
+                clientName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || ''
             } : undefined,
             comments: (() => {
                 const raw = dv.pap_chatdata || (dv.pap_ChatData as unknown as string);
@@ -320,7 +321,7 @@ export class DataverseChecklistService implements IChecklistService {
         ].join(',');
 
         // Expand Job to get details
-        const expand = `pap_jobid($select=pap_name,pap_clientname,pap_number),createdby($select=fullname)`;
+        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber),createdby($select=fullname)`;
 
         const response = await dataverseClient.get<{ value: DataverseChecklist[] }>(
             entities.checklists,

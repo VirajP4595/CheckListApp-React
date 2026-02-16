@@ -20,6 +20,7 @@ interface ChecklistState {
     isSaving: boolean;
     lastSaved: Date | null;
     error: string | null;
+    isInitialized: boolean;
     processingItems: string[]; // IDs of items currently being processed (adding/deleting)
 
     loadedRowImages: Record<string, boolean>;
@@ -76,6 +77,7 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
     isSaving: false,
     lastSaved: null,
     error: null,
+    isInitialized: false,
     processingItems: [],
     loadedRowImages: {},
     availableImageFolders: [],
@@ -85,7 +87,7 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             const checklists = await getChecklistService().getAllChecklists();
-            set({ checklists, isLoading: false });
+            set({ checklists, isLoading: false, isInitialized: true });
         } catch (err) {
             set({ error: (err as Error).message, isLoading: false });
         }

@@ -26,7 +26,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }) => {
-    const { checklists, isLoading, loadChecklists, error } = useChecklistStore();
+    const { checklists, isLoading, loadChecklists, error, isInitialized } = useChecklistStore();
     const { user } = useUserStore();
 
     // Filter State
@@ -45,7 +45,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
 
     useEffect(() => {
         // Initial Load
-        if (!error && checklists.length === 0 && !isLoading) {
+        if (!error && !isInitialized && !isLoading) {
             void loadChecklists();
         }
 
@@ -58,7 +58,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
             }, 2000);
             return () => clearTimeout(timer);
         }
-    }, [error, checklists.length, isLoading, loadChecklists]);
+    }, [error, isInitialized, isLoading, loadChecklists]);
 
     if (error && retryCount.current >= MAX_RETRIES) {
         return (

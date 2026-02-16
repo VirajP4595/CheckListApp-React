@@ -22,7 +22,7 @@ export class DataverseClient {
         headers.append('Content-Type', 'application/json');
         headers.append('OData-MaxVersion', '4.0');
         headers.append('OData-Version', '4.0');
-        headers.append('Prefer', 'return=representation');
+        headers.append('Prefer', 'return=representation,odata.include-annotations="*"');
         return headers;
     }
 
