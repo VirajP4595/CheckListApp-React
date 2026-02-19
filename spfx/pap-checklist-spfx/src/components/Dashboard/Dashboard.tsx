@@ -32,7 +32,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
     // Filter State
     const [filters, setFilters] = React.useState<DashboardFilterState>({
         search: '',
+
         selectedJobIds: [],
+        selectedClientNames: [],
         selectedStatuses: [],
         sort: { field: 'updatedAt', direction: 'desc' }
     });
@@ -108,14 +110,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
             result = result.filter(c => selectedJobIds.includes(c.id));
         }
 
-        // 2. Filter by Status
+        // 2. Filter by Client Name
+        const selectedClientNames = filters.selectedClientNames;
+        if (selectedClientNames && selectedClientNames.length > 0) {
+            console.log('Filtering by Clients:', selectedClientNames);
+            result = result.filter(c => c.jobDetails?.clientName && selectedClientNames.includes(c.jobDetails.clientName));
+        }
+
+        // 3. Filter by Status
         const selectedStatuses = filters.selectedStatuses;
         if (selectedStatuses && selectedStatuses.length > 0) {
             console.log('Filtering by Status:', selectedStatuses);
             result = result.filter(c => selectedStatuses.includes(c.status));
         }
 
-        // 3. Sort
+        // 4. Sort
         try {
             result.sort((a, b) => {
                 const fieldA = filters.sort.field === 'updatedAt' ? new Date(a.updatedAt || 0).getTime() : (a.title || '').toLowerCase();

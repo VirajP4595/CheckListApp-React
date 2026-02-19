@@ -162,7 +162,7 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
         title: dv.pap_name,
         currentRevisionNumber: dv.pap_currentrevisionnumber || 0,
         status: STATUS_MAP[dv.pap_status] || 'draft',
-        workgroups: workgroups.map(mapWorkgroup).sort((a, b) => a.order - b.order),
+        workgroups: workgroups.map(mapWorkgroup).sort((a, b) => a.number - b.number),
         revisions: [],  // Loaded separately
         clientCorrespondence: parseJsonField(dv.pap_clientcorrespondence),
         estimateType: parseJsonField(dv.pap_estimatetype),
@@ -275,7 +275,7 @@ export class DataverseChecklistService implements IChecklistService {
                 summaryNotes: wg.pap_summarynotes,
                 order: wg.pap_order
             };
-        }).sort((a, b) => a.order - b.order);
+        }).sort((a, b) => a.number - b.number);
 
         return {
             id: dv.pap_checklistid,

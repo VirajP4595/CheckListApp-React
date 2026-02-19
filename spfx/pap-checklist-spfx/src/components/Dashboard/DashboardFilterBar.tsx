@@ -23,6 +23,7 @@ export interface DashboardFilterState {
     // The workgroup filter IS a searchable dropdown that SELECTS items.
     // So we should have a "Job" filter that selects specific jobs.
     selectedJobIds: string[];
+    selectedClientNames: string[];
     selectedStatuses: ChecklistStatus[];
     sort: SortParams;
 }
@@ -121,6 +122,97 @@ const JobFilter: React.FC<{
     );
 };
 
+const ClientFilter: React.FC<{
+    checklists: Checklist[];
+    selectedNames: string[];
+    onChange: (names: string[]) => void;
+}> = ({ checklists, selectedNames, onChange }) => {
+    const [search, setSearch] = useState('');
+    const [open, setOpen] = useState(false);
+
+    // key is clientName, value is count (or just existence)
+    // We need a list of UNIQUE client names from checklists
+    const clientOptions = useMemo(() => {
+        const names = new Set<string>();
+        checklists.forEach(c => {
+            if (c.jobDetails?.clientName) names.add(c.jobDetails.clientName);
+        });
+        return Array.from(names).sort();
+    }, [checklists]);
+
+    const filteredOptions = useMemo(() => {
+        if (!search.trim()) return clientOptions;
+        const q = search.toLowerCase();
+        return clientOptions.filter(name => name.toLowerCase().includes(q));
+    }, [clientOptions, search]);
+
+    const handleSelect = (name: string, checked: boolean) => {
+        if (checked) {
+            onChange([...selectedNames, name]);
+        } else {
+            onChange(selectedNames.filter(x => x !== name));
+        }
+    };
+
+    const count = selectedNames.length;
+    let label = 'Filter by Client';
+    if (count === clientOptions.length && count > 0) label = 'All Clients';
+    else if (count > 0) label = `${count} Clients`;
+
+    return (
+        <Menu open={open} onOpenChange={(_, data) => setOpen(data.open)}>
+            <MenuTrigger disableButtonEnhancement>
+                <Button
+                    className={styles['filter-dropdown']}
+                    appearance="outline"
+                    icon={<ChevronDown20Regular />}
+                    iconPosition="after"
+                    style={{ justifyContent: 'space-between', fontWeight: 400 }}
+                >
+                    <span style={{ color: count === 0 ? '#616161' : 'inherit' }}>{label}</span>
+                </Button>
+            </MenuTrigger>
+            <MenuPopover>
+                <div className={styles['search-container']} onClick={(e) => e.stopPropagation()}>
+                    <div className={styles['search-wrapper']}>
+                        <Search20Regular className={styles['search-icon']} />
+                        <input
+                            className={styles['search-input']}
+                            placeholder="Search clients..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            autoFocus
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                </div>
+                <MenuList className={styles['search-list']} checkedValues={{ client: selectedNames }}>
+                    {filteredOptions.length === 0 ? (
+                        <div style={{ padding: '8px', color: '#666', fontSize: '12px' }}>
+                            No clients found
+                        </div>
+                    ) : (
+                        filteredOptions.map(name => (
+                            <MenuItemCheckbox
+                                key={name}
+                                name="client"
+                                value={name}
+                                onClick={(e) => {
+                                    handleSelect(name, !selectedNames.includes(name));
+                                    e.stopPropagation();
+                                }}
+                            >
+                                {name}
+                            </MenuItemCheckbox>
+                        ))
+                    )}
+                </MenuList>
+            </MenuPopover>
+        </Menu>
+    );
+};
+
 export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
     checklists,
     filters,
@@ -135,6 +227,10 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
         onFiltersChange({ ...filters, selectedJobIds: ids });
     };
 
+    const handleClientChange = (names: string[]) => {
+        onFiltersChange({ ...filters, selectedClientNames: names });
+    };
+
     const handleSortChange = (value: string) => {
         const [field, direction] = value.split('-');
         onFiltersChange({
@@ -147,12 +243,13 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
         onFiltersChange({
             ...filters,
             selectedJobIds: [],
+            selectedClientNames: [],
             selectedStatuses: [],
             search: '' // ensure search reset if we add it later
         });
     };
 
-    const hasActiveFilters = filters.selectedJobIds.length > 0 || filters.selectedStatuses.length > 0;
+    const hasActiveFilters = filters.selectedJobIds.length > 0 || filters.selectedClientNames.length > 0 || filters.selectedStatuses.length > 0;
     const sortValue = `${filters.sort.field}-${filters.sort.direction}`;
 
     return (
@@ -168,6 +265,13 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
                     checklists={checklists}
                     selectedIds={filters.selectedJobIds}
                     onChange={handleJobChange}
+                />
+
+                {/* Client Filter */}
+                <ClientFilter
+                    checklists={checklists}
+                    selectedNames={filters.selectedClientNames}
+                    onChange={handleClientChange}
                 />
 
                 {/* Status Dropdown */}
