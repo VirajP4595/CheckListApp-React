@@ -1,8 +1,8 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
-import { Button, Spinner } from '@fluentui/react-components';
-import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular, ClipboardPulse24Regular } from '@fluentui/react-icons';
+import { Button, Spinner, Dialog, DialogTrigger, DialogSurface, DialogTitle, DialogBody, DialogActions, DialogContent } from '@fluentui/react-components';
+import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular, ClipboardPulse24Regular, Delete24Regular } from '@fluentui/react-icons';
 import { Panel, PanelType } from '@fluentui/react/lib/Panel';
-import { useChecklistStore } from '../../stores';
+import { useChecklistStore, useUserStore } from '../../stores';
 import { STATUS_CONFIG, type Revision } from '../../models';
 import { WorkgroupSection } from './WorkgroupSection';
 import { AutoSaveIndicator } from './AutoSaveIndicator';
@@ -15,6 +15,7 @@ import { CommonNotes } from './Sidebar/CommonNotes';
 import { ChecklistInfoDialog } from './Sidebar/ChecklistInfoDialog';
 import ActivityLogPanel from './Sidebar/ActivityLogPanel';
 import { PdfGenerationProgressModal } from '../Checklist/PdfGenerationProgressModal';
+import { DeleteProgressModal } from '../Checklist/DeleteProgressModal';
 import { getChecklistService, getRevisionService } from '../../services';
 import styles from './ChecklistEditor.module.scss';
 
@@ -33,14 +34,19 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
         saveChecklist,
         updateChecklist,
         addWorkgroup,
-        processingItems
+        processingItems,
+        deleteChecklist
     } = useChecklistStore();
+
+    const { isSuperAdmin } = useUserStore();
 
     const [showRevisionPanel, setShowRevisionPanel] = useState(false);
     const [showActivityPanel, setShowActivityPanel] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [viewingRevision, setViewingRevision] = useState<Revision | null>(null);
 
     const [loadingProgress, setLoadingProgress] = useState<{ open: boolean; title: string; status: string; percent: number; cancelled: boolean }>({ open: false, title: 'Loading...', status: '', percent: 0, cancelled: false });
+    const [deleteProgress, setDeleteProgress] = useState<{ open: boolean; status: string; percent: number }>({ open: false, status: '', percent: 0 });
     const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, workgroupIds: [] });
     const [expandWorkgroups, setExpandWorkgroups] = useState(false);  // Collapsed by default
     const [expandTasks, setExpandTasks] = useState(false);  // Collapsed by default
@@ -203,6 +209,22 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                             onViewRevision={handleViewRevision}
                             triggerClassName={styles['editor-action-btn']}
                         />
+
+                        {isSuperAdmin && (
+                            <>
+                                <Button
+                                    className={styles['editor-action-btn']}
+                                    appearance="subtle"
+                                    icon={<Delete24Regular style={{ color: '#d13438' }} />}
+                                    onClick={() => setIsDeleteDialogOpen(true)}
+                                    disabled={isSaving}
+                                    title="Delete Checklist (Permanent)"
+                                >
+                                    <span style={{ color: '#d13438' }}>Delete</span>
+                                </Button>
+                            </>
+                        )}
+
                         <Button
                             className={styles['editor-action-btn']}
                             appearance="subtle"
@@ -289,6 +311,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                     {/* Mobile Actions */}
                     <div className={styles['editor-mobile-actions']}>
                         <Button
+                            className={styles['btn-ghost']}
                             appearance="outline"
                             icon={<History24Regular />}
                             onClick={() => setShowRevisionPanel(!showRevisionPanel)}
@@ -325,28 +348,71 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                 type={PanelType.medium}
                 headerText="Activity Log"
                 closeButtonAriaLabel="Close"
-                isLightDismiss
             >
                 <ActivityLogPanel checklistId={checklistId} />
             </Panel>
 
+            {/* PDF / Preview Progress Modal */}
             <PdfGenerationProgressModal
                 open={loadingProgress.open}
+                onCancel={() => {
+                    setLoadingProgress(prev => ({ ...prev, open: false, cancelled: true }));
+                }}
                 title={loadingProgress.title}
-                iconType={loadingProgress.title.includes('Preview') ? 'preview' : 'pdf'}
+                iconType={loadingProgress.title.toLowerCase().includes('preview') ? 'preview' : 'pdf'}
                 status={loadingProgress.status}
                 percent={loadingProgress.percent}
-                onCancel={() => {
-                    // Only cancel if it's the PDF export that's running
-                    if (loadingProgress.title.includes('PDF')) {
-                        isCancelledRef.current = true;
-                        setLoadingProgress(prev => ({ ...prev, cancelled: true }));
-                    } else {
-                        // For load operations, just close (though requests might continue in background)
-                        setLoadingProgress(prev => ({ ...prev, open: false }));
-                    }
-                }}
             />
+
+            {/* Delete Progress Modal */}
+            <DeleteProgressModal
+                open={deleteProgress.open}
+                onCancel={() => setDeleteProgress({ open: false, status: '', percent: 0 })}
+                status={deleteProgress.status}
+                percent={deleteProgress.percent}
+            />
+
+            {/* Permanent Deletion Confirmation Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={(e, data) => setIsDeleteDialogOpen(data.open)}>
+                <DialogSurface>
+                    <DialogBody>
+                        <DialogTitle>Delete Checklist Permanently?</DialogTitle>
+                        <DialogContent>
+                            <p style={{ color: '#d13438', fontWeight: 'bold' }}>This action cannot be undone.</p>
+                            <p>Deleting this checklist will permanently remove the following items across the entire system:</p>
+                            <ul>
+                                <li>The Checklist record itself.</li>
+                                <li>All associated Workgroups ({activeChecklist.workgroups?.length || 0}).</li>
+                                <li>All Checklist Rows.</li>
+                                <li>All Images and files attached to those rows.</li>
+                                <li>All Review and Revision History.</li>
+                            </ul>
+                            <p>Are you absolutely sure you want to proceed?</p>
+                        </DialogContent>
+                        <DialogActions className={styles['dialog-footer']}>
+                            <Button className={styles['btn-secondary']} appearance="secondary" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                            <Button
+                                className={styles['btn-delete']}
+                                onClick={() => {
+                                    setIsDeleteDialogOpen(false);
+                                    setDeleteProgress({ open: true, status: 'Starting...', percent: 0 });
+                                    void deleteChecklist(activeChecklist.id, (status, percent) => {
+                                        setDeleteProgress(prev => ({ ...prev, status, percent }));
+                                    }).then(() => {
+                                        setDeleteProgress(prev => ({ ...prev, percent: 100, status: 'Deleted!' }));
+                                        setTimeout(() => onBack(), 500);
+                                    }).catch(err => {
+                                        console.error('Delete failed', err);
+                                        setDeleteProgress({ open: false, status: '', percent: 0 });
+                                    });
+                                }}
+                            >
+                                Yes, Permanently Delete
+                            </Button>
+                        </DialogActions>
+                    </DialogBody>
+                </DialogSurface>
+            </Dialog>
         </div >
     );
 };

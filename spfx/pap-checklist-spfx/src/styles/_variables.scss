@@ -2,11 +2,11 @@
 // PAP Checklist - Brand Variables (Reference Style)
 // ============================================
 
-// 1. BRAND COLORS (Tailwind Blue Palette)
-$color-primary: #2563eb; // blue-600
-$color-primary-light: #3b82f6; // blue-500
-$color-primary-dark: #1d4ed8; // blue-700
-$color-primary-subtle: #eff6ff; // blue-50 (backgrounds)
+// 1. BRAND COLORS (PAP Official)
+$color-primary: #03518b; // PAP Deep Blue
+$color-primary-light: #0466b0;
+$color-primary-dark: #023c66;
+$color-primary-subtle: #f0f7ff;
 
 // 2. NEUTRAL GRAYS (Tailwind Slate/Gray)
 $color-white: #ffffff;
@@ -23,7 +23,7 @@ $color-gray-800: #1f2937;
 $color-gray-900: #111827;
 
 // 3. STATUS COLORS
-$color-success: #22c55e; // green-500
+$color-success: #60923f; // PAP Green
 $color-error: #ef4444; // red-500 (used for No)
 $color-warning: #eab308; // yellow-500 (Pending)
 $color-info: #3b82f6; // blue-500
@@ -46,10 +46,10 @@ $color-warning-dark: #a16207;
 $color-warning-subtle: #fefce8; // yellow-50
 
 // Accent Mappings
-$color-accent: $color-primary-light; // blue-500
-$color-accent-light: #60a5fa; // blue-400
-$color-accent-dark: #2563eb; // blue-600
-$color-accent-subtle: #eff6ff; // blue-50
+$color-accent: #c8da2d; // PAP Lime
+$color-accent-light: #d4e357;
+$color-accent-dark: #a9ba26;
+$color-accent-subtle: #f9fbe7;
 
 // 4. SEMANTIC COLORS (Base)
 $color-background: $color-gray-50;
@@ -140,6 +140,10 @@ $shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06
 $shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 $shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+// 10. PREMIUM EFFECTS
+$shadow-premium: 0 10px 30px -5px rgba(3, 81, 139, 0.15), 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+$glass-effect: saturate(180%) blur(12px);
 
 // 10. TRANSITIONS
 $transition-fast: 150ms ease;

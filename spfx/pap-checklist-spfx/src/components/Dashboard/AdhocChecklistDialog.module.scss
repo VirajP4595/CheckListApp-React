@@ -1,0 +1,56 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-4;
+    padding-top: $spacing-4;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+}
+
+.form-label {
+    @include label;
+}
+
+.input-field {
+    width: 100%;
+    @include input-filled;
+}
+
+.dropdown-field {
+    width: 100%;
+    @include dropdown-filled;
+}
+
+.dialog-actions {
+    margin-top: $spacing-6;
+    gap: $spacing-3;
+}
+
+.adhoc-trigger-btn {
+    @include button-premium-glow;
+}
+
+.btn-primary {
+    min-width: 120px;
+    @include button-primary;
+}
+
+.btn-secondary {
+    min-width: 100px;
+    @include button-secondary;
+}
+
+.error-message {
+    color: $color-status-final; // Using red for error
+    padding: $spacing-2;
+    background-color: rgba($color-status-final, 0.1);
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+}

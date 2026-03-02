@@ -139,7 +139,7 @@ h6 {
 // ============================================
 
 .pap-header {
-    background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
+    background-color: $color-primary;
     color: $color-white;
     padding: $spacing-4 $spacing-6;
     box-shadow: $shadow-md;

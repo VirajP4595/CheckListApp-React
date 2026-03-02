@@ -2,7 +2,7 @@
 @use '../../styles/mixins' as *;
 
 .surface {
-    min-width: 400px;
+    min-width: 420px;
     padding: 24px;
 }
 
@@ -25,8 +25,8 @@
     align-items: center;
     margin-bottom: 10px;
 
-    .pdfIcon {
-        color: #d13438; // PDF Red
+    .deleteIcon {
+        color: #d13438;
         font-size: 48px;
     }
 }

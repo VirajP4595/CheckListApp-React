@@ -7,6 +7,7 @@ export interface IChecklistService {
 
     // Metadata Only
     saveChecklist(checklist: Checklist): Promise<Checklist>;
+    deleteChecklist(id: string, onProgress?: (status: string, percent: number) => void): Promise<void>;
 
     // Workgroup Actions
     createWorkgroup(checklistId: string, number: number, name: string): Promise<Workgroup>;

@@ -40,9 +40,10 @@
 }
 
 .filter-toggle-btn {
+    @include button-ghost;
     font-size: $font-size-xs !important;
-    padding: $spacing-1 $spacing-2 !important;
-    min-width: auto !important;
+    padding: $spacing-1 $spacing-3 !important;
+    min-height: 28px !important;
 }
 
 // ============================================
@@ -177,11 +178,15 @@
 }
 
 .filter-clear-btn {
+    @include button-ghost;
     color: $color-primary !important;
     font-size: $font-size-xs !important;
+    padding: $spacing-1 $spacing-2 !important;
+    min-height: 28px !important;
 
     &:hover {
         color: $color-primary-light !important;
+        background-color: rgba($color-primary, 0.05) !important;
     }
 }
 

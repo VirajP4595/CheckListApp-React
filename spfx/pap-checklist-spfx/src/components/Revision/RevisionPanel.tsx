@@ -133,9 +133,10 @@ export const RevisionPanel: React.FC<RevisionPanelProps> = ({
                             </DialogContent>
                             <DialogActions>
                                 <DialogTrigger disableButtonEnhancement>
-                                    <Button appearance="secondary">Cancel</Button>
+                                    <Button className={styles['btn-secondary']} appearance="secondary">Cancel</Button>
                                 </DialogTrigger>
                                 <Button
+                                    className={styles['btn-primary']}
                                     appearance="primary"
                                     onClick={handleCreate}
                                     disabled={!title.trim() || isCreating}

@@ -1,3 +1,4 @@
+@use "sass:color";
 // Dashboard Component Styles
 @use '../../styles/variables' as *;
 @use '../../styles/mixins' as *;
@@ -16,28 +17,27 @@
 // Dashboard Header
 // ============================================
 
-// ============================================
-// Dashboard Header
-// ============================================
-
 .dashboard-header {
-    background: linear-gradient(135deg, rgba($color-primary, 0.95) 0%, rgba($color-primary-dark, 0.98) 100%);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background-color: $color-primary;
+    backdrop-filter: $glass-effect;
+    -webkit-backdrop-filter: $glass-effect;
     color: $color-white;
-    padding: $spacing-3 $spacing-4; // Significantly reduced padding
+    padding: $spacing-2 $spacing-4;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     border-bottom: 1px solid rgba($color-white, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: $z-index-sticky;
 
     @include breakpoint('md') {
-        padding: $spacing-4 $spacing-6; // Compact but breathable on desktop
+        padding: $spacing-3 $spacing-6;
     }
 }
 
 .dashboard-header-content {
-    @include flex-between;
     flex-wrap: wrap;
     gap: $spacing-3;
+    @include flex-between;
     @include container;
 }
 
@@ -45,6 +45,36 @@
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.dashboard-logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    margin-right: $spacing-6;
+    cursor: pointer;
+    transition: all $transition-base;
+    padding: 0 $spacing-5;
+    background-color: rgba($color-white, 0.85); // Softened glass white
+    backdrop-filter: blur(8px);
+    border-radius: $border-radius-md;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba($color-white, 0.3);
+    overflow: hidden;
+
+    &:hover {
+        transform: translateY(-2px);
+        background-color: rgba($color-white, 0.95);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        border-color: rgba($color-white, 0.5);
+    }
+}
+
+.dashboard-logo {
+    height: 100%;
+    width: auto;
+    object-fit: contain;
 }
 
 .dashboard-title {
@@ -55,22 +85,25 @@
 
 .dashboard-title-main {
     font-family: $font-family-heading;
-    font-size: $font-size-xl; // Reduced from 2xl
+    font-size: $font-size-base;
     font-weight: $font-weight-bold;
     color: $color-white;
     margin: 0;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
 
     @include breakpoint('md') {
-        font-size: $font-size-2xl; // Reduced from 3xl
+        font-size: $font-size-lg;
     }
 }
 
 .dashboard-title-sub {
-    font-size: $font-size-xs;
-    color: rgba($color-white, 0.7);
-    font-weight: $font-weight-normal;
-    letter-spacing: 0.02em;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: rgba($color-white, 0.6);
+    font-weight: $font-weight-medium;
+    letter-spacing: 0.1em;
+    margin-top: 1px;
 }
 
 // ============================================
@@ -78,18 +111,32 @@
 // ============================================
 
 .dashboard-create-btn {
-    background-color: $color-accent !important;
-    color: $color-gray-900 !important;
-    font-weight: $font-weight-bold;
-    padding: $spacing-2 $spacing-4;
-    border-radius: $border-radius-full; // Updated to pill shape
-    transition: all $transition-base;
-    box-shadow: 0 4px 12px rgba($color-accent, 0.3); // Added initial shadow
+    font-size: $font-size-base;
+    @include button-premium-glow;
+}
+
+.adhoc-trigger-btn {
+    height: 40px;
+    @include button-premium-glow;
+}
+
+.btn-error-primary {
+    background: $color-status-final !important;
+    border-color: $color-status-final !important;
+    @include button-primary;
 
     &:hover {
-        transform: translateY(-2px);
-        background-color: $color-accent-light !important;
-        box-shadow: 0 8px 20px rgba($color-accent, 0.4); // Enhanced glow on hover
+        background: color.adjust($color-status-final, $lightness: -5%) !important;
+    }
+}
+
+.btn-error-secondary {
+    color: $color-status-final !important;
+    border-color: $color-status-final !important;
+    @include button-secondary;
+
+    &:hover {
+        background: rgba($color-status-final, 0.05) !important;
     }
 }
 
@@ -99,11 +146,11 @@
 
 .dashboard-content {
     flex: 1;
-    padding: $spacing-6 $spacing-4;
+    padding: $spacing-4 $spacing-4;
     background-color: $color-background;
 
     @include breakpoint('md') {
-        padding: $spacing-8 $spacing-6;
+        padding: $spacing-4 $spacing-6;
     }
 }
 
@@ -141,9 +188,17 @@
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    border: 1px solid $color-gray-200;
+    transition: all $transition-base;
+    box-shadow: $shadow-premium;
+    background-color: $color-white;
+    border-radius: $border-radius-lg;
+    overflow: hidden;
     @include card;
-    @include card-hover;
+
+    &:hover {
+        transform: translateY(-4px) scale(1.01);
+        box-shadow: 0 15px 35px -5px rgba(3, 81, 139, 0.12), 0 8px 15px -3px rgba(0, 0, 0, 0.04);
+    }
 
     &:focus-visible {
         outline: 2px solid $color-primary;
@@ -151,10 +206,31 @@
     }
 }
 
+.checklist-card--status-draft {
+    border-left-color: $color-status-draft;
+}
+
+.checklist-card--status-in-review {
+    border-left-color: $color-status-review;
+}
+
+.checklist-card--status-final {
+    border-left-color: $color-status-final;
+}
+
 .checklist-card-header {
-    padding: $spacing-4;
+    padding: $spacing-3 $spacing-4; // Reduced vertical padding
     border-bottom: 1px solid $color-gray-200;
-    background: linear-gradient(to right, rgba($color-primary, 0.05), transparent);
+    background-color: rgba($color-primary, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1; // Reduced gap
+}
+
+.checklist-card-job-ref-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .checklist-card-job-ref {
@@ -164,7 +240,16 @@
     color: $color-primary;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: $spacing-1;
+}
+
+.job-type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    background: $color-gray-200;
+    color: $color-gray-700;
 }
 
 .checklist-card-title {
@@ -177,11 +262,11 @@
 }
 
 .checklist-card-body {
-    padding: $spacing-4;
+    padding: $spacing-3 $spacing-4; // Reduced vertical padding
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: $spacing-3;
+    gap: $spacing-2; // Reduced gap
 }
 
 .checklist-card-meta {
@@ -220,10 +305,21 @@
 .checklist-card-revision {
     font-family: $font-family-mono;
     font-size: $font-size-xs;
-    color: $color-gray-600;
-    background-color: $color-gray-100;
     padding: $spacing-1 $spacing-2;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-full;
+    border: 1px solid transparent;
+    transition: all $transition-base;
+
+    // REV 0 defaults to draft status colors
+    background-color: rgba($color-status-draft, 0.15);
+    color: $color-status-draft;
+
+    &--active {
+        background-color: rgba($color-accent, 0.15);
+        color: $color-primary;
+        border-color: rgba($color-accent, 0.3);
+        font-weight: $font-weight-bold;
+    }
 }
 
 .checklist-card-details {
@@ -262,8 +358,24 @@
 }
 
 .checklist-card-date,
-.checklist-card-estimator {
+.checklist-card-estimator,
+.checklist-card-due {
     font-size: $font-size-xs;
+    color: $color-gray-500;
+}
+
+// Due Date Colors
+.due-overdue {
+    color: #d13438; // Red
+    font-weight: $font-weight-bold;
+}
+
+.due-urgent {
+    color: #ca5010; // Orange
+    font-weight: $font-weight-semibold;
+}
+
+.due-normal {
     color: $color-gray-500;
 }
 
@@ -272,10 +384,10 @@
 // ============================================
 
 .dashboard-empty {
-    @include flex-center;
     flex-direction: column;
     padding: $spacing-16 $spacing-4;
     text-align: center;
+    @include flex-center;
 }
 
 .dashboard-empty-icon {
@@ -304,8 +416,8 @@
 // ============================================
 
 .dashboard-loading {
-    @include flex-center;
     min-height: 300px;
+    @include flex-center;
 }
 
 // ============================================
@@ -336,12 +448,19 @@
     display: flex;
     align-items: center;
     gap: $spacing-3;
-    margin-left: auto; // Push to right
-    margin-right: $spacing-4; // Space before Create button
-    padding: $spacing-2 $spacing-3;
+    margin-left: auto;
+    margin-right: $spacing-4;
+    padding: $spacing-1 $spacing-4;
     background-color: rgba($color-white, 0.1);
+    backdrop-filter: blur(8px);
     border-radius: $border-radius-full;
-    border: 1px solid rgba($color-white, 0.2);
+    border: 1px solid rgba($color-white, 0.15);
+    transition: all $transition-fast;
+
+    &:hover {
+        background-color: rgba($color-white, 0.15);
+        border-color: rgba($color-white, 0.3);
+    }
 
     @media (max-width: $breakpoint-sm) {
         display: none; // Hide on mobile if crowded, or adjust

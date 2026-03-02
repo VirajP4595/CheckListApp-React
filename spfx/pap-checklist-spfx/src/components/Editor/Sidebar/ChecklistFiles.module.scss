@@ -1,3 +1,4 @@
+@use "sass:color";
 // ChecklistFiles Styles
 @use '../../../styles/variables' as *;
 @use '../../../styles/mixins' as *;
@@ -141,6 +142,18 @@
 
     .files-item:hover & {
         opacity: 1;
+    }
+
+    button {
+        padding: $spacing-1 !important;
+        min-width: 32px !important;
+        height: 32px !important;
+        @include button-ghost;
+
+        &:hover {
+            color: $color-primary !important;
+            background-color: rgba($color-primary, 0.05) !important;
+        }
     }
 }
 

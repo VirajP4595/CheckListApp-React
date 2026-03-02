@@ -21,7 +21,7 @@ interface AppProps {
 const App: React.FC<AppProps> = ({ userDisplayName, userEmail, userId, siteUrl }) => {
     const [currentView, setCurrentView] = useState<View>('dashboard');
     const [activeChecklistId, setActiveChecklistId] = useState<string | null>(null);
-    const setUser = useUserStore(state => state.setUser);
+    const { setUser, checkAdminRole } = useUserStore();
 
     // Initialize state from URL query parameters
     useEffect(() => {
@@ -43,7 +43,10 @@ const App: React.FC<AppProps> = ({ userDisplayName, userEmail, userId, siteUrl }
             email: userEmail,
             role: 'estimator' // Default role
         });
-    }, [userId, userDisplayName, userEmail, setUser]);
+
+        // Check if user is in Super Admin group
+        void checkAdminRole();
+    }, [userId, userDisplayName, userEmail, setUser, checkAdminRole]);
 
     const handleOpenChecklist = (id: string) => {
         setActiveChecklistId(id);

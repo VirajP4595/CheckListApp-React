@@ -1,3 +1,6 @@
+@use "sass:color";
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
 
 .branding-panel {
   display: flex;
@@ -51,6 +54,15 @@
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: $spacing-2;
   justify-content: center;
+  margin-top: $spacing-4;
+
+  button:first-child {
+    @include button-secondary;
+  }
+
+  button:last-child {
+    @include button-primary;
+  }
 }

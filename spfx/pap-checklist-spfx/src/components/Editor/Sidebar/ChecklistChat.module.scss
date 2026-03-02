@@ -1,3 +1,4 @@
+@use "sass:color";
 // ChecklistChat Styles
 @use '../../../styles/variables' as *;
 @use '../../../styles/mixins' as *;
@@ -86,6 +87,11 @@
 
 .chat-send-btn {
     flex-shrink: 0;
+    min-width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    border-radius: $border-radius-full !important;
+    @include button-primary;
 }
 
 // ============================================

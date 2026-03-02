@@ -11,6 +11,7 @@ import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import * as strings from 'PapChecklistWebPartStrings';
 import App from '../../App';
 import { initializeServices } from '../../services/serviceFactory';
+import { sharePointGroupService } from '../../services/sharePointGroupService';
 import { FluentProvider, webLightTheme, IdPrefixProvider } from '@fluentui/react-components';
 
 // Removed static import to prevent unconditional loading
@@ -49,6 +50,7 @@ export default class PapChecklistWebPart extends BaseClientSideWebPart<IPapCheck
 
     // Initialize our Services with SPFx Context
     await initializeServices(this.context);
+    sharePointGroupService.initialize(this.context);
 
     // Check for ?showsp=true query param
     // using standard URLSearchParams for reliability

@@ -24,7 +24,7 @@
     gap: $spacing-3;
     padding: $spacing-4;
     border-bottom: 1px solid $color-gray-200;
-    background: linear-gradient(to right, rgba($color-accent, 0.15), transparent);
+    background-color: rgba($color-accent, 0.08);
 }
 
 .dialog-icon {
