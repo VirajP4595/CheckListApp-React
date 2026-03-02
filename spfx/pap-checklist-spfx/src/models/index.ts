@@ -110,6 +110,11 @@ export interface Checklist {
         jobName: string;
         jobNumber: string;
         clientName: string;
+        leadEstimator?: string;
+        reviewer?: string;
+        dueDate?: Date;
+        jobType?: string;
+        meetingOccurred?: boolean;
     };
     // ────────────────────────
     createdBy: string;

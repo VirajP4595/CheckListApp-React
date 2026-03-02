@@ -11,6 +11,7 @@ import {
 import { DocumentBulletList24Regular, Person24Regular, Home24Regular } from '@fluentui/react-icons';
 import { useChecklistStore, useUserStore } from '../../stores';
 import { ChecklistCard } from './ChecklistCard';
+import { AdhocChecklistDialog } from './AdhocChecklistDialog';
 import styles from './Dashboard.module.scss';
 
 interface DashboardProps {
@@ -27,7 +28,7 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }) => {
     const { checklists, isLoading, loadChecklists, error, isInitialized } = useChecklistStore();
-    const { user } = useUserStore();
+    const { user, isSuperAdmin } = useUserStore();
 
     // Filter State
     const [filters, setFilters] = React.useState<DashboardFilterState>({
@@ -35,6 +36,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
 
         selectedJobIds: [],
         selectedClientNames: [],
+        selectedJobTypes: [],
         selectedStatuses: [],
         sort: { field: 'updatedAt', direction: 'desc' }
     });
@@ -46,8 +48,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
     const MAX_RETRIES = 2;
 
     useEffect(() => {
-        // Initial Load
-        if (!error && !isInitialized && !isLoading) {
+        // [Refined] Always refresh when Dashboard mounts to ensure latest values on return from Editor
+        if (!error && !isLoading) {
             void loadChecklists();
         }
 
@@ -60,7 +62,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
             }, 2000);
             return () => clearTimeout(timer);
         }
-    }, [error, isInitialized, isLoading, loadChecklists]);
+    }, [error, isLoading, loadChecklists]);
 
     if (error && retryCount.current >= MAX_RETRIES) {
         return (
@@ -77,13 +79,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
                             </div>
                         </MessageBarBody>
                         <MessageBarActions containerAction={<button aria-label="Dismiss" />}>
-                            <Button onClick={() => {
+                            <Button className={styles['btn-error-secondary']} onClick={() => {
                                 retryCount.current = 0;
                                 void loadChecklists();
                             }}>
                                 Try Again
                             </Button>
-                            <Button appearance="primary" onClick={() => window.location.reload()}>
+                            <Button className={styles['btn-error-primary']} appearance="primary" onClick={() => window.location.reload()}>
                                 Refresh Page
                             </Button>
                         </MessageBarActions>
@@ -124,7 +126,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
             result = result.filter(c => selectedStatuses.includes(c.status));
         }
 
-        // 4. Sort
+        // 4. Filter by Job Type
+        const selectedJobTypes = filters.selectedJobTypes;
+        if (selectedJobTypes && selectedJobTypes.length > 0) {
+            console.log('Filtering by Job Type:', selectedJobTypes);
+            result = result.filter(c => c.jobDetails?.jobType && selectedJobTypes.includes(c.jobDetails.jobType));
+        }
+
+        // 5. Sort
         try {
             result.sort((a, b) => {
                 const fieldA = filters.sort.field === 'updatedAt' ? new Date(a.updatedAt || 0).getTime() : (a.title || '').toLowerCase();
@@ -159,36 +168,46 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
             {/* Brand Header */}
             <header className={styles['dashboard-header']}>
                 <div className={styles['dashboard-header-content']}>
-                    {/* Home Button */}
-                    <div className={styles['dashboard-home-btn']}>
-                        <Button
-                            appearance="subtle"
-                            icon={<Home24Regular />}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        {/* PAP Logo Replacement for Home Button */}
+                        <div
+                            className={styles['dashboard-logo-container']}
                             title="Go to SharePoint Home"
                             onClick={() => { window.location.href = siteUrl; }}
-                            style={{ color: 'white', minWidth: 'auto', padding: '8px' }}
-                        />
-                    </div>
-
-                    <div className={styles['dashboard-title']}>
-                        <h1 className={styles['dashboard-title-main']}>PAP Checklists</h1>
-                        <span className={styles['dashboard-title-sub']}>
-                            Estimator Checklist Management System
-                        </span>
-                    </div>
-
-                    {/* User Profile */}
-                    {user && (
-                        <div className={styles['user-profile']}>
-                            <div className={styles['user-avatar']}>
-                                <Person24Regular />
-                            </div>
-                            <div className={styles['user-info']}>
-                                <span className={styles['user-name']}>{user.name}</span>
-                                <span className={styles['user-email']}>{user.email}</span>
-                            </div>
+                        >
+                            <img
+                                src={`${siteUrl}/SiteAssets/PAPLogo/2024_PAP logo hor_transparent bkgrd_HR.png`}
+                                alt="PAP Logo"
+                                className={styles['dashboard-logo']}
+                            />
                         </div>
-                    )}
+
+                        <div className={styles['dashboard-title']}>
+                            <h1 className={styles['dashboard-title-main']}>PAP Checklists</h1>
+                            <span className={styles['dashboard-title-sub']}>
+                                Estimator Management System
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Right Aligned Controls (Admin + Profile) */}
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        {user && isSuperAdmin && (
+                            <AdhocChecklistDialog />
+                        )}
+
+                        {user && (
+                            <div className={styles['user-profile']}>
+                                <div className={styles['user-avatar']}>
+                                    <Person24Regular />
+                                </div>
+                                <div className={styles['user-info']}>
+                                    <span className={styles['user-name']}>{user.name}</span>
+                                    <span className={styles['user-email']}>{user.email}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </header>
 

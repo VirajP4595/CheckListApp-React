@@ -25,6 +25,14 @@ interface DataverseChecklist {
         _vin_account_value?: string;
         "_vin_account_value@OData.Community.Display.V1.FormattedValue"?: string;
         vin_jobnumber?: string;
+        _vin_estimator_value?: string;
+        "_vin_estimator_value@OData.Community.Display.V1.FormattedValue"?: string;
+        _ownerid_value?: string;
+        "_ownerid_value@OData.Community.Display.V1.FormattedValue"?: string;
+        vin_duedate?: string;
+        vin_jobtype?: number;
+        "vin_jobtype@OData.Community.Display.V1.FormattedValue"?: string;
+        vin_jobstartmtg?: boolean;
     };
     createdby?: {
         fullname: string;
@@ -142,9 +150,9 @@ function mapWorkgroup(dv: DataverseWorkgroup): Workgroup {
 
 function mapChecklist(dv: DataverseChecklist): Checklist {
     // DEBUG: Inspect raw data for chat issues
-    console.log('[DataverseService] Mapping Checklist:', dv.pap_checklistid);
-    console.log('[DataverseService] Raw Chat Data:', dv.pap_chatdata);
-    console.log('[DataverseService] All Keys:', Object.keys(dv));
+    // console.log('[DataverseService] Mapping Checklist:', dv.pap_checklistid);
+    // console.log('[DataverseService] Raw Chat Data:', dv.pap_chatdata);
+    // console.log('[DataverseService] All Keys:', Object.keys(dv));
 
     // Access child workgroups using the navigation property name from navprops
     const workgroups = (dv[navprops.checklist_workgroups] as DataverseWorkgroup[] | undefined) || [];
@@ -153,7 +161,12 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
     const jobDetails = dv.pap_jobid ? {
         jobName: dv.pap_jobid.vin_name,
         jobNumber: dv.pap_jobid.vin_jobnumber || '',
-        clientName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || ''
+        clientName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '',
+        leadEstimator: dv.pap_jobid["_vin_estimator_value@OData.Community.Display.V1.FormattedValue"] || '',
+        reviewer: dv.pap_jobid["_ownerid_value@OData.Community.Display.V1.FormattedValue"] || '',
+        dueDate: dv.pap_jobid.vin_duedate ? new Date(dv.pap_jobid.vin_duedate) : undefined,
+        jobType: dv.pap_jobid["vin_jobtype@OData.Community.Display.V1.FormattedValue"] || '',
+        meetingOccurred: dv.pap_jobid.vin_jobstartmtg ?? true // Default to true if null/omitted
     } : undefined;
     return {
         id: dv.pap_checklistid,
@@ -171,7 +184,7 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
         comments: (() => {
             const raw = dv.pap_chatdata || (dv.pap_ChatData as unknown as string);
             const parsed = parseJsonField(raw);
-            console.log('[DataverseService] Parsed Comments:', parsed, 'From Raw:', raw);
+            //console.log('[DataverseService] Parsed Comments:', parsed, 'From Raw:', raw);
             return parsed;
         })(),
         files: parseJsonField(dv.pap_filedata),
@@ -203,7 +216,7 @@ export class DataverseChecklistService implements IChecklistService {
         ].join(',');
 
         // Expand Job to get details
-        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber),createdby($select=fullname)`;
+        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg),createdby($select=fullname)`;
 
         const dv = await dataverseClient.getById<DataverseChecklist>(
             entities.checklists,
@@ -292,7 +305,12 @@ export class DataverseChecklistService implements IChecklistService {
             jobDetails: dv.pap_jobid ? {
                 jobName: dv.pap_jobid.vin_name,
                 jobNumber: dv.pap_jobid.vin_jobnumber || '',
-                clientName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || ''
+                clientName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '',
+                leadEstimator: dv.pap_jobid["_vin_estimator_value@OData.Community.Display.V1.FormattedValue"] || '',
+                reviewer: dv.pap_jobid["_ownerid_value@OData.Community.Display.V1.FormattedValue"] || '',
+                dueDate: dv.pap_jobid.vin_duedate ? new Date(dv.pap_jobid.vin_duedate) : undefined,
+                jobType: dv.pap_jobid["vin_jobtype@OData.Community.Display.V1.FormattedValue"] || '',
+                meetingOccurred: dv.pap_jobid.vin_jobstartmtg ?? true
             } : undefined,
             comments: (() => {
                 const raw = dv.pap_chatdata || (dv.pap_ChatData as unknown as string);
@@ -321,11 +339,11 @@ export class DataverseChecklistService implements IChecklistService {
         ].join(',');
 
         // Expand Job to get details
-        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber),createdby($select=fullname)`;
+        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg),createdby($select=fullname)`;
 
         const response = await dataverseClient.get<{ value: DataverseChecklist[] }>(
             entities.checklists,
-            `$select=${select}&$expand=${expand}&$orderby=modifiedon desc&$top=50`
+            `$select=${select}&$expand=${expand}&$filter=statecode eq 0&$orderby=modifiedon desc&$top=50`
         );
         return response.value.map(dv => mapChecklist(dv));
     }
@@ -344,6 +362,45 @@ export class DataverseChecklistService implements IChecklistService {
             [col('filedata')]: JSON.stringify(checklist.files || [])
         });
         return checklist;
+    }
+
+    async deleteChecklist(id: string, onProgress?: (status: string, percent: number) => void): Promise<void> {
+        console.log(`[Dataverse] Permanently Deleting Checklist: ${id}`);
+
+        if (onProgress) onProgress('Locating workgroups...', 10);
+
+        // 1. Get all workgroups for this checklist
+        const workgroupsResponse = await dataverseClient.get<{ value: { pap_workgroupid: string }[] }>(
+            entities.workgroups,
+            `$filter=_pap_checklistid_value eq ${id}&$select=pap_workgroupid`
+        );
+        const workgroupIds = workgroupsResponse.value.map(wg => wg.pap_workgroupid);
+
+        if (onProgress) onProgress(`Found ${workgroupIds.length} workgroups. Processing rows...`, 20);
+
+        // 2. For each workgroup, get rows and delete
+        let deletedWgs = 0;
+
+        for (const wgId of workgroupIds) {
+            if (onProgress) onProgress(`Deleting workgroup ${deletedWgs + 1} of ${workgroupIds.length}...`, 20 + Math.floor((deletedWgs / Math.max(workgroupIds.length, 1)) * 70));
+
+            const rowsResponse = await dataverseClient.get<{ value: DataverseRow[] }>(
+                entities.checklistrows,
+                `$filter=_pap_workgroupid_value eq ${wgId}&$select=pap_checklistrowid`
+            );
+            const rowIds = rowsResponse.value.map(r => r.pap_checklistrowid);
+
+            // Execute row deletions concurrently
+            await Promise.all(rowIds.map(rId => dataverseClient.delete(entities.checklistrows, rId)));
+
+            await dataverseClient.delete(entities.workgroups, wgId);
+            deletedWgs++;
+        }
+
+        if (onProgress) onProgress('Deleting main checklist record...', 90);
+        // 3. Delete checklist
+        await dataverseClient.delete(entities.checklists, id);
+        if (onProgress) onProgress('Deletion complete', 100);
     }
 
     // ─── WORKGROUP ACTIONS ──────────────────────────────────────────────

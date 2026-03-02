@@ -10,46 +10,33 @@ import {
     ProgressBar,
     Text
 } from '@fluentui/react-components';
-import { DocumentPdf24Regular, Eye24Regular, Delete24Regular } from '@fluentui/react-icons';
-import styles from './PdfGenerationProgressModal.module.scss';
+import { Delete24Regular } from '@fluentui/react-icons';
+import styles from './DeleteProgressModal.module.scss';
 
-interface PdfGenerationProgressModalProps {
+interface DeleteProgressModalProps {
     open: boolean;
     onCancel: () => void;
-    title?: string;         // e.g. "Generating PDF Report"
-    iconType?: 'pdf' | 'preview' | 'delete';
-    status: string;         // e.g. "Processing image 5/20..."
-    percent: number;        // 0-100
-    hint?: string;          // Optional custom hint text
+    status: string;
+    percent: number;
 }
 
-export const PdfGenerationProgressModal: React.FC<PdfGenerationProgressModalProps> = ({
+export const DeleteProgressModal: React.FC<DeleteProgressModalProps> = ({
     open,
     onCancel,
-    title = 'Generating PDF Report',
-    iconType = 'pdf',
     status,
-    percent,
-    hint
+    percent
 }) => {
     return (
         <Dialog open={open}>
             <DialogSurface className={styles.surface}>
                 <DialogBody>
                     <div className={styles.header}>
-                        <DialogTitle>{title}</DialogTitle>
-                        {/* We don't show close button, must either finish or cancel */}
+                        <DialogTitle>Deleting Checklist</DialogTitle>
                     </div>
 
                     <DialogContent className={styles.content}>
                         <div className={styles.iconArea}>
-                            {iconType === 'pdf' ? (
-                                <DocumentPdf24Regular className={styles.pdfIcon} />
-                            ) : iconType === 'delete' ? (
-                                <Delete24Regular className={styles.pdfIcon} style={{ color: '#d13438' }} />
-                            ) : (
-                                <Eye24Regular className={styles.pdfIcon} />
-                            )}
+                            <Delete24Regular className={styles.deleteIcon} />
                         </div>
 
                         <div className={styles.progressArea}>
@@ -62,7 +49,7 @@ export const PdfGenerationProgressModal: React.FC<PdfGenerationProgressModalProp
 
                         {percent < 100 && (
                             <Text size={200} className={styles.hint}>
-                                {hint !== undefined ? hint : 'Large reports with many images may take a minute.'}
+                                Permanently removing all associated checklist data...
                             </Text>
                         )}
                     </DialogContent>
@@ -72,7 +59,7 @@ export const PdfGenerationProgressModal: React.FC<PdfGenerationProgressModalProp
                             className={styles['btn-cancel']}
                             appearance="subtle"
                             onClick={onCancel}
-                            disabled={percent >= 100} // Don't cancel if done (wait for auto-close or success)
+                            disabled={percent >= 100}
                         >
                             Cancel
                         </Button>

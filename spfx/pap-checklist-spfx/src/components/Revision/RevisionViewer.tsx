@@ -126,6 +126,18 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
                         </div>
                     )}
 
+                    {/* Common Notes (from Snapshot) */}
+                    {snapshot?.commonNotes && snapshot.commonNotes.trim() && (
+                        <div className={styles['revision-common-notes']}>
+                            <h3 className={styles['revision-common-notes-title']}>Common Notes</h3>
+                            <RichTextEditor
+                                content={snapshot.commonNotes}
+                                readOnly={true}
+                                className={styles['compact-rte']}
+                            />
+                        </div>
+                    )}
+
                     {/* Workgroups */}
                     {snapshot?.workgroups?.map(workgroup => {
                         // Filter rows - hide BLANK items

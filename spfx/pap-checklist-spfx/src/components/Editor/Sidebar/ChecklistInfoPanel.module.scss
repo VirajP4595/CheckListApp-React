@@ -44,34 +44,28 @@
   display: inline-flex;
   align-items: center;
   gap: $spacing-1;
-  padding: $spacing-1 $spacing-2;
-  border-radius: $border-radius-md;
+  padding: $spacing-1 $spacing-3;
+  border-radius: $border-radius-full;
   font-size: $font-size-xs;
-  font-weight: $font-weight-medium;
+  font-weight: $font-weight-semibold;
   cursor: pointer;
-
-  // Filled Style (Base)
   background-color: $color-gray-100;
   border: 1px solid transparent;
   color: $color-gray-700;
-  transition: all $transition-fast;
+  transition: all $transition-base;
   user-select: none;
 
   &:hover {
     background-color: $color-gray-200;
-    // border-color: transparent; // Keep border transparent
-  }
-
-  &:focus-visible {
-    outline: 2px solid $color-primary;
-    outline-offset: 2px;
+    transform: translateY(-1px);
   }
 }
 
 .chip--selected {
-  background-color: rgba($color-primary, 0.15);
-  border-color: $color-primary;
+  background-color: rgba($color-primary, 0.1);
+  border-color: rgba($color-primary, 0.4);
   color: $color-primary;
+  box-shadow: 0 2px 8px rgba($color-primary, 0.1);
 }
 
 .chip--disabled {
@@ -147,17 +141,21 @@
 .action-group {
   display: flex;
   flex-direction: column;
-  align-items: flex-start !important; // Force Left align
+  align-items: flex-start !important;
   justify-content: flex-start !important;
   gap: $spacing-2;
   margin-top: $spacing-4;
   width: 100%;
 
-  // Target the button directly ensuring no auto margins
   &>button {
     margin: 0 !important;
     width: auto !important;
     min-width: 0 !important;
     max-width: 100% !important;
   }
+}
+
+.export-btn {
+  width: 100%;
+  @include button-secondary;
 }

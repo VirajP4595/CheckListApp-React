@@ -35,6 +35,7 @@ interface ChecklistState {
 
     // Actions - Checklist CRUD
     saveChecklist: () => Promise<void>;
+    deleteChecklist: (id: string, onProgress?: (status: string, percent: number) => void) => Promise<void>;
     saveRow: (rowId: string) => Promise<void>;
     createRevision: (title: string, notes: string) => Promise<void>;
     uploadClientLogo: (file: File) => Promise<void>;
@@ -174,6 +175,22 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
             });
         } catch (err) {
             set({ error: (err as Error).message, isSaving: false });
+        }
+    },
+
+    deleteChecklist: async (id: string, onProgress?: (status: string, percent: number) => void) => {
+        set({ isSaving: true, error: null });
+        try {
+            await getChecklistService().deleteChecklist(id, onProgress);
+            set(state => ({
+                isSaving: false,
+                checklists: state.checklists.filter(c => c.id !== id),
+                activeChecklist: state.activeChecklist?.id === id ? null : state.activeChecklist
+            }));
+        } catch (err) {
+            console.error('[Store] Failed to delete checklist', err);
+            set({ error: (err as Error).message, isSaving: false });
+            throw err;
         }
     },
 

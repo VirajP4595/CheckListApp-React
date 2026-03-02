@@ -24,6 +24,7 @@ export interface DashboardFilterState {
     // So we should have a "Job" filter that selects specific jobs.
     selectedJobIds: string[];
     selectedClientNames: string[];
+    selectedJobTypes: string[];
     selectedStatuses: ChecklistStatus[];
     sort: SortParams;
 }
@@ -213,6 +214,45 @@ const ClientFilter: React.FC<{
     );
 };
 
+const JobTypeFilter: React.FC<{
+    checklists: Checklist[];
+    selectedTypes: string[];
+    onChange: (types: string[]) => void;
+}> = ({ checklists, selectedTypes, onChange }) => {
+    // Collect all unique job types from checklists
+    const jobTypeOptions = useMemo(() => {
+        const types = new Set<string>();
+        checklists.forEach(c => {
+            if (c.jobDetails?.jobType) types.add(c.jobDetails.jobType);
+        });
+        return Array.from(types).sort();
+    }, [checklists]);
+
+    const handleSelect = (types: string[]) => {
+        onChange(types);
+    };
+
+    let label = 'Filter by Job Type';
+    if (selectedTypes.length === jobTypeOptions.length && selectedTypes.length > 0) label = 'All Job Types';
+    else if (selectedTypes.length > 0) label = `${selectedTypes.length} Job Types`;
+
+    return (
+        <Dropdown
+            className={styles['filter-dropdown']}
+            placeholder={label}
+            multiselect
+            selectedOptions={selectedTypes}
+            onOptionSelect={(_, data) => handleSelect(data.selectedOptions as string[])}
+        >
+            {jobTypeOptions.map(type => (
+                <Option key={type} value={type} text={type}>
+                    {type}
+                </Option>
+            ))}
+        </Dropdown>
+    );
+};
+
 export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
     checklists,
     filters,
@@ -231,6 +271,10 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
         onFiltersChange({ ...filters, selectedClientNames: names });
     };
 
+    const handleJobTypeChange = (types: string[]) => {
+        onFiltersChange({ ...filters, selectedJobTypes: types });
+    };
+
     const handleSortChange = (value: string) => {
         const [field, direction] = value.split('-');
         onFiltersChange({
@@ -244,12 +288,13 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
             ...filters,
             selectedJobIds: [],
             selectedClientNames: [],
+            selectedJobTypes: [],
             selectedStatuses: [],
             search: '' // ensure search reset if we add it later
         });
     };
 
-    const hasActiveFilters = filters.selectedJobIds.length > 0 || filters.selectedClientNames.length > 0 || filters.selectedStatuses.length > 0;
+    const hasActiveFilters = filters.selectedJobIds.length > 0 || filters.selectedClientNames.length > 0 || filters.selectedJobTypes.length > 0 || filters.selectedStatuses.length > 0;
     const sortValue = `${filters.sort.field}-${filters.sort.direction}`;
 
     return (
@@ -274,6 +319,13 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
                     onChange={handleClientChange}
                 />
 
+                {/* Job Type Filter */}
+                <JobTypeFilter
+                    checklists={checklists}
+                    selectedTypes={filters.selectedJobTypes}
+                    onChange={handleJobTypeChange}
+                />
+
                 {/* Status Dropdown */}
                 <Dropdown
                     className={styles['filter-dropdown']}
@@ -290,7 +342,7 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
                     ))}
                 </Dropdown>
 
-                <div className={styles['filter-divider']} style={{ width: 1, height: 24, background: '#e0e0e0', margin: '0 8px' }} />
+                <div className={styles['filter-divider']} />
 
                 {/* Sort Dropdown */}
                 <div className={styles['filter-label']}>

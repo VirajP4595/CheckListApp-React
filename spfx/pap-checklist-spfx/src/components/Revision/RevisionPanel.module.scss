@@ -1,6 +1,7 @@
 // RevisionPanel Styles
 @use '../../styles/variables' as *;
 @use '../../styles/mixins' as *;
+@use 'sass:color';
 
 // ============================================
 // Panel Container
@@ -23,7 +24,7 @@
     justify-content: space-between;
     padding: $spacing-3 $spacing-4;
     border-bottom: 1px solid $color-gray-200;
-    background: linear-gradient(to right, rgba($color-accent, 0.15), transparent);
+    background-color: rgba($color-accent, 0.05);
 }
 
 .panel-title {
@@ -114,9 +115,16 @@
 // ============================================
 
 .create-revision {
-    padding: $spacing-3 $spacing-4;
+    padding: $spacing-4 $spacing-5;
     border-top: 1px solid $color-gray-200;
     background-color: $color-gray-50;
+    display: flex;
+    justify-content: flex-end;
+
+    button {
+        border-radius: $border-radius-full !important;
+        @include button-primary;
+    }
 }
 
 // ============================================
@@ -192,4 +200,14 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+}
+
+.btn-primary {
+    min-width: 120px;
+    @include button-primary;
+}
+
+.btn-secondary {
+    min-width: 100px;
+    @include button-secondary;
 }

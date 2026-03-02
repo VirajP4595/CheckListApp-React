@@ -32,6 +32,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
     const addRow = useChecklistStore(state => state.addRow);
     const updateWorkgroup = useChecklistStore(state => state.updateWorkgroup);
     const deleteWorkgroup = useChecklistStore(state => state.deleteWorkgroup);
+    const activeChecklist = useChecklistStore(state => state.activeChecklist);
 
     const isAdding = useChecklistStore(state => state.processingItems.includes(workgroup.id));
 
@@ -89,6 +90,13 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
     // Filter rows based on filters
     const filteredRows = useMemo(() => {
         return workgroup.rows.filter(row => {
+            // UAT Feedback: Hide 'Meeting Transcript' if meeting Occurred is false
+            if (activeChecklist?.jobDetails?.meetingOccurred === false) {
+                if (row.name?.toLowerCase().trim() === 'meeting transcript') {
+                    return false;
+                }
+            }
+
             if (filters?.answerStates && filters.answerStates.length > 0) {
                 if (!filters.answerStates.includes(row.answer)) {
                     return false;
@@ -106,7 +114,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
             }
             return true;
         });
-    }, [workgroup.rows, filters]);
+    }, [workgroup.rows, filters, activeChecklist?.jobDetails?.meetingOccurred]);
 
 
 

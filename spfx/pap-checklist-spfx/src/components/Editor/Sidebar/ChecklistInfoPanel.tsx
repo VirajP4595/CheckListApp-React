@@ -167,6 +167,7 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
                 <div className={styles['action-group']}>
                     {!loadingProgress.open ? (
                         <Button
+                            className={styles['export-btn']}
                             icon={<ArrowDownload24Regular />}
                             onClick={handleExportPDF}
                         >

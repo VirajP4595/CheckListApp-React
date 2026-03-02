@@ -132,11 +132,14 @@ export class PdfGeneratorService {
         for (const wg of this.checklist.workgroups) {
             // Pre-calculate visible rows for this workgroup
             const visibleRows = wg.rows.filter(row => {
-                const rawDesc = this.stripHtml(row.description || '').trim();
-                const isUnanswered = row.answer === 'BLANK';
-                const isExcluded = row.answer === 'NO';
-                // Keep if description exists OR status is meaningful (not BLANK/NO)
-                return rawDesc || (!isUnanswered && !isExcluded);
+                // Exclude rows marked as internal only
+                if (row.internalOnly) return false;
+
+                // Exclude rows that have not been answered yet
+                if (row.answer === 'BLANK') return false;
+
+                // Include all other answered rows
+                return true;
             });
 
             // If no rows are visible, skip the entire workgroup (header included)
@@ -358,7 +361,7 @@ export class PdfGeneratorService {
                         }
                         const props = await this.getImageProperties(d).catch(() => ({ ratio: 1.77 }));
                         loadedImages.push({ data: d, ratio: props.ratio });
-                    } catch (e) { 
+                    } catch (e) {
                         console.error("Error loading image", e);
                     }
                 }
