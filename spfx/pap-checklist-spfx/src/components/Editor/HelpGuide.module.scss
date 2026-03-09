@@ -71,8 +71,19 @@
     }
 
     &--none {
-        background-color: $color-gray-100;
-        border: 1px solid $color-gray-300;
+        background-color: #8a8886;
+    }
+
+    &--tbc {
+        background-color: #a4262c;
+    }
+
+    &--opt {
+        background-color: #ca5010;
+    }
+
+    &--spec {
+        background-color: #498205;
     }
 }
 

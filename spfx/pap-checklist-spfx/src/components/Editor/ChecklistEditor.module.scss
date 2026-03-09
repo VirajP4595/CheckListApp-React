@@ -12,6 +12,7 @@
     display: flex;
     flex-direction: column;
     background-color: $color-background;
+    overflow-x: hidden; // Prevent horizontal scrollbar
 }
 
 // ============================================
@@ -198,9 +199,9 @@
 
 .editor-save-btn {
     border-radius: $border-radius-full !important;
-    padding: $spacing-1 $spacing-6 !important;
-    height: 36px !important;
-    @include button-primary;
+    padding: $spacing-1 $spacing-8 !important; // Slightly wider for premium feel
+    height: 40px !important; // Taller for primary action
+    @include button-premium-glow;
 }
 
 // ============================================
@@ -212,6 +213,7 @@
     display: flex;
     flex-direction: column;
     padding: $spacing-4;
+    overflow-x: hidden; // Prevent horizontal scrollbar
 
     @include breakpoint('lg') {
         flex-direction: row;

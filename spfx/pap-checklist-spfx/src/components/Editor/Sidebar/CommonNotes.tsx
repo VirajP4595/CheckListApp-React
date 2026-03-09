@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@fluentui/react-components';
-import { ChevronDown20Regular, ChevronRight20Regular, Notepad24Regular } from '@fluentui/react-icons';
+import { ChevronDown20Regular, ChevronRight20Regular, Notepad24Regular, Calculator24Regular } from '@fluentui/react-icons';
 import { RichTextEditor } from '../RichTextEditor';
+import { CarpentryLabourDialog } from '../CarpentryLabourDialog';
 import type { Checklist } from '../../../models';
 import { useUserStore } from '../../../stores';
 import { getActivityLogService } from '../../../services';
@@ -22,6 +23,7 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
     // Auto-collapse if empty
     const hasContent = notes && notes.trim().length > 0 && notes !== '<p></p>' && notes !== '<p><br></p>';
     const [expanded, setExpanded] = useState(hasContent);
+    const [showCarpentryDialog, setShowCarpentryDialog] = useState(false);
 
     useEffect(() => {
         setNotes(checklist.commonNotes || '');
@@ -57,22 +59,36 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
 
     return (
         <div className={`${styles['common-notes-card']} ${expanded ? styles['common-notes-card--expanded'] : ''}`}>
-            <button
-                className={styles['common-notes-header']}
-                onClick={handleToggle}
-                type="button"
-            >
-                <div className={styles['common-notes-header-left']}>
-                    <span className={styles['common-notes-icon']}>
-                        {expanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
-                    </span>
-                    <Notepad24Regular className={styles['common-notes-title-icon']} />
-                    <span className={styles['common-notes-title']}>Common Notes</span>
-                    {!hasContent && !expanded && (
-                        <span className={styles['common-notes-empty-hint']}>Click to add project-wide notes</span>
-                    )}
-                </div>
-            </button>
+            <div className={styles['common-notes-header']}>
+                <button
+                    className={styles['common-notes-title-btn']}
+                    onClick={handleToggle}
+                    type="button"
+                >
+                    <div className={styles['common-notes-header-left']}>
+                        <span className={styles['common-notes-icon']}>
+                            {expanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
+                        </span>
+                        <Notepad24Regular className={styles['common-notes-title-icon']} />
+                        <span className={styles['common-notes-title']}>Common Notes</span>
+                        {!hasContent && !expanded && (
+                            <span className={styles['common-notes-empty-hint']}>Click to add project-wide notes</span>
+                        )}
+                    </div>
+                </button>
+                <Button
+                    className={styles['carpentry-btn']}
+                    appearance="subtle"
+                    icon={<Calculator24Regular />}
+                    size="small"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCarpentryDialog(true);
+                    }}
+                >
+                    Carpentry Labour
+                </Button>
+            </div>
 
             {expanded && (
                 <div className={styles['common-notes-content']}>
@@ -84,6 +100,14 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
                         readOnly={readOnly}
                     />
                 </div>
+            )}
+
+            {showCarpentryDialog && (
+                <CarpentryLabourDialog
+                    checklist={checklist}
+                    onClose={() => setShowCarpentryDialog(false)}
+                    readOnly={readOnly}
+                />
             )}
         </div>
     );

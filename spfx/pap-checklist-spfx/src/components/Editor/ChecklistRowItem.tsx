@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Button, Tooltip, Input, Spinner } from '@fluentui/react-components';
+import { Button, Tooltip, Input, Spinner, Dialog, DialogTrigger, DialogSurface, DialogBody, DialogTitle, DialogContent, DialogActions } from '@fluentui/react-components';
 import {
     Delete20Regular,
     Flag20Regular,
@@ -7,13 +7,18 @@ import {
     LockClosed20Regular,
     LockClosed20Filled,
     ChevronRight20Regular,
-    ChevronDown20Regular
+    ChevronDown20Regular,
+    Alert20Regular,
+    Alert20Filled,
+    PersonArrowRight20Regular,
+    PersonArrowRight20Filled
 } from '@fluentui/react-icons';
 import type { ChecklistRow } from '../../models';
 import { useChecklistStore } from '../../stores';
 import { AnswerSelector } from './AnswerSelector';
 import { RichTextEditor } from './RichTextEditor';
 import { InlineImageArea } from './InlineImageArea';
+import { NotifyAdminDialog } from './NotifyAdminDialog';
 import styles from './ChecklistRowItem.module.scss';
 
 interface ChecklistRowItemProps {
@@ -40,6 +45,8 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
     const originalNotesRef = useRef(row.notes);
 
     const [expanded, setExpanded] = React.useState(!isCompact);
+    const [showNotifyDialog, setShowNotifyDialog] = React.useState(false);
+    const activeChecklist = useChecklistStore(state => state.activeChecklist);
 
     React.useEffect(() => {
         setExpanded(!isCompact);
@@ -62,13 +69,31 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
         void saveRow(row.id);
     };
 
+    const handleToggleNotify = () => {
+        if (!row.notifyAdmin) {
+            updateRow(row.id, { notifyAdmin: true });
+            void saveRow(row.id);
+            setShowNotifyDialog(true);
+        } else {
+            updateRow(row.id, { notifyAdmin: false });
+            void saveRow(row.id);
+        }
+    };
+
+    const handleToggleBtc = () => {
+        updateRow(row.id, { builderToConfirm: !row.builderToConfirm });
+        void saveRow(row.id);
+    };
+
     const handleToggleInternalOnly = () => {
         updateRow(row.id, { internalOnly: !row.internalOnly });
         void saveRow(row.id);
     };
 
     const handleDelete = () => {
-        void deleteRow(row.id);
+        if (window.confirm(`Are you sure you want to delete this item${row.name ? ': "' + row.name + '"' : ''}?`)) {
+            void deleteRow(row.id);
+        }
     };
 
     const handleImageAdd = (source: string) => {
@@ -87,8 +112,13 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
 
     };
 
+    const setActiveRowId = useChecklistStore(state => state.setActiveRowId);
+
     return (
-        <div className={`${styles['row-item']} ${row.markedForReview ? styles['row-item--review'] : ''} ${row.internalOnly ? styles['row-item--internal'] : ''} ${!expanded ? styles['row-item--compact'] : ''}`}>
+        <div
+            className={`${styles['row-item']} ${!expanded ? styles['row-item--compact'] : ''}`}
+            onMouseEnter={() => setActiveRowId(row.id)}
+        >
 
             {/* Main Flex Container (3 Columns) */}
             <div className={styles['row-main-flex']}>
@@ -148,9 +178,92 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                             }}
                             placeholder="Item name"
                         />
+
+                        {/* Column 3: Actions */}
+                        <div className={styles['row-right-col']}>
+                            <Tooltip content={row.markedForReview ? 'Remove review flag' : 'Mark for review'} relationship="label">
+                                <Button
+                                    className={row.markedForReview ? styles['row-action-btn--review'] : styles['row-action-btn']}
+                                    appearance="subtle"
+                                    size="small"
+                                    icon={row.markedForReview ? <Flag20Filled /> : <Flag20Regular />}
+                                    onClick={handleToggleReview}
+                                />
+                            </Tooltip>
+                            <Tooltip content={row.notifyAdmin ? 'Remove admin notification' : 'Notify admin'} relationship="label">
+                                <Button
+                                    className={row.notifyAdmin ? styles['row-action-btn--notify'] : styles['row-action-btn']}
+                                    appearance="subtle"
+                                    size="small"
+                                    icon={row.notifyAdmin ? <Alert20Filled /> : <Alert20Regular />}
+                                    onClick={handleToggleNotify}
+                                />
+                            </Tooltip>
+                            <Tooltip content={row.builderToConfirm ? 'Remove BTC flag' : 'Builder to Confirm'} relationship="label">
+                                <Button
+                                    className={row.builderToConfirm ? styles['row-action-btn--btc'] : styles['row-action-btn']}
+                                    appearance="subtle"
+                                    size="small"
+                                    icon={row.builderToConfirm ? <PersonArrowRight20Filled /> : <PersonArrowRight20Regular />}
+                                    onClick={handleToggleBtc}
+                                />
+                            </Tooltip>
+                            <Tooltip content={row.internalOnly ? 'Remove internal flag' : 'Mark as internal only'} relationship="label">
+                                <Button
+                                    className={row.internalOnly ? styles['row-action-btn--internal'] : styles['row-action-btn']}
+                                    appearance="subtle"
+                                    size="small"
+                                    icon={row.internalOnly ? <LockClosed20Filled /> : <LockClosed20Regular />}
+                                    onClick={handleToggleInternalOnly}
+                                />
+                            </Tooltip>
+                            <Dialog>
+                                <DialogTrigger disableButtonEnhancement>
+                                    <Tooltip content="Delete item" relationship="label">
+                                        {isDeleting ? (
+                                            <Spinner size="extra-tiny" />
+                                        ) : (
+                                            <Button
+                                                className={styles['row-action-btn--delete']}
+                                                appearance="subtle"
+                                                size="small"
+                                                icon={<Delete20Regular />}
+                                            />
+                                        )}
+                                    </Tooltip>
+                                </DialogTrigger>
+                                <DialogSurface aria-describedby={undefined}>
+                                    <DialogBody>
+                                        <DialogTitle>Delete Item</DialogTitle>
+                                        <DialogContent>
+                                            Are you sure you want to delete this item{row.name ? ': "' + row.name + '"' : ''}? This action cannot be undone.
+                                        </DialogContent>
+                                        <DialogActions>
+                                            <DialogTrigger disableButtonEnhancement>
+                                                <Button appearance="secondary">Cancel</Button>
+                                            </DialogTrigger>
+                                            <Button
+                                                appearance="primary"
+                                                style={{ backgroundColor: '#d13438' }}
+                                                onClick={() => {
+                                                    void deleteRow(row.id);
+                                                }}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </DialogActions>
+                                    </DialogBody>
+                                </DialogSurface>
+                            </Dialog>
+                            {showNotifyDialog && (
+                                <NotifyAdminDialog
+                                    row={row}
+                                    checklist={activeChecklist}
+                                    onClose={() => setShowNotifyDialog(false)}
+                                />
+                            )}
+                        </div>
                     </div>
-
-
 
                     {/* Notes & Images (Visible if expanded) */}
                     {expanded && (
@@ -180,41 +293,6 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                             </div>
                         </>
                     )}
-                </div>
-
-                {/* Column 3: Actions */}
-                <div className={styles['row-right-col']}>
-                    <Tooltip content={row.markedForReview ? 'Remove review flag' : 'Mark for review'} relationship="label">
-                        <Button
-                            className={row.markedForReview ? styles['row-action-btn--review'] : styles['row-action-btn']}
-                            appearance="subtle"
-                            size="small"
-                            icon={row.markedForReview ? <Flag20Filled /> : <Flag20Regular />}
-                            onClick={handleToggleReview}
-                        />
-                    </Tooltip>
-                    <Tooltip content={row.internalOnly ? 'Remove internal flag' : 'Mark as internal only'} relationship="label">
-                        <Button
-                            className={row.internalOnly ? styles['row-action-btn--internal'] : styles['row-action-btn']}
-                            appearance="subtle"
-                            size="small"
-                            icon={row.internalOnly ? <LockClosed20Filled /> : <LockClosed20Regular />}
-                            onClick={handleToggleInternalOnly}
-                        />
-                    </Tooltip>
-                    <Tooltip content="Delete item" relationship="label">
-                        {isDeleting ? (
-                            <Spinner size="extra-tiny" />
-                        ) : (
-                            <Button
-                                className={styles['row-action-btn--delete']}
-                                appearance="subtle"
-                                size="small"
-                                icon={<Delete20Regular />}
-                                onClick={handleDelete}
-                            />
-                        )}
-                    </Tooltip>
                 </div>
 
             </div>

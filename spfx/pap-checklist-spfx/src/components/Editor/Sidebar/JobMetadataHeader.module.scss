@@ -1,0 +1,123 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+// ============================================
+// Job Metadata Header
+// ============================================
+
+.job-metadata {
+    @include card;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-lg;
+    padding: 1.25rem 1.5rem; // Increased padding for premium feel
+    margin-bottom: $spacing-6; // More breathing room below
+    background: $color-white;
+    box-shadow: $shadow-sm; // Subtle lift
+}
+
+.job-metadata-title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $color-gray-700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: $spacing-3;
+    padding-bottom: $spacing-2;
+    border-bottom: 1px solid $color-border;
+}
+
+.job-metadata-title-icon {
+    color: $color-primary;
+    font-size: 16px;
+}
+
+.job-metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); // Wider columns
+    gap: $spacing-4 $spacing-6; // Increased gap
+
+    @include mobile {
+        grid-template-columns: 1fr 1fr;
+        gap: $spacing-3 $spacing-4;
+    }
+}
+
+.job-metadata-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.job-metadata-label {
+    font-size: 11px;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500; // Better contrast
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.job-metadata-value {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold; // Bolder value
+    color: $color-gray-900; // Darker text for readability
+    line-height: 1.4;
+}
+
+.job-metadata-value--empty {
+    color: $color-gray-300;
+    font-style: italic;
+    font-weight: 400;
+}
+
+.job-metadata-value--on-hold {
+    color: $color-gray-300;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 11px;
+}
+
+// QBE sub-values
+.qbe-range {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    font-size: $font-size-xs;
+    color: $color-gray-600;
+    margin-top: 2px;
+}
+
+.qbe-range-label {
+    font-weight: 600;
+    color: $color-gray-500;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.qbe-range-value {
+    font-weight: 500;
+    color: $color-gray-700;
+}
+
+// Boolean badges
+.badge-yes {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+}
+
+.badge-no {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba($color-gray-400, 0.12);
+    color: $color-gray-500;
+}

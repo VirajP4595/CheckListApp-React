@@ -23,6 +23,7 @@ const useStyles = makeStyles({
         flexDirection: 'column',
         gap: tokens.spacingVerticalS,
         width: '100%',
+        boxSizing: 'border-box',
     },
     dropzone: {
         display: 'flex',
@@ -37,6 +38,7 @@ const useStyles = makeStyles({
         transitionDuration: '0.15s',
         transitionTimingFunction: 'ease',
         cursor: 'pointer',
+        boxSizing: 'border-box',
     },
     dropzoneHover: {
         ...shorthands.borderColor('#0a6dbc'),
@@ -167,6 +169,8 @@ export const InlineImageArea: React.FC<InlineImageAreaProps> = ({
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
             if (item.type.startsWith('image/')) {
+                e.preventDefault();
+                e.stopPropagation();
                 const file = item.getAsFile();
                 if (file) {
                     handleFile(file);

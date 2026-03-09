@@ -13,6 +13,7 @@ import { DataverseRevisionService } from './dataverseRevisionService';
 import { SharePointImageService } from './sharePointService';
 import { ActivityLogService } from './activityLogService';
 import { dataverseClient } from './dataverseService';
+import { GraphEmailService } from './graphEmailService';
 
 // ─── SERVICE INSTANCES ─────────────────────────────────────
 
@@ -20,6 +21,7 @@ let checklistServiceInstance: IChecklistService | null = null;
 let revisionServiceInstance: IRevisionService | null = null;
 let imageServiceInstance: SharePointImageService | null = null; // Concrete type for init
 let activityLogServiceInstance: ActivityLogService | null = null;
+let graphEmailServiceInstance: GraphEmailService | null = null;
 
 // ─── INITIALIZATION ────────────────────────────────────────
 
@@ -34,6 +36,11 @@ export async function initializeServices(context: WebPartContext): Promise<void>
         imageServiceInstance = new SharePointImageService();
     }
     await imageServiceInstance.initialize(context);
+
+    if (!graphEmailServiceInstance) {
+        graphEmailServiceInstance = new GraphEmailService();
+    }
+    await graphEmailServiceInstance.initialize(context);
 
     console.log('[ServiceFactory] Services Initialized.');
 }
@@ -68,6 +75,13 @@ export function getActivityLogService(): ActivityLogService {
     return activityLogServiceInstance;
 }
 
+export function getGraphEmailService(): GraphEmailService {
+    if (!graphEmailServiceInstance) {
+        graphEmailServiceInstance = new GraphEmailService();
+    }
+    return graphEmailServiceInstance;
+}
+
 // ─── RESET (for testing) ───────────────────────────────────
 
 export function resetServices(): void {
@@ -75,4 +89,5 @@ export function resetServices(): void {
     revisionServiceInstance = null;
     imageServiceInstance = null;
     activityLogServiceInstance = null;
+    graphEmailServiceInstance = null;
 }

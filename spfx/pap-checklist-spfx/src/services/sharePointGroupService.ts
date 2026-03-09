@@ -57,6 +57,38 @@ export class SharePointGroupService {
             return false;
         }
     }
+
+    public async getGroupMemberEmails(groupName: string): Promise<string[]> {
+        if (!this.context) {
+            console.error('[SharePointGroupService] Not initialized.');
+            return [];
+        }
+
+        try {
+            const url = `${this.context.pageContext.web.absoluteUrl}/_api/web/sitegroups/getbyname('${groupName}')/users?$select=Email`;
+            const response: SPHttpClientResponse = await this.context.spHttpClient.get(
+                url,
+                SPHttpClient.configurations.v1
+            );
+
+            if (!response.ok) {
+                console.warn(`[SharePointGroupService] Could not fetch members for group ${groupName}. Status: ${response.statusText}`);
+                return [];
+            }
+
+            const data = await response.json();
+            // Handle both OData verbosity levels just in case
+            const users: { Email?: string }[] = data.value || (data.d && data.d.results) || [];
+
+            return users
+                .map(u => u.Email)
+                .filter((email): email is string => !!email && email.trim() !== '');
+
+        } catch (error) {
+            console.error(`[SharePointGroupService] Error fetching members for ${groupName}:`, error);
+            return [];
+        }
+    }
 }
 
 export const sharePointGroupService = new SharePointGroupService();

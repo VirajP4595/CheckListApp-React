@@ -97,39 +97,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
 
     // Computed Checklists
     const filteredChecklists = React.useMemo(() => {
-        console.log('Dashboard Debug:', {
-            totalChecklists: checklists.length,
-            filters,
-            firstChecklist: checklists[0]
-        });
-
         let result = [...checklists];
 
         // 1. Filter by Job Selection (if any)
         const selectedJobIds = filters.selectedJobIds;
         if (selectedJobIds && selectedJobIds.length > 0) {
-            console.log('Filtering by Jobs:', selectedJobIds);
             result = result.filter(c => selectedJobIds.includes(c.id));
         }
 
         // 2. Filter by Client Name
         const selectedClientNames = filters.selectedClientNames;
         if (selectedClientNames && selectedClientNames.length > 0) {
-            console.log('Filtering by Clients:', selectedClientNames);
             result = result.filter(c => c.jobDetails?.clientName && selectedClientNames.includes(c.jobDetails.clientName));
         }
 
         // 3. Filter by Status
         const selectedStatuses = filters.selectedStatuses;
         if (selectedStatuses && selectedStatuses.length > 0) {
-            console.log('Filtering by Status:', selectedStatuses);
             result = result.filter(c => selectedStatuses.includes(c.status));
         }
 
         // 4. Filter by Job Type
         const selectedJobTypes = filters.selectedJobTypes;
         if (selectedJobTypes && selectedJobTypes.length > 0) {
-            console.log('Filtering by Job Type:', selectedJobTypes);
             result = result.filter(c => c.jobDetails?.jobType && selectedJobTypes.includes(c.jobDetails.jobType));
         }
 
@@ -149,7 +139,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
             console.error("Sort Error", e);
         }
 
-        console.log('Filtered Count:', result.length);
         return result;
     }, [checklists, filters]);
 

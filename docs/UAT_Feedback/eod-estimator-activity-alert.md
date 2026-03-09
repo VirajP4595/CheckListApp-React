@@ -77,10 +77,12 @@ To convert the JSON `action` keys (like `row_updated`) into friendly text and fo
    - **On:** Select `action` from the Parse JSON dynamic content to check what the user did.
 
 4. **Append HTML** (Inside each Switch Case)
-   - Add a Case for the actions you care about (e.g., `row_updated`, `revision_created`).
-   - Inside each Case, add an **Append to string variable** action pointing to `HTMLTableRows`.
+   - Add a **Case** for each of the action keys below.
+   - Inside each Case, add an **Append to string variable** action pointing to `HTMLTableRows`, using the provided HTML snippet.
 
-   *Example for `row_updated` Case:*
+   ***
+
+   **Case: `row_updated`**
    ```html
    <tr style="border-bottom: 1px solid #e1dfdd;">
      <td style="padding: 12px 8px;"><strong>@{items('Apply_to_each')?['user']}</strong></td>
@@ -88,7 +90,55 @@ To convert the JSON `action` keys (like `row_updated`) into friendly text and fo
    </tr>
    ```
 
-   *Example for `revision_created` Case:*
+   **Case: `row_added`**
+   ```html
+   <tr style="border-bottom: 1px solid #e1dfdd;">
+     <td style="padding: 12px 8px;"><strong>@{items('Apply_to_each')?['user']}</strong></td>
+     <td style="padding: 12px 8px; color: #605e5c;">Added rows to @{items('Apply_to_each')?['detail']}</td>
+   </tr>
+   ```
+
+   **Case: `row_deleted`**
+   ```html
+   <tr style="border-bottom: 1px solid #e1dfdd;">
+     <td style="padding: 12px 8px;"><strong>@{items('Apply_to_each')?['user']}</strong></td>
+     <td style="padding: 12px 8px; color: #605e5c;">Deleted rows from @{items('Apply_to_each')?['detail']}</td>
+   </tr>
+   ```
+
+   **Case: `workgroup_added`**
+   ```html
+   <tr style="border-bottom: 1px solid #e1dfdd;">
+     <td style="padding: 12px 8px;"><strong>@{items('Apply_to_each')?['user']}</strong></td>
+     <td style="padding: 12px 8px; color: #605e5c;">Added workgroup @{items('Apply_to_each')?['detail']}</td>
+   </tr>
+   ```
+
+   **Case: `workgroup_deleted`**
+   ```html
+   <tr style="border-bottom: 1px solid #e1dfdd;">
+     <td style="padding: 12px 8px;"><strong>@{items('Apply_to_each')?['user']}</strong></td>
+     <td style="padding: 12px 8px; color: #605e5c;">Deleted workgroup @{items('Apply_to_each')?['detail']}</td>
+   </tr>
+   ```
+
+   **Case: `common_notes_updated`**
+   ```html
+   <tr style="border-bottom: 1px solid #e1dfdd;">
+     <td style="padding: 12px 8px;"><strong>@{items('Apply_to_each')?['user']}</strong></td>
+     <td style="padding: 12px 8px; color: #605e5c;">Modified common notes</td>
+   </tr>
+   ```
+
+   **Case: `checklist_metadata_updated`**
+   ```html
+   <tr style="border-bottom: 1px solid #e1dfdd;">
+     <td style="padding: 12px 8px;"><strong>@{items('Apply_to_each')?['user']}</strong></td>
+     <td style="padding: 12px 8px; color: #605e5c;">Updated checklist details</td>
+   </tr>
+   ```
+
+   **Case: `revision_created`**
    ```html
    <tr style="border-bottom: 1px solid #e1dfdd;">
      <td style="padding: 12px 8px;"><strong>@{items('Apply_to_each')?['user']}</strong></td>
@@ -96,7 +146,30 @@ To convert the JSON `action` keys (like `row_updated`) into friendly text and fo
    </tr>
    ```
 
----
+   **Case: `file_uploaded`**
+   ```html
+   <tr style="border-bottom: 1px solid #e1dfdd;">
+     <td style="padding: 12px 8px;"><strong>@{items('Apply_to_each')?['user']}</strong></td>
+     <td style="padding: 12px 8px; color: #605e5c;">Uploaded file @{items('Apply_to_each')?['detail']}</td>
+   </tr>
+   ```
+
+   **Case: `file_deleted`**
+   ```html
+   <tr style="border-bottom: 1px solid #e1dfdd;">
+     <td style="padding: 12px 8px;"><strong>@{items('Apply_to_each')?['user']}</strong></td>
+     <td style="padding: 12px 8px; color: #605e5c;">Deleted file @{items('Apply_to_each')?['detail']}</td>
+   </tr>
+   ```
+
+   **Case: `comment_added`**
+   ```html
+   <tr style="border-bottom: 1px solid #e1dfdd;">
+     <td style="padding: 12px 8px;"><strong>@{items('Apply_to_each')?['user']}</strong></td>
+     <td style="padding: 12px 8px; color: #605e5c;">Added a comment</td>
+   </tr>
+   ```
+
 
 ### 6. Resolve Estimator Email
 
@@ -112,12 +185,44 @@ The estimator is a lookup on the Job entity: `_vin_estimator_value`.
 
 **Office 365 Outlook → Send an email (V2)**
 
-| Field | Value |
-| :--- | :--- |
-| **To** | Estimator's email (from step 6) |
-| **Subject** | `📋 PAP Checklist Activity — {Job Name} ({Job Number}) — {today's date}` |
-| **Body** | HTML table from step 5 wrapped in a styled email template |
+**To:** `outputs('Get_a_row')?['body/internalemailaddress']` *(the email resolved in Step 6)*
+**Subject:** `📋 PAP Checklist Activity — @{outputs('Get_Job_Details')?['vin_name']} (@{outputs('Get_Job_Details')?['vin_jobnumber']}) — @{utcNow('dd MMM yyyy')}`
 
+**Body:** 
+Click the `</>` (Code View) button in the Power Automate email body field and paste the following HTML structure. Notice where the `@{variables('HTMLTableRows')}` is injected.
+
+```html
+<div style="font-family: 'Segoe UI', Arial, sans-serif; color: #323130; max-width: 600px; margin: 0 auto; border: 1px solid #e1dfdd; border-radius: 4px; overflow: hidden;">
+    <div style="background-color: #0078d4; padding: 16px 24px;">
+        <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 600;">📋 Today's Checklist Activity</h2>
+    </div>
+    
+    <div style="padding: 24px;">
+        <p style="margin-top: 0; margin-bottom: 16px; font-size: 15px;">
+            The following updates occurred today on <strong>@{outputs('Get_Job_Details')?['vin_name']}</strong> (@{outputs('Get_Job_Details')?['vin_jobnumber']}):
+        </p>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px;">
+            <thead>
+                <tr style="background-color: #f3f2f1; text-align: left; border-bottom: 2px solid #ccc;">
+                    <th style="padding: 10px 12px; font-weight: 600; width: 35%;">Team Member</th>
+                    <th style="padding: 10px 12px; font-weight: 600;">Activity Summary</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- INJECT THE LOOPED VARIABLE HERE -->
+                @{variables('HTMLTableRows')}
+            </tbody>
+        </table>
+        
+        <p style="margin-top: 32px; font-size: 13px; color: #605e5c; border-top: 1px solid #e1dfdd; padding-top: 16px;">
+            This is an automated digest sent from the PAP Checklist application.
+            <br/>
+            Checklist Status: <strong>@{outputs('List_Active_Checklists')?['pap_status@OData.Community.Display.V1.FormattedValue']}</strong>
+        </p>
+    </div>
+</div>
+```
 ---
 
 ## Dataverse Tables & Columns Referenced

@@ -18,6 +18,8 @@ import styles from './FilterBar.module.scss';
 export interface FilterState {
     answerStates: AnswerState[];
     markedForReview: boolean | null;
+    notifyAdmin: boolean | null;
+    builderToConfirm: boolean | null;
     internalOnly: boolean | null;
     workgroupIds: string[];
 }
@@ -150,6 +152,20 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         });
     };
 
+    const handleNotifyChange = (checked: boolean) => {
+        onFiltersChange({
+            ...filters,
+            notifyAdmin: checked ? true : null,
+        });
+    };
+
+    const handleBtcChange = (checked: boolean) => {
+        onFiltersChange({
+            ...filters,
+            builderToConfirm: checked ? true : null,
+        });
+    };
+
     const handleInternalOnlyChange = (checked: boolean) => {
         onFiltersChange({
             ...filters,
@@ -158,10 +174,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     };
 
     const clearFilters = () => {
-        onFiltersChange({ answerStates: [], markedForReview: null, internalOnly: null, workgroupIds: [] });
+        onFiltersChange({ answerStates: [], markedForReview: null, notifyAdmin: null, builderToConfirm: null, internalOnly: null, workgroupIds: [] });
     };
 
-    const hasActiveFilters = filters.answerStates.length > 0 || filters.markedForReview !== null || filters.internalOnly !== null || filters.workgroupIds.length > 0;
+    const hasActiveFilters = filters.answerStates.length > 0 || filters.markedForReview !== null || filters.notifyAdmin !== null || filters.builderToConfirm !== null || filters.internalOnly !== null || filters.workgroupIds.length > 0;
 
     return (
         <div className={styles['filter-bar']}>
@@ -207,49 +223,119 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                     />
                 )}
 
-                <Dropdown
-                    className={styles['filter-dropdown']}
-                    placeholder="Answer"
-                    multiselect
-                    selectedOptions={filters.answerStates}
-                    onOptionSelect={(_, data) => {
-                        handleAnswerStateChange(data.selectedOptions as AnswerState[]);
-                    }}
-                >
-                    {ANSWER_STATES.map(state => {
-                        const config = ANSWER_CONFIG[state];
-                        return (
-                            <Option key={state} value={state} text={config.label}>
-                                <div className={styles['answer-option']}>
-                                    <span
-                                        className={styles['answer-dot']}
-                                        style={{ backgroundColor: config.color }}
-                                    />
-                                    <span className={styles['answer-label']}>{config.label}</span>
-                                    {config.description && (
-                                        <span className={styles['answer-desc']}>{config.description}</span>
-                                    )}
-                                </div>
-                            </Option>
-                        );
-                    })}
-                </Dropdown>
+                <Menu>
+                    <MenuTrigger disableButtonEnhancement>
+                        <Button
+                            className={styles['filter-dropdown']}
+                            appearance="outline"
+                            icon={<ChevronDown20Regular />}
+                            iconPosition="after"
+                            style={{ justifyContent: 'space-between', fontWeight: 400 }}
+                        >
+                            <span style={{ color: filters.answerStates.length === 0 ? '#616161' : 'inherit' }}>
+                                {filters.answerStates.length === 0 ? 'Answer' : `${filters.answerStates.length} Selected`}
+                            </span>
+                        </Button>
+                    </MenuTrigger>
+                    <MenuPopover className={styles['filter-menu-popover']}>
+                        <MenuList checkedValues={{ answer: filters.answerStates }}>
+                            {ANSWER_STATES.map(state => {
+                                const config = ANSWER_CONFIG[state];
+                                return (
+                                    <MenuItemCheckbox
+                                        key={state}
+                                        name="answer"
+                                        value={state}
+                                        onClick={(e) => {
+                                            const newStates = filters.answerStates.includes(state)
+                                                ? filters.answerStates.filter(s => s !== state)
+                                                : [...filters.answerStates, state];
+                                            handleAnswerStateChange(newStates);
+                                            e.stopPropagation();
+                                        }}
+                                    >
+                                        <div className={styles['answer-option']}>
+                                            <span
+                                                className={styles['answer-dot']}
+                                                style={{ backgroundColor: config.color }}
+                                            />
+                                            <span className={styles['answer-label']}>{config.label}</span>
+                                        </div>
+                                    </MenuItemCheckbox>
+                                );
+                            })}
+                        </MenuList>
+                    </MenuPopover>
+                </Menu>
 
-                <div className={styles['filter-review']}>
-                    <Checkbox
-                        label="Review"
-                        checked={filters.markedForReview === true}
-                        onChange={(_, data) => handleReviewChange(!!data.checked)}
-                    />
-                </div>
-
-                <div className={styles['filter-review']}>
-                    <Checkbox
-                        label="Internal Only"
-                        checked={filters.internalOnly === true}
-                        onChange={(_, data) => handleInternalOnlyChange(!!data.checked)}
-                    />
-                </div>
+                <Menu>
+                    <MenuTrigger disableButtonEnhancement>
+                        <Button
+                            className={styles['filter-dropdown']}
+                            appearance="outline"
+                            icon={<ChevronDown20Regular />}
+                            iconPosition="after"
+                            style={{ justifyContent: 'space-between', fontWeight: 400 }}
+                        >
+                            <span style={{ color: (!filters.markedForReview && !filters.notifyAdmin && !filters.builderToConfirm && !filters.internalOnly) ? '#616161' : 'inherit' }}>
+                                {(!filters.markedForReview && !filters.notifyAdmin && !filters.builderToConfirm && !filters.internalOnly)
+                                    ? 'Row Status'
+                                    : `${[filters.markedForReview, filters.notifyAdmin, filters.builderToConfirm, filters.internalOnly].filter(Boolean).length} Selected`}
+                            </span>
+                        </Button>
+                    </MenuTrigger>
+                    <MenuPopover>
+                        <MenuList checkedValues={{
+                            status: [
+                                ...(filters.markedForReview ? ['markedForReview'] : []),
+                                ...(filters.notifyAdmin ? ['notifyAdmin'] : []),
+                                ...(filters.builderToConfirm ? ['builderToConfirm'] : []),
+                                ...(filters.internalOnly ? ['internalOnly'] : [])
+                            ]
+                        }}>
+                            <MenuItemCheckbox
+                                name="status"
+                                value="markedForReview"
+                                onClick={(e) => {
+                                    handleReviewChange(!filters.markedForReview);
+                                    e.stopPropagation();
+                                }}
+                            >
+                                Review
+                            </MenuItemCheckbox>
+                            <MenuItemCheckbox
+                                name="status"
+                                value="notifyAdmin"
+                                onClick={(e) => {
+                                    handleNotifyChange(!filters.notifyAdmin);
+                                    e.stopPropagation();
+                                }}
+                            >
+                                Notify Admin
+                            </MenuItemCheckbox>
+                            <MenuItemCheckbox
+                                name="status"
+                                value="builderToConfirm"
+                                onClick={(e) => {
+                                    handleBtcChange(!filters.builderToConfirm);
+                                    e.stopPropagation();
+                                }}
+                            >
+                                BTC
+                            </MenuItemCheckbox>
+                            <MenuItemCheckbox
+                                name="status"
+                                value="internalOnly"
+                                onClick={(e) => {
+                                    handleInternalOnlyChange(!filters.internalOnly);
+                                    e.stopPropagation();
+                                }}
+                            >
+                                Internal Only
+                            </MenuItemCheckbox>
+                        </MenuList>
+                    </MenuPopover>
+                </Menu>
             </div>
 
             {hasActiveFilters && (

@@ -1,16 +1,19 @@
 // ─── ANSWER STATE ────────────────────────────────────────
-export type AnswerState = 'YES' | 'NO' | 'BLANK' | 'PS' | 'PC' | 'SUB' | 'OTS';
+export type AnswerState = 'YES' | 'NO' | 'BLANK' | 'PS' | 'PC' | 'SUB' | 'OTS' | 'TBC' | 'OPT_EXTRA' | 'BUILDER_SPEC';
 
-export const ANSWER_STATES: AnswerState[] = ['YES', 'NO', 'BLANK', 'PS', 'PC', 'SUB', 'OTS'];
+export const ANSWER_STATES: AnswerState[] = ['YES', 'NO', 'BLANK', 'PS', 'PC', 'SUB', 'OTS', 'TBC', 'OPT_EXTRA', 'BUILDER_SPEC'];
 
 export const ANSWER_CONFIG: Record<AnswerState, { label: string; color: string; description: string }> = {
     YES: { label: 'Yes', color: '#107c10', description: 'Included' },
-    NO: { label: 'No', color: '#d13438', description: 'Excluded' },
-    BLANK: { label: '—', color: '#8a8886', description: 'Intentionally unanswered' },
+    NO: { label: 'Noted as Excluded', color: '#d13438', description: 'Noted as excluded from scope' },
+    BLANK: { label: 'Nothing Selected', color: '#8a8886', description: 'Intentionally unanswered' },
     PS: { label: 'PS', color: '#ff8c00', description: 'Provisional Sum' },
     PC: { label: 'PC', color: '#0078d4', description: 'Prime Cost' },
-    SUB: { label: 'SUB', color: '#8764b8', description: 'Subcontractor' },
+    SUB: { label: 'Subquote / Subcontractor Quote', color: '#8764b8', description: 'Subcontractor' },
     OTS: { label: 'OTS', color: '#038387', description: 'Owner to Supply' },
+    TBC: { label: 'TBC', color: '#a4262c', description: 'To Be Confirmed' },
+    OPT_EXTRA: { label: 'Optional Extra', color: '#ca5010', description: 'Optional extra item' },
+    BUILDER_SPEC: { label: 'Builder Spec / Standard', color: '#498205', description: 'Builder specification or standard' },
 };
 
 // ─── CHECKLIST STATUS ────────────────────────────────────
@@ -41,6 +44,8 @@ export interface ChecklistRow {
     answer: AnswerState;
     notes: string;
     markedForReview: boolean;
+    notifyAdmin: boolean;
+    builderToConfirm: boolean;
     internalOnly: boolean;
     images: ChecklistImage[];
     references?: string[];
@@ -115,7 +120,20 @@ export interface Checklist {
         dueDate?: Date;
         jobType?: string;
         meetingOccurred?: boolean;
+        checklistChoice?: string | number | null;
+        appointmentDate?: Date | null;
+        // ── Job Metadata Header fields (TEMP column names — pending client confirmation) ──
+        builderName?: string;          // TEMP: _vin_account_value (same as client?) — TBC
+        siteAddress?: string;          // TEMP: vin_buildarea — TBC
+        qbeFlagged?: boolean;          // vin_qbeflagged
+        qbeLow?: number | null;        // vin_qbelow
+        qbeHigh?: number | null;       // vin_qbehigh
+        engineering?: boolean | null;   // TEMP: unknown column — TBC
+        threeDModel?: boolean | null;   // TEMP: vin_dmodelsuited — TBC
+        // procurement?: boolean;       // ON HOLD — Adrienne to confirm
     };
+    carpentryLabourImageUrl?: string;
+    carpentryLabourDescription?: string;
     // ────────────────────────
     createdBy: string;
     createdAt: Date;
@@ -146,6 +164,8 @@ export function createEmptyRow(workgroupId: string, order: number): ChecklistRow
         answer: 'BLANK',
         notes: '',
         markedForReview: false,
+        notifyAdmin: false,
+        builderToConfirm: false,
         internalOnly: false,
         images: [],
         order,

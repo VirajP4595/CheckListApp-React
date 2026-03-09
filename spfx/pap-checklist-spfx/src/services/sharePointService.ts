@@ -110,9 +110,11 @@ export class SharePointImageService implements IImageService {
 
         // 3. Update Metadata
         try {
+            // NOTE: The property names here MUST match the exact Internal Column Names in SharePoint.
+            // If they were created with spaces (e.g. "Checklist ID"), the internal name might be "Checklist_x0020_ID" or similar.
             await client.api(`/drives/${driveId}/items/${file.id}/listItem/fields`).patch({
-                ChecklistId: checklistId,
-                RowId: rowId,
+                Checklist_x0020_ID: checklistId,
+                Row_x0020_ID: rowId,
                 Caption: caption || filename,
                 Title: caption || filename
             });
@@ -263,6 +265,42 @@ export class SharePointImageService implements IImageService {
         return data['@microsoft.graph.downloadUrl'] || data.webUrl;
     }
 
+    async uploadCarpentryImage(checklistId: string, file: File): Promise<string> {
+        const { driveId } = await this.getDriveInfo();
+        const folderPath = `${encodeURIComponent(checklistId.trim())}/carpentry`;
+        const extMatch = file.name.match(/\.[0-9a-z]+$/i);
+        const ext = extMatch ? extMatch[0] : '.png';
+        const filename = `carpentry-labour-${Date.now()}${ext}`; // Timestamp prevents cache issues
+        const uploadUrl = `/drives/${driveId}/root:/${folderPath}/${filename}:/content`;
+
+        const data = await this.getClient().api(uploadUrl).put(file);
+        return data['@microsoft.graph.downloadUrl'] || data.webUrl;
+    }
+
+    async downloadCarpentryImage(checklistId: string): Promise<Blob | null> {
+        try {
+            const { driveId } = await this.getDriveInfo();
+            const folderPath = `${encodeURIComponent(checklistId.trim())}/carpentry`;
+            const response = await this.getClient().api(`/drives/${driveId}/root:/${folderPath}:/children`)
+                .select('name')
+                .top(10) // Just get recent
+                .get();
+
+            if (response.value && response.value.length > 0) {
+                // Sort by name (timestamp based) descending
+                const files = response.value.sort((a: any, b: any) => b.name.localeCompare(a.name));
+                const latestFile = files[0];
+                return await this.getClient().api(`/drives/${driveId}/root:/${folderPath}/${latestFile.name}:/content`)
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    .responseType('blob' as any)
+                    .get();
+            }
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
     async uploadPDFReport(checklistId: string, filename: string, blob: Blob): Promise<string> {
         const { driveId } = await this.getDriveInfo();
         const folderPath = `${checklistId}/reports`;
@@ -272,11 +310,13 @@ export class SharePointImageService implements IImageService {
 
         try {
             await this.getClient().api(`/drives/${driveId}/items/${data.id}/listItem/fields`).patch({
-                ChecklistId: checklistId,
-                FileType: 'Report',
+                Checklist_x0020_ID: checklistId,
+                File_x0020_Type: 'Report',
                 Title: filename
             });
-        } catch (e) { console.warn("Failed to set PDF metadata", e); }
+        } catch (e) {
+            console.warn("Failed to set PDF metadata", e);
+        }
 
         return data.webUrl;
     }

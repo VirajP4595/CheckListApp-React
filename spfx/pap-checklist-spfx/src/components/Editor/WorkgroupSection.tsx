@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Button, Input, Tooltip, Spinner } from '@fluentui/react-components';
+import { Button, Input, Tooltip, Spinner, Dialog, DialogTrigger, DialogSurface, DialogBody, DialogTitle, DialogContent, DialogActions } from '@fluentui/react-components';
 import {
     Add20Regular,
     ChevronDown20Regular,
@@ -90,9 +90,14 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
     // Filter rows based on filters
     const filteredRows = useMemo(() => {
         return workgroup.rows.filter(row => {
-            // UAT Feedback: Hide 'Meeting Transcript' if meeting Occurred is false
-            if (activeChecklist?.jobDetails?.meetingOccurred === false) {
-                if (row.name?.toLowerCase().trim() === 'meeting transcript') {
+            // UAT Feedback: Hide 'From Meeting Transcript' when no checklist meeting occurred
+            const job = activeChecklist?.jobDetails;
+            const choice = job?.checklistChoice?.toString().toLowerCase() || '';
+            const isNotAppointment = !choice.includes('appointment meeting');
+            const isDateEmpty = !job?.appointmentDate;
+
+            if (isNotAppointment && isDateEmpty) {
+                if (row.name?.toLowerCase().trim() === 'from meeting transcript') {
                     return false;
                 }
             }
@@ -109,6 +114,16 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
             }
             if (filters?.internalOnly !== null && filters?.internalOnly !== undefined) {
                 if (row.internalOnly !== filters.internalOnly) {
+                    return false;
+                }
+            }
+            if (filters?.notifyAdmin !== null && filters?.notifyAdmin !== undefined) {
+                if (row.notifyAdmin !== filters.notifyAdmin) {
+                    return false;
+                }
+            }
+            if (filters?.builderToConfirm !== null && filters?.builderToConfirm !== undefined) {
+                if (row.builderToConfirm !== filters.builderToConfirm) {
                     return false;
                 }
             }
@@ -178,35 +193,23 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                     {!isEditing && (
                         <div className={styles['workgroup-status-summary']}>
                             {(() => {
-                                // Fix case sensitivity (data might be YES or yes)
                                 const normalize = (s?: string) => s?.toLowerCase() || 'blank';
-                                const yes = filteredRows.filter(r => normalize(r.answer) === 'yes').length;
-                                const no = filteredRows.filter(r => normalize(r.answer) === 'no').length;
-                                const blank = filteredRows.filter(r => ['blank', '', undefined, null].includes(normalize(r.answer))).length;
+                                const unansweredRows = filteredRows.filter(r => ['blank', '', undefined, null].includes(normalize(r.answer)));
+                                const answeredRows = filteredRows.filter(r => !['blank', '', undefined, null].includes(normalize(r.answer)));
 
-                                // Show as simple text with dots
-                                const parts = [];
-                                if (yes) parts.push(
-                                    <span key="y" className={styles['status-item']}>
-                                        <span className={styles['status-dot-yes']}>●</span> {yes} Yes
-                                    </span>
-                                );
-                                if (no) parts.push(
-                                    <span key="n" className={styles['status-item']}>
-                                        <span className={styles['status-dot-no']}>●</span> {no} No
-                                    </span>
-                                );
-                                if (blank) parts.push(
-                                    <span key="b" className={styles['status-item']}>
-                                        <span className={styles['status-dot-blank']}>●</span> {blank} Blank
-                                    </span>
-                                );
+                                const answered = answeredRows.length;
+                                const unanswered = unansweredRows.length;
 
-                                return parts.length > 0 ? (
+                                return (
                                     <div className={styles['status-summary-container']}>
-                                        {parts}
+                                        <span className={styles['status-item']}>
+                                            <span className={styles['status-dot-yes']}>●</span> {answered} Answered
+                                        </span>
+                                        <span className={styles['status-item']}>
+                                            <span className={styles['status-dot-blank']}>●</span> {unanswered} Unanswered
+                                        </span>
                                     </div>
-                                ) : null;
+                                );
                             })()}
                         </div>
                     )}
@@ -230,18 +233,42 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                             />
                         )}
 
-                        <Tooltip content="Delete workgroup" relationship="label">
-                            <Button
-                                className={styles['workgroup-action-btn--delete']}
-                                appearance="subtle"
-                                size="small"
-                                icon={<Delete20Regular />}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete();
-                                }}
-                            />
-                        </Tooltip>
+                        <Dialog>
+                            <DialogTrigger disableButtonEnhancement>
+                                <Tooltip content="Delete workgroup" relationship="label">
+                                    <Button
+                                        className={styles['workgroup-action-btn--delete']}
+                                        appearance="subtle"
+                                        size="small"
+                                        icon={<Delete20Regular />}
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
+                                </Tooltip>
+                            </DialogTrigger>
+                            <DialogSurface aria-describedby={undefined}>
+                                <DialogBody>
+                                    <DialogTitle>Delete Workgroup</DialogTitle>
+                                    <DialogContent>
+                                        Are you sure you want to delete workgroup "{workgroup.name}"? This will also delete all {workgroup.rows.length} items. This action cannot be undone.
+                                    </DialogContent>
+                                    <DialogActions>
+                                        <DialogTrigger disableButtonEnhancement>
+                                            <Button appearance="secondary">Cancel</Button>
+                                        </DialogTrigger>
+                                        <Button
+                                            appearance="primary"
+                                            style={{ backgroundColor: '#d13438' }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                void deleteWorkgroup(workgroup.id);
+                                            }}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </DialogActions>
+                                </DialogBody>
+                            </DialogSurface>
+                        </Dialog>
                     </div>
                 </div>
             </header>
@@ -259,29 +286,40 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                             <div className={styles['workgroup-rows']}>
                                 {filteredRows
                                     .sort((a, b) => a.order - b.order)
-                                    .map(row => (
-                                        <ChecklistRowItem
-                                            key={row.id}
-                                            row={row}
-                                            workgroupId={workgroup.id}
-                                            isCompact={!expandTasks}
-                                        />
-                                    ))}
+                                    .flatMap((row, index, arr) => {
+                                        const items: React.ReactNode[] = [
+                                            <ChecklistRowItem
+                                                key={row.id}
+                                                row={row}
+                                                workgroupId={workgroup.id}
+                                                isCompact={!expandTasks}
+                                            />
+                                        ];
+
+                                        // Add insert divider after every row (including the last one)
+                                        items.push(
+                                            <div
+                                                key={`insert-${row.id}`}
+                                                className={styles['insert-row-divider']}
+                                            >
+                                                <button
+                                                    className={styles['insert-row-btn']}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (!isAdding) void addRow(workgroup.id, row.id);
+                                                    }}
+                                                    title="Insert row here"
+                                                >
+                                                    <span className={styles['insert-row-icon']}>+</span>
+                                                    <span className={styles['insert-row-label']}>Add new row here</span>
+                                                </button>
+                                            </div>
+                                        );
+
+                                        return items;
+                                    })}
                             </div>
                         )}
-
-                        <Button
-                            className={styles['workgroup-add-row']}
-                            appearance="subtle"
-                            icon={isAdding ? <Spinner size="extra-tiny" /> : <Add20Regular />}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (!isAdding) handleAddRow();
-                            }}
-                            disabled={isAdding}
-                        >
-                            {isAdding ? 'Adding...' : 'Add checklist item'}
-                        </Button>
                     </div>
                 )
             }

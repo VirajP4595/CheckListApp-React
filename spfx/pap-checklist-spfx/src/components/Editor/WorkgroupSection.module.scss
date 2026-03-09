@@ -27,13 +27,12 @@
 
 .workgroup-header {
     display: flex;
-    justify-content: space-between; // Split Left and Right
+    justify-content: space-between;
     align-items: center;
     gap: $spacing-4;
-    padding: 1.25rem; // p-5
-    // background: $color-white;
+    padding: $spacing-3 $spacing-4; // Increased padding for breathing room
     border-bottom: 1px solid $color-border;
-    border-radius: $border-radius-lg $border-radius-lg 0 0; // Rounded top only
+    border-radius: $border-radius-lg $border-radius-lg 0 0;
 
     @include mobile {
         padding: $spacing-3;
@@ -248,35 +247,76 @@ $badge-radius: $border-radius-lg;
 // ============================================
 
 .workgroup-content {
-    padding: 1.25rem;
+    padding: 0.75rem 1.25rem;
     background-color: $color-gray-50;
     border-radius: 0 0 $border-radius-lg $border-radius-lg; // Rounded bottom only
-
-    // Fix top border issue if content is just below header
-    // The header has border-bottom, so content starts cleanly.
 }
 
 .workgroup-rows {
     display: flex;
     flex-direction: column;
-    gap: $spacing-3;
+    gap: $spacing-2;
 }
 
-.workgroup-add-row {
-    margin-top: $spacing-4;
-    width: 100% !important;
-    border: 2.5px dashed $color-gray-200 !important;
+// ============================================
+// Insert Row Divider (between rows)
+// ============================================
+
+.insert-row-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin: 2px 0;
+    z-index: 1;
+}
+
+.insert-row-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: auto;
+    border: 1px dashed $color-gray-200 !important;
     background: transparent !important;
-    color: $color-gray-500 !important;
-    min-height: 44px !important;
-    transition: all $transition-base !important;
-    @include button-base;
+    padding: 1px 10px !important;
+    min-height: 0 !important;
+    height: 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    opacity: 0.5;
 
     &:hover {
+        opacity: 1;
         border-color: $color-primary !important;
-        color: $color-primary !important;
-        background: rgba($color-primary, 0.02) !important;
-        transform: translateY(-1px);
+        background: rgba($color-primary, 0.04) !important;
+    }
+}
+
+.insert-row-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: $color-primary;
+    color: $color-white;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.insert-row-label {
+    font-size: 10px;
+    color: $color-gray-400;
+    font-weight: 500;
+    white-space: nowrap;
+
+    .insert-row-btn:hover & {
+        color: $color-primary;
     }
 }
 

@@ -18,6 +18,8 @@ interface DataverseChecklist {
     pap_chatdata?: string;
     pap_ChatData?: string;
     pap_filedata?: string;
+    pap_carpentrylabourimageurl?: string;
+    pap_carpentrylabourdescription?: string;
     _pap_jobid_value?: string;
     // Navigation property for Job lookup
     pap_jobid?: {
@@ -33,6 +35,15 @@ interface DataverseChecklist {
         vin_jobtype?: number;
         "vin_jobtype@OData.Community.Display.V1.FormattedValue"?: string;
         vin_jobstartmtg?: boolean;
+        vin_checklistchoice?: number | null;
+        "vin_checklistchoice@OData.Community.Display.V1.FormattedValue"?: string;
+        vin_checklistappointment?: string | null;
+        // Job Metadata Header fields (TEMP column names — pending client confirmation)
+        vin_buildarea?: string;          // TEMP: site address
+        vin_qbeflagged?: boolean;        // QBE flagged yes/no
+        vin_qbelow?: number | null;      // QBE low estimate
+        vin_qbehigh?: number | null;     // QBE high estimate
+        vin_dmodelsuited?: boolean | null; // TEMP: 3D model
     };
     createdby?: {
         fullname: string;
@@ -65,6 +76,8 @@ interface DataverseRow {
     pap_answer: number;  // Choice field
     pap_notes?: string;
     pap_markedforreview: boolean;
+    pap_notifyadmin: boolean;
+    pap_buildertoconfirm: boolean;
     pap_internalonly: boolean;
     pap_order: number;
     _pap_workgroupid_value: string;
@@ -106,7 +119,10 @@ const ANSWER_MAP: Record<number, AnswerState> = {
     4: 'PS',
     5: 'PC',
     6: 'SUB',
-    7: 'OTS'
+    7: 'OTS',
+    8: 'TBC',
+    9: 'OPT_EXTRA',
+    10: 'BUILDER_SPEC'
 };
 
 const ANSWER_VALUE_MAP: Record<AnswerState, number> = {
@@ -116,7 +132,10 @@ const ANSWER_VALUE_MAP: Record<AnswerState, number> = {
     'PS': 4,
     'PC': 5,
     'SUB': 6,
-    'OTS': 7
+    'OTS': 7,
+    'TBC': 8,
+    'OPT_EXTRA': 9,
+    'BUILDER_SPEC': 10
 };
 
 function mapRow(dv: DataverseRow): ChecklistRow {
@@ -128,6 +147,8 @@ function mapRow(dv: DataverseRow): ChecklistRow {
         answer: ANSWER_MAP[dv.pap_answer] || 'BLANK',
         notes: dv.pap_notes || '',
         markedForReview: dv.pap_markedforreview || false,
+        notifyAdmin: dv.pap_notifyadmin || false,
+        builderToConfirm: dv.pap_buildertoconfirm || false,
         internalOnly: dv.pap_internalonly || false,
         images: [],  // Loaded separately from SharePoint
         order: dv.pap_order
@@ -166,7 +187,17 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
         reviewer: dv.pap_jobid["_ownerid_value@OData.Community.Display.V1.FormattedValue"] || '',
         dueDate: dv.pap_jobid.vin_duedate ? new Date(dv.pap_jobid.vin_duedate) : undefined,
         jobType: dv.pap_jobid["vin_jobtype@OData.Community.Display.V1.FormattedValue"] || '',
-        meetingOccurred: dv.pap_jobid.vin_jobstartmtg ?? true // Default to true if null/omitted
+        meetingOccurred: dv.pap_jobid.vin_jobstartmtg ?? true, // Default to true if null/omitted
+        checklistChoice: dv.pap_jobid["vin_checklistchoice@OData.Community.Display.V1.FormattedValue"] || dv.pap_jobid.vin_checklistchoice,
+        appointmentDate: dv.pap_jobid.vin_checklistappointment ? new Date(dv.pap_jobid.vin_checklistappointment) : null,
+        // Job Metadata Header fields (TEMP column names — pending client confirmation)
+        builderName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '', // TEMP: using client name
+        siteAddress: dv.pap_jobid.vin_buildarea || '',  // TEMP: TBC
+        qbeFlagged: dv.pap_jobid.vin_qbeflagged ?? false,
+        qbeLow: dv.pap_jobid.vin_qbelow ?? null,
+        qbeHigh: dv.pap_jobid.vin_qbehigh ?? null,
+        engineering: null,   // TEMP: column unknown — TBC with client
+        threeDModel: dv.pap_jobid.vin_dmodelsuited ?? null,  // TEMP: TBC
     } : undefined;
     return {
         id: dv.pap_checklistid,
@@ -188,6 +219,8 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
             return parsed;
         })(),
         files: parseJsonField(dv.pap_filedata),
+        carpentryLabourImageUrl: dv.pap_carpentrylabourimageurl,
+        carpentryLabourDescription: dv.pap_carpentrylabourdescription,
         jobDetails: jobDetails,
         createdBy: dv.createdby?.fullname || '',
         createdAt: new Date(dv.createdon),
@@ -210,13 +243,15 @@ export class DataverseChecklistService implements IChecklistService {
             col('clientlogourl'),
             col('chatdata'),
             col('filedata'),
+            col('carpentrylabourimageurl'),
+            col('carpentrylabourdescription'),
             `_${col('jobid')}_value`,
             'createdon',
             'modifiedon'
         ].join(',');
 
         // Expand Job to get details
-        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg),createdby($select=fullname)`;
+        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg,vin_checklistchoice,vin_checklistappointment,vin_buildarea,vin_qbeflagged,vin_qbelow,vin_qbehigh,vin_dmodelsuited),createdby($select=fullname)`;
 
         const dv = await dataverseClient.getById<DataverseChecklist>(
             entities.checklists,
@@ -247,6 +282,8 @@ export class DataverseChecklistService implements IChecklistService {
                 col('answer'),
                 col('notes'),
                 col('markedforreview'),
+                col('notifyadmin'),
+                col('buildertoconfirm'),
                 col('internalonly'),
                 col('order'),
                 `_${col('workgroupid')}_value`
@@ -310,7 +347,9 @@ export class DataverseChecklistService implements IChecklistService {
                 reviewer: dv.pap_jobid["_ownerid_value@OData.Community.Display.V1.FormattedValue"] || '',
                 dueDate: dv.pap_jobid.vin_duedate ? new Date(dv.pap_jobid.vin_duedate) : undefined,
                 jobType: dv.pap_jobid["vin_jobtype@OData.Community.Display.V1.FormattedValue"] || '',
-                meetingOccurred: dv.pap_jobid.vin_jobstartmtg ?? true
+                meetingOccurred: dv.pap_jobid.vin_jobstartmtg ?? true,
+                checklistChoice: dv.pap_jobid["vin_checklistchoice@OData.Community.Display.V1.FormattedValue"] || dv.pap_jobid.vin_checklistchoice,
+                appointmentDate: dv.pap_jobid.vin_checklistappointment ? new Date(dv.pap_jobid.vin_checklistappointment) : null
             } : undefined,
             comments: (() => {
                 const raw = dv.pap_chatdata || (dv.pap_ChatData as unknown as string);
@@ -339,7 +378,7 @@ export class DataverseChecklistService implements IChecklistService {
         ].join(',');
 
         // Expand Job to get details
-        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg),createdby($select=fullname)`;
+        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg,vin_checklistchoice,vin_checklistappointment),createdby($select=fullname)`;
 
         const response = await dataverseClient.get<{ value: DataverseChecklist[] }>(
             entities.checklists,
@@ -359,7 +398,9 @@ export class DataverseChecklistService implements IChecklistService {
             [col('commonnotes')]: checklist.commonNotes,
             [col('clientlogourl')]: checklist.clientLogoUrl,
             [col('chatdata')]: JSON.stringify(checklist.comments || []),
-            [col('filedata')]: JSON.stringify(checklist.files || [])
+            [col('filedata')]: JSON.stringify(checklist.files || []),
+            [col('carpentrylabourimageurl')]: checklist.carpentryLabourImageUrl || null,
+            [col('carpentrylabourdescription')]: checklist.carpentryLabourDescription || null
         });
         return checklist;
     }
@@ -455,6 +496,8 @@ export class DataverseChecklistService implements IChecklistService {
             [col('answer')]: ANSWER_VALUE_MAP[rowData.answer || 'BLANK'],
             [col('notes')]: rowData.notes || '',
             [col('markedforreview')]: rowData.markedForReview || false,
+            [col('notifyadmin')]: rowData.notifyAdmin || false,
+            [col('buildertoconfirm')]: rowData.builderToConfirm || false,
             [col('internalonly')]: rowData.internalOnly || false,
             [col('order')]: rowData.order || 0,
             [`${col('workgroupid')}@odata.bind`]: `/${entities.workgroups}(${workgroupId})`
@@ -472,6 +515,8 @@ export class DataverseChecklistService implements IChecklistService {
             answer: rowData.answer || 'BLANK',
             notes: rowData.notes || '',
             markedForReview: rowData.markedForReview || false,
+            notifyAdmin: rowData.notifyAdmin || false,
+            builderToConfirm: rowData.builderToConfirm || false,
             internalOnly: rowData.internalOnly || false,
             images: [],
             order: rowData.order || 0
@@ -486,6 +531,8 @@ export class DataverseChecklistService implements IChecklistService {
             [col('answer')]: ANSWER_VALUE_MAP[row.answer],
             [col('notes')]: row.notes,
             [col('markedforreview')]: row.markedForReview,
+            [col('notifyadmin')]: row.notifyAdmin,
+            [col('buildertoconfirm')]: row.builderToConfirm,
             [col('internalonly')]: row.internalOnly,
             [col('order')]: row.order
         });

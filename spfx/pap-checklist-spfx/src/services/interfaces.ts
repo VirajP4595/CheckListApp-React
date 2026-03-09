@@ -47,6 +47,8 @@ export interface IImageService {
     uploadPDFReport(checklistId: string, filename: string, blob: Blob): Promise<string>;
     downloadImageContent(itemId: string): Promise<string>;
     downloadClientLogoContent(checklistId: string): Promise<Blob | null>;
+    uploadCarpentryImage(checklistId: string, file: File): Promise<string>;
+    downloadCarpentryImage(checklistId: string): Promise<Blob | null>;
     listImageFolders(checklistId: string): Promise<string[]>; // Returns list of rowIds that have image folders
 }
 

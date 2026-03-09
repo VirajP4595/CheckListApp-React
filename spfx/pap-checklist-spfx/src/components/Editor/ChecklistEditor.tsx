@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { Button, Spinner, Dialog, DialogTrigger, DialogSurface, DialogTitle, DialogBody, DialogActions, DialogContent } from '@fluentui/react-components';
-import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular, ClipboardPulse24Regular, Delete24Regular } from '@fluentui/react-icons';
+import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular, ClipboardPulse24Regular, Delete24Regular, ArrowDownload24Regular } from '@fluentui/react-icons';
 import { Panel, PanelType } from '@fluentui/react/lib/Panel';
 import { useChecklistStore, useUserStore } from '../../stores';
 import { STATUS_CONFIG, type Revision } from '../../models';
@@ -10,8 +10,11 @@ import { RevisionPanel } from '../Revision/RevisionPanel';
 import { RevisionViewer } from '../Revision/RevisionViewer';
 
 import { FilterBar, type FilterState } from './FilterBar';
+import { usePdfExport } from '../../hooks/usePdfExport';
+import { useBtcExport } from '../../hooks/useBtcExport';
 import { HelpGuide } from './HelpGuide';
 import { CommonNotes } from './Sidebar/CommonNotes';
+import { JobMetadataHeader } from './Sidebar/JobMetadataHeader';
 import { ChecklistInfoDialog } from './Sidebar/ChecklistInfoDialog';
 import ActivityLogPanel from './Sidebar/ActivityLogPanel';
 import { PdfGenerationProgressModal } from '../Checklist/PdfGenerationProgressModal';
@@ -25,6 +28,7 @@ interface ChecklistEditorProps {
 }
 
 export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, onBack }) => {
+    const lastPasteTime = useRef<number>(0);
     const {
         activeChecklist,
         isLoading,
@@ -40,6 +44,13 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
     const { isSuperAdmin } = useUserStore();
 
+    // PDF Export Hook
+    const { exportPdf, loadingProgress: pdfLoadingProgress, cancelExport: cancelPdfExport } = usePdfExport();
+
+    // BTC Export Hook
+    const { exportBtc, loadingProgress: btcLoadingProgress, cancelExport: cancelBtcExport } = useBtcExport();
+
+    // Local state for full load overlay (initial load/preview)
     const [showRevisionPanel, setShowRevisionPanel] = useState(false);
     const [showActivityPanel, setShowActivityPanel] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -47,7 +58,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
     const [loadingProgress, setLoadingProgress] = useState<{ open: boolean; title: string; status: string; percent: number; cancelled: boolean }>({ open: false, title: 'Loading...', status: '', percent: 0, cancelled: false });
     const [deleteProgress, setDeleteProgress] = useState<{ open: boolean; status: string; percent: number }>({ open: false, status: '', percent: 0 });
-    const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, workgroupIds: [] });
+    const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, notifyAdmin: null, builderToConfirm: null, workgroupIds: [] });
     const [expandWorkgroups, setExpandWorkgroups] = useState(false);  // Collapsed by default
     const [expandTasks, setExpandTasks] = useState(false);  // Collapsed by default
 
@@ -171,6 +182,51 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
         }
     };
 
+    const handleGlobalPaste = React.useCallback((e: React.ClipboardEvent) => {
+        const now = Date.now();
+        if (now - lastPasteTime.current < 500) return; // Debounce global pasting to prevent duplicates
+
+        const { activeRowId, addImageToRow, processingItems } = useChecklistStore.getState();
+
+        // Don't paste if we dont have an active row
+        if (!activeRowId) return;
+
+        // Don't paste if already processing an image addition for that row
+        if (processingItems.includes(`img-add-${activeRowId}`)) return;
+
+        const items = e.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.type.startsWith('image/')) {
+                // Prevent browser from trying to handle the file paste natively
+                e.preventDefault();
+
+                lastPasteTime.current = now;
+
+                const file = item.getAsFile();
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (readerEvent) => {
+                        const result = readerEvent.target?.result as string;
+                        if (result) {
+                            const newImage = {
+                                id: `img-${Date.now()}`,
+                                rowId: activeRowId,
+                                source: result,
+                                // Assuming we want it at the end; accurate order calculation needs a store lookup,
+                                // but the store's addImageToRow handles appending.
+                                order: 999
+                            };
+                            addImageToRow(activeRowId, newImage);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+                break; // Stop after first image
+            }
+        }
+    }, []);
+
     if (isLoading || !activeChecklist) {
         return (
             <div className={styles['editor-loading']}>
@@ -182,7 +238,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
     const statusConfig = STATUS_CONFIG[activeChecklist.status];
 
     return (
-        <div className={styles.editor}>
+        <div className={styles.editor} onPaste={handleGlobalPaste}>
             {/* Brand Header */}
             <header className={styles['editor-header']}>
                 <div className={styles['editor-header-content']}>
@@ -263,6 +319,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
             {/* Main Layout */}
             < div className={styles['editor-layout']} >
                 <main className={styles['editor-main']}>
+                    <JobMetadataHeader checklist={activeChecklist} />
                     <CommonNotes
                         checklist={activeChecklist}
                         onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
@@ -354,14 +411,22 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
             {/* PDF / Preview Progress Modal */}
             <PdfGenerationProgressModal
-                open={loadingProgress.open}
-                onCancel={() => {
-                    setLoadingProgress(prev => ({ ...prev, open: false, cancelled: true }));
-                }}
-                title={loadingProgress.title}
-                iconType={loadingProgress.title.toLowerCase().includes('preview') ? 'preview' : 'pdf'}
-                status={loadingProgress.status}
-                percent={loadingProgress.percent}
+                open={pdfLoadingProgress.open}
+                onCancel={cancelPdfExport}
+                title={pdfLoadingProgress.title}
+                iconType={pdfLoadingProgress.title.toLowerCase().includes('preview') ? 'preview' : 'pdf'}
+                status={pdfLoadingProgress.status}
+                percent={pdfLoadingProgress.percent}
+            />
+
+            {/* BTC Export Progress Modal */}
+            <PdfGenerationProgressModal
+                open={btcLoadingProgress.open}
+                onCancel={cancelBtcExport}
+                title={btcLoadingProgress.title}
+                iconType="pdf"
+                status={btcLoadingProgress.status}
+                percent={btcLoadingProgress.percent}
             />
 
             {/* Delete Progress Modal */}

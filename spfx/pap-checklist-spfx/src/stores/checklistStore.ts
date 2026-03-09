@@ -23,6 +23,10 @@ interface ChecklistState {
     isInitialized: boolean;
     processingItems: string[]; // IDs of items currently being processed (adding/deleting)
 
+    // Tracking active row for global image pasting
+    activeRowId: string | null;
+    setActiveRowId: (id: string | null) => void;
+
     loadedRowImages: Record<string, boolean>;
     availableImageFolders: string[]; // Cache of rows that actually have image folders
 
@@ -80,6 +84,10 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
     error: null,
     isInitialized: false,
     processingItems: [],
+
+    activeRowId: null,
+    setActiveRowId: (id) => set({ activeRowId: id }),
+
     loadedRowImages: {},
     availableImageFolders: [],
 

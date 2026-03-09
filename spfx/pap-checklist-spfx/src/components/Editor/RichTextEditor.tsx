@@ -62,27 +62,29 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     placeholder,
     className,
 }) => {
+    const editorExtensions = React.useMemo(() => [
+        StarterKit.configure({
+            heading: false,
+        }),
+        Underline,
+        Highlight.configure({
+            multicolor: true,
+        }),
+        TaskList,
+        TaskItem.configure({
+            nested: true,
+        }),
+        Link.configure({
+            openOnClick: false,
+        }),
+        Placeholder.configure({
+            placeholder: readOnly ? '' : placeholder,
+        }),
+    ], [readOnly, placeholder]);
+
     const editor = useEditor({
         editable: !readOnly,
-        extensions: [
-            StarterKit.configure({
-                heading: false,
-            }),
-            Underline,
-            Highlight.configure({
-                multicolor: true,
-            }),
-            TaskList,
-            TaskItem.configure({
-                nested: true,
-            }),
-            Link.configure({
-                openOnClick: false,
-            }),
-            Placeholder.configure({
-                placeholder: readOnly ? '' : placeholder,
-            }),
-        ],
+        extensions: editorExtensions,
         content,
         // ... (existing handlers)
         onUpdate: ({ editor }) => {

@@ -112,7 +112,19 @@
 
 .dashboard-create-btn {
     font-size: $font-size-base;
+
+    // Override for dark header contrast
+    background-color: $color-white !important;
+    color: $color-primary !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    border: none !important;
+
     @include button-premium-glow;
+
+    &:hover {
+        background-color: $color-gray-50 !important;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
+    }
 }
 
 .adhoc-trigger-btn {

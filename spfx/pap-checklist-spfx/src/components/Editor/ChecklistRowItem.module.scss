@@ -10,25 +10,22 @@
     @include surface;
     background-color: $color-white;
     border: 1px solid $color-border;
-    padding: $spacing-3; // Reduced from 1.25rem (p-5) to closer match compact
+    padding: $spacing-4; // Increased padding for breathing room
     border-radius: $border-radius-lg;
-    margin-bottom: $spacing-3;
-    transition: box-shadow $transition-base;
+    transition: all $transition-base;
 
     &:hover {
-        box-shadow: $shadow-md;
+        box-shadow: $shadow-premium; // Premium soft shadow
+        background-color: rgba($color-primary, 0.015); // Very soft primary tint
     }
 
     &--compact {
-        padding: $spacing-2;
+        padding: $spacing-2 $spacing-3;
     }
 
-    &--review {
-        border-left: 4px solid $color-status-review;
-    }
 
     &--internal {
-        border-right: 4px solid $color-gray-500;
+        // border-right color removed as per request
         background-color: rgba($color-gray-100, 0.5);
     }
 }
@@ -46,7 +43,6 @@
 .row-left-col {
     display: flex;
     align-items: flex-start;
-    padding-top: 0.75rem; // items-start pt-3 from reference
     flex-shrink: 0;
 }
 
@@ -77,9 +73,14 @@
 .row-right-col {
     display: flex;
     align-items: flex-start;
-    padding-top: 0.75rem; // items-start pt-3
     gap: $spacing-1;
     flex-shrink: 0;
+    opacity: 0.4; // Mute actions until hovered
+    transition: opacity $transition-base;
+
+    .row-item:hover & {
+        opacity: 1;
+    }
 }
 
 // ============================================
@@ -93,7 +94,7 @@
 }
 
 .row-answer {
-    width: 128px; // w-32
+    width: 230px; // Slightly wider for new labels
     flex-shrink: 0;
 }
 
@@ -206,15 +207,44 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
     }
 }
 
+.row-action-btn--notify {
+    color: #0078d4 !important; // Blue
+    padding: $spacing-1 !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    @include button-ghost;
+
+    &:hover {
+        background-color: rgba(#0078d4, 0.08) !important;
+    }
+}
+
+.row-action-btn--btc {
+    color: #ca5010 !important; // Amber
+    padding: $spacing-1 !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    @include button-ghost;
+
+    &:hover {
+        background-color: rgba(#ca5010, 0.08) !important;
+    }
+}
+
 // ============================================
 // Extra (Images/Notes)
 // ============================================
 
 .row-notes {
     margin-top: $spacing-1;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden; // Prevent Tiptap from expanding
     // border-top: 1px solid $color-border; // No border between desc and notes usually in stack? Reference didn't show notes. Keeping clean.
 }
 
 .row-images {
     margin-top: $spacing-1;
+    width: 100%;
+    max-width: 100%;
 }

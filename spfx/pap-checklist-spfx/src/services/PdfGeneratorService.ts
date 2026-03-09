@@ -2,6 +2,7 @@
 import jsPDF from 'jspdf';
 import { Checklist, ANSWER_CONFIG } from '../models'; // Relative path check needed
 import { PdfRichTextRenderer, BRAND_COLORS } from '../utils/pdfRichTextRenderer';
+import { getImageService } from './serviceFactory';
 
 export class PdfGeneratorService {
 
@@ -134,6 +135,9 @@ export class PdfGeneratorService {
             const visibleRows = wg.rows.filter(row => {
                 // Exclude rows marked as internal only
                 if (row.internalOnly) return false;
+
+                // Include if Builder to Confirm, even if BLANK
+                if (row.builderToConfirm) return true;
 
                 // Exclude rows that have not been answered yet
                 if (row.answer === 'BLANK') return false;
@@ -388,6 +392,66 @@ export class PdfGeneratorService {
                 cursorY += 5;
             } // End Workgroup Images
         } // End Workgroup Loop
+
+        // --- Feature 1: Carpentry Labour Section ---
+        if (this.checklist.carpentryLabourImageUrl) {
+            checkPageBreak(40);
+            // Optionally force new page if preferred
+            if (cursorY > margin.top + 20) {
+                doc.addPage();
+                cursorY = margin.top;
+            }
+
+            doc.setFontSize(14);
+            doc.setTextColor(BRAND_COLORS.BLACK);
+            doc.setFont('helvetica', 'bold');
+            doc.text("Carpentry Labour Cost Calculator", margin.left, cursorY + 5);
+            cursorY += 12;
+
+            if (!onProgress("Fetching Carpentry Image...", 90)) throw new Error("Cancelled");
+
+            try {
+                const carpentryBlob = await getImageService().downloadCarpentryImage(this.checklist.id);
+                if (carpentryBlob) {
+                    const dataUrl = await this.readBlobAsDataURL(carpentryBlob);
+                    const props = await this.getImageProperties(dataUrl);
+
+                    const maxW = contentWidth;
+                    let imgW = maxW;
+                    let imgH = imgW / props.ratio;
+
+                    if (cursorY + imgH > pageHeight - margin.bottom) {
+                        const maxH = pageHeight - margin.bottom - cursorY;
+                        if (imgH > maxH) {
+                            imgH = maxH;
+                            imgW = imgH * props.ratio;
+                        }
+                    }
+
+                    // Render image
+                    // jsPDF handles PNG/JPEG automatically if type is passed, or we can look closely at format
+                    doc.addImage(dataUrl, 'WEBP', margin.left, cursorY, imgW, imgH, undefined, 'FAST');
+                    cursorY += imgH + 8;
+                }
+            } catch (err) {
+                console.warn("Failed to load carpentry image for PDF", err);
+            }
+
+            if (this.checklist.carpentryLabourDescription) {
+                doc.setFontSize(10);
+                doc.setTextColor('#323130');
+                doc.setFont('helvetica', 'normal');
+                const descY = this.renderer.render(
+                    this.checklist.carpentryLabourDescription,
+                    margin.left,
+                    cursorY,
+                    contentWidth,
+                    pageHeight - margin.bottom,
+                    () => { doc.addPage(); cursorY = margin.top; return margin.top; }
+                );
+                cursorY = descY + 5;
+            }
+        } // End Carpentry
 
         // Apply Footers
         const totalPages = doc.getNumberOfPages();

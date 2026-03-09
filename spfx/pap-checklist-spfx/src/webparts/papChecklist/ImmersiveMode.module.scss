@@ -65,7 +65,7 @@
 
     /* Allow scroll from Content Scroll Region */
     [data-automation-id="contentScrollRegion"] {
-        overflow: auto !important;
+        overflow: hidden !important;
     }
 
     /* Remove margin/padding from Canvas Controls */

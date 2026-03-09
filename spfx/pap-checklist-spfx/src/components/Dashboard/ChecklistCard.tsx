@@ -41,6 +41,7 @@ export const ChecklistCard: React.FC<ChecklistCardProps> = ({ checklist, onClick
         }
     };
 
+
     const getDueDateUrgency = (dueDate?: Date) => {
         if (!dueDate) return null;
         const today = new Date();

@@ -36,7 +36,7 @@ export const AnswerSelector: React.FC<AnswerSelectorProps> = ({ value, onChange 
                     {config.label}
                 </Button>
             </MenuTrigger>
-            <MenuPopover>
+            <MenuPopover className={styles['answer-menu-popover']}>
                 <MenuList>
                     {ANSWER_STATES.map(state => {
                         const stateConfig = ANSWER_CONFIG[state];
@@ -51,7 +51,6 @@ export const AnswerSelector: React.FC<AnswerSelectorProps> = ({ value, onChange 
                                         style={{ backgroundColor: stateConfig.color }}
                                     />
                                     <span className={styles['answer-menu-label']}>{stateConfig.label}</span>
-                                    <span className={styles['answer-menu-desc']}>{stateConfig.description}</span>
                                 </div>
                             </MenuItem>
                         );
