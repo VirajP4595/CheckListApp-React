@@ -301,7 +301,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                                     e.stopPropagation();
                                 }}
                             >
-                                Review
+                                Marked For Review
                             </MenuItemCheckbox>
                             <MenuItemCheckbox
                                 name="status"
@@ -321,7 +321,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                                     e.stopPropagation();
                                 }}
                             >
-                                BTC
+                                BTC - Builder To Confirm
                             </MenuItemCheckbox>
                             <MenuItemCheckbox
                                 name="status"

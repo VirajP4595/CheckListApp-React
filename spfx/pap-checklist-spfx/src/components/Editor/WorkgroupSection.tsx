@@ -131,7 +131,19 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
         });
     }, [workgroup.rows, filters, activeChecklist?.jobDetails?.meetingOccurred]);
 
+    // Check if any row-level filters are active
+    const hasActiveRowFilters = filters && (
+        (filters.answerStates && filters.answerStates.length > 0) ||
+        (filters.markedForReview !== null && filters.markedForReview !== undefined) ||
+        (filters.internalOnly !== null && filters.internalOnly !== undefined) ||
+        (filters.notifyAdmin !== null && filters.notifyAdmin !== undefined) ||
+        (filters.builderToConfirm !== null && filters.builderToConfirm !== undefined)
+    );
 
+    // Hide workgroup if filters are applied but no items match
+    if (hasActiveRowFilters && filteredRows.length === 0) {
+        return null;
+    }
 
     return (
         <section className={styles.workgroup}>
