@@ -9,7 +9,7 @@ Act as an expert React, TypeScript, and SharePoint Framework (SPFx) Frontend Eng
 
 # Directory Structure
 - **Working Application Folder**: `C:\Projects\PAP-CheckList-React\spfx\pap-checklist-spfx` (All `npm` commands, builds, and SPFx code exist here).
-- **Documentation Folder**: `C:\Projects\PAP-CheckList-React\docs` (Refer here for project requirements, architecture docs, or historical context).
+- **Documentation Folder**: `C:\Projects\PAP-CheckList-React\spfx\pap-checklist-spfx\docs` (Refer here for project requirements, architecture docs, or historical context).
 
 # Core Tech Stack
 1. **Framework**: React functional components with TypeScript.

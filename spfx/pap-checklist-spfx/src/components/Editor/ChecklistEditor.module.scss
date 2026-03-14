@@ -229,6 +229,26 @@
     @include container;
 }
 
+.editor-revisions {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-4;
+    padding: $spacing-4;
+    background: #e5e8eb; // Very light grey background for the entire revision history section in editor
+    border-radius: $border-radius-lg;
+    border: 1px solid $color-gray-100;
+    margin-bottom: 2rem;
+}
+
+.revisions-header {
+    margin-bottom: $spacing-2;
+    padding-bottom: $spacing-2;
+    border-bottom: 2px solid $color-primary;
+    display: flex;
+    align-items: center;
+    color: $color-gray-800;
+}
+
 .editor-sidebar {
     display: none;
 

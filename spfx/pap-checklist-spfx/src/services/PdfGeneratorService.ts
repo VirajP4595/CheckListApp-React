@@ -1,6 +1,6 @@
 
 import jsPDF from 'jspdf';
-import { Checklist, ANSWER_CONFIG } from '../models'; // Relative path check needed
+import { Checklist, Workgroup, ChecklistRow, AnswerState, ANSWER_CONFIG } from '../models';
 import { PdfRichTextRenderer, BRAND_COLORS } from '../utils/pdfRichTextRenderer';
 import { getImageService } from './serviceFactory';
 
@@ -130,233 +130,112 @@ export class PdfGeneratorService {
         this.checklist.workgroups.forEach(wg => { totalItems += wg.rows.length; });
         let processedItems = 0;
 
-        for (const wg of this.checklist.workgroups) {
+        const renderWorkgroup = async (wg: Workgroup, totalItemsCount: number) => {
             // Pre-calculate visible rows for this workgroup
-            const visibleRows = wg.rows.filter(row => {
-                // Exclude rows marked as internal only
+            const visibleRows = wg.rows.filter((row: ChecklistRow) => {
                 if (row.internalOnly) return false;
-
-                // Include if Builder to Confirm, even if BLANK
                 if (row.builderToConfirm) return true;
-
-                // Exclude rows that have not been answered yet
                 if (row.answer === 'BLANK') return false;
-
-                // Include all other answered rows
                 return true;
             });
 
-            // If no rows are visible, skip the entire workgroup (header included)
-            if (visibleRows.length === 0) {
-                continue;
-            }
+            if (visibleRows.length === 0) return;
 
             // -- Workgroup Header --
             checkPageBreak(15);
-
             cursorY += 2;
-            doc.setFillColor('#f3f2f1'); // Light gray background
+            doc.setFillColor('#f3f2f1'); 
             doc.rect(margin.left, cursorY, contentWidth, 10, 'F');
-
             doc.setFontSize(11);
             doc.setTextColor(BRAND_COLORS.BLUE);
             doc.setFont('helvetica', 'bold');
             doc.text(`${wg.number}  ${wg.name}`, margin.left + 2, cursorY + 7);
-
             cursorY += 12;
 
-            // Accumulate images for the workgroup
             const workgroupImages: { data: string; ratio: number; caption?: string }[] = [];
 
             for (const row of visibleRows) {
-
                 processedItems++;
-                // Calc Progress
-                if (!onProgress(`Section ${wg.number}...`, 10 + (processedItems / totalItems) * 80)) {
+                if (!onProgress(`Drawing Row ${processedItems}...`, 10 + (processedItems / totalItemsCount) * 85)) {
                     throw new Error("Cancelled");
                 }
 
-                // ... (Content Calc) ...
-                // Calculate Content Heights (Lookahead)
-                const answerBoxW = 12;
-                // const col2X = margin.left + answerBoxW + 4; // Unused
-                const col2W = contentWidth - answerBoxW - 12;
-
+                const col2W = contentWidth - 12 - 4;
                 let contentH = 0;
-
-                // Title
                 const title = row.name || this.stripHtml(row.description).substring(0, 50);
                 if (title) contentH += 6;
-
-                // Description
                 const descH = this.renderer.measureHeight(row.description || '', col2W);
                 if (descH > 0) contentH += descH + 2;
-
-                // Notes - MOVED UP
                 const notesH = row.notes ? this.renderer.measureHeight(row.notes, col2W) + 4 : 0;
                 contentH += notesH;
 
-                // Images
-                let imagesH = 0;
-                if (row.images && row.images.length > 0) {
-                    // Grid math
-                    const gap = 4;
-                    const gridW = (col2W - gap) / 2;
-                    const avgRatio = 1.77;
-                    const avgRowH = gridW / avgRatio;
-                    const rows = Math.ceil(row.images.length / 2);
-                    imagesH = (rows * avgRowH) + (rows * 2) + 4;
-                }
-                contentH += imagesH;
+                checkPageBreak(Math.min(contentH + 5, 40));
 
-                // Min height for Status Box header + Title
-                checkPageBreak(30);
+                let drawY = cursorY + 4;
+                const fullW = contentWidth;
+                const answerConf = ANSWER_CONFIG[row.answer as AnswerState];
 
-                // -- Draw Row --
-                const startRowY = cursorY;
-
-                // 1. Status Pill (Inline) - UPDATED
-                // Replaces the left-column status box. Now we draw a pill next to title (or at start if no title)
-                // Actually, let's keep the row structure, but make the status pill inline with title.
-                // Status Box (Left Column) is REMOVED. Everything shifts LEFT? 
-                // Wait, "Inline Pill" usually means right of title.
-                // Re-defined layout: 
-                // Col 1: Content (Full Width)
-                // Row Header: Title + [Status Pill]
-
-                let drawY = startRowY + 4;
-                const fullW = contentWidth; // No more left column for status
-
-                const answerConf = ANSWER_CONFIG[row.answer];
-
-                // Title Line (Title + Pill)
                 if (title) {
                     doc.setTextColor(BRAND_COLORS.BLACK);
                     doc.setFontSize(11);
                     doc.setFont('helvetica', 'bold');
-                    doc.text(title, margin.left, drawY + 3); // +3 baseline adjust
-
+                    doc.text(title, margin.left, drawY + 3);
                     const titleW = doc.getTextWidth(title);
-
-                    // Draw Pill
                     const pillX = margin.left + titleW + 4;
                     const pillW = doc.getTextWidth(answerConf.label) + 6;
-
-                    // Pill bg
                     doc.setFillColor(answerConf.color);
                     doc.roundedRect(pillX, drawY - 1, pillW, 5, 2, 2, 'F');
-
-                    // Pill text
                     doc.setTextColor(BRAND_COLORS.WHITE);
                     doc.setFontSize(7);
                     doc.setFont('helvetica', 'bold');
                     doc.text(answerConf.label, pillX + (pillW / 2), drawY + 2.5, { align: 'center' });
-
                     drawY += 7;
-                } else {
-                    // No title, just draw pill at start?
-                    // Or fallback title was generated?
-                    // Let's assume fallback title exists if row.name missing
                 }
 
-
-                // Description (Paginated)
                 if (row.description) {
-                    doc.setFontSize(10);
-                    doc.setFontSize(9); // Compact
+                    doc.setFontSize(9);
                     doc.setTextColor('#323130');
-                    const descY = this.renderer.render(
-                        row.description,
-                        margin.left, // Full Width
-                        drawY,
-                        fullW,
-                        pageHeight - margin.bottom,
-                        () => { doc.addPage(); cursorY = margin.top; return margin.top; }
-                    );
-                    drawY = descY + 2;
+                    drawY = this.renderer.render(row.description, margin.left, drawY, fullW, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; }) + 2;
                 }
 
-                // Notes (Compact & Full Width)
                 if (row.notes) {
                     drawY += 1;
-                    const notesH = this.renderer.measureHeight(row.notes, fullW);
-                    const boxH = notesH + 5; // Compact padding
-
-                    if (drawY + boxH > pageHeight - margin.bottom) {
-                        doc.addPage();
-                        cursorY = margin.top;
-                        drawY = cursorY + 2;
-                    }
-
-                    // Background & Border
-                    doc.setFillColor('#fff9e6');
-                    doc.rect(margin.left, drawY, fullW, boxH, 'F');
-                    doc.setFillColor('#fce100');
-                    doc.rect(margin.left, drawY, 1.5, boxH, 'F');
-
-                    // Label
-                    doc.setFontSize(8);
-                    doc.setTextColor('#8a6d3b');
-                    doc.setFont('helvetica', 'bold');
+                    const bH = this.renderer.measureHeight(row.notes, fullW) + 5;
+                    if (drawY + bH > pageHeight - margin.bottom) { doc.addPage(); drawY = margin.top + 2; }
+                    doc.setFillColor('#fff9e6'); doc.rect(margin.left, drawY, fullW, bH, 'F');
+                    doc.setFillColor('#fce100'); doc.rect(margin.left, drawY, 1.5, bH, 'F');
+                    doc.setFontSize(8); doc.setTextColor('#8a6d3b'); doc.setFont('helvetica', 'bold');
                     doc.text("NOTES:", margin.left + 3, drawY + 3.5);
-
-                    // Content - Full Width (minor padding)
-                    doc.setFontSize(9);
-                    doc.setTextColor('#484644');
-                    doc.setFont('helvetica', 'normal');
-
-                    this.renderer.render(
-                        row.notes,
-                        margin.left + 3,
-                        drawY + 5,
-                        fullW - 4,
-                        pageHeight - margin.bottom,
-                        () => { doc.addPage(); return margin.top; }
-                    );
-                    drawY += boxH + 2;
+                    doc.setFontSize(9); doc.setTextColor('#484644'); doc.setFont('helvetica', 'normal');
+                    this.renderer.render(row.notes, margin.left + 3, drawY + 5, fullW - 4, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; });
+                    drawY += bH + 2;
                 }
 
-                // Collect Images (Don't draw yet)
                 if (row.images && row.images.length > 0) {
                     for (const img of row.images) {
-                        workgroupImages.push({
-                            data: img.source,
-                            ratio: 1.77,
-                            caption: row.name
-                        });
+                        workgroupImages.push({ data: img.source, ratio: 1.77, caption: row.name });
                     }
                 }
-
                 cursorY = drawY;
-
-                // Divider
-                doc.setDrawColor('#e1dfdd');
-                doc.setLineWidth(0.1);
+                doc.setDrawColor('#e1dfdd'); doc.setLineWidth(0.1);
                 doc.line(margin.left, cursorY, pageWidth - margin.right, cursorY);
                 cursorY += 1;
-            } // End Row Loop
+            }
 
-            // --- Render Workgroup Images ---
+            // Render Workgroup Images
             if (workgroupImages.length > 0) {
                 checkPageBreak(30);
-                doc.setFontSize(9);
-                doc.setTextColor(BRAND_COLORS.BLUE);
-                doc.setFont('helvetica', 'bold');
-                doc.text("Workgroup Images", margin.left, cursorY + 5);
+                doc.setFontSize(10); doc.setTextColor(BRAND_COLORS.BLUE); doc.setFont('helvetica', 'bold');
+                doc.text("Workgroup Images:", margin.left, cursorY + 5);
                 cursorY += 8;
 
                 const gap = 4;
                 const gridW = (contentWidth - gap) / 2;
-
-                // Fetch Loop for Collected Images
                 const loadedImages = [];
                 for (const item of workgroupImages) {
                     try {
                         let d = item.data;
                         if (d.startsWith('http') || d.startsWith('blob:')) {
-                            // Use simple fetch for now, assuming CORS/Auth handled or public
-                            // For blob urls from preview, directly readable?
-                            // Actually blob urls work if same origin context.
                             const r = await fetch(d).catch(() => null);
                             if (r && r.ok) {
                                 const b = await r.blob();
@@ -365,33 +244,91 @@ export class PdfGeneratorService {
                         }
                         const props = await this.getImageProperties(d).catch(() => ({ ratio: 1.77 }));
                         loadedImages.push({ data: d, ratio: props.ratio });
-                    } catch (e) {
-                        console.error("Error loading image", e);
-                    }
+                    } catch (e) { console.error("Img Load Err", e); }
                 }
 
                 for (let i = 0; i < loadedImages.length; i += 2) {
-                    const img1 = loadedImages[i];
-                    const img2 = loadedImages[i + 1];
-
-                    const h1 = gridW / img1.ratio;
-                    const h2 = img2 ? (gridW / img2.ratio) : 0;
-                    const rowH = Math.max(h1, h2);
-
-                    if (cursorY + rowH > pageHeight - margin.bottom) {
-                        doc.addPage();
-                        cursorY = margin.top;
-                    }
-
+                    const img1 = loadedImages[i]; const img2 = loadedImages[i + 1];
+                    const h1 = gridW / img1.ratio; const h2 = img2 ? (gridW / img2.ratio) : 0;
+                    const rH = Math.max(h1, h2);
+                    if (cursorY + rH > pageHeight - margin.bottom) { doc.addPage(); cursorY = margin.top; }
                     doc.addImage(img1.data, 'JPEG', margin.left, cursorY, gridW, h1);
-                    if (img2) {
-                        doc.addImage(img2.data, 'JPEG', margin.left + gridW + gap, cursorY, gridW, h2);
-                    }
-                    cursorY += rowH + 4;
+                    if (img2) doc.addImage(img2.data, 'JPEG', margin.left + gridW + gap, cursorY, gridW, h2);
+                    cursorY += rH + 4;
                 }
                 cursorY += 5;
-            } // End Workgroup Images
-        } // End Workgroup Loop
+            }
+        };
+
+        // --- SECTION: REVISION HISTORY ---
+        const revisions = (this.checklist.revisions || []).sort((a, b) => b.number - a.number);
+        if (revisions.length > 0) {
+            checkPageBreak(20);
+            doc.setFontSize(14);
+            doc.setTextColor(BRAND_COLORS.BLACK);
+            doc.setFont('helvetica', 'bold');
+            doc.text("Revision History", margin.left, cursorY + 6);
+            cursorY += 12;
+
+            for (const rev of revisions) {
+                const revWorkgroups = this.checklist.workgroups.filter(wg => wg.revisionId === rev.id);
+                if (revWorkgroups.length === 0 && !rev.notes) continue;
+
+                checkPageBreak(25);
+                // Revision Block Header
+                doc.setFillColor('#f8f9fa');
+                doc.rect(margin.left, cursorY, contentWidth, 8, 'F');
+                doc.setDrawColor('#dee2e6');
+                doc.rect(margin.left, cursorY, contentWidth, 8, 'S');
+
+                doc.setFontSize(10);
+                doc.setTextColor(BRAND_COLORS.BLACK);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`REV ${rev.number}: ${rev.title}`, margin.left + 2, cursorY + 5.5);
+                
+                const dateStr = rev.createdAt instanceof Date ? rev.createdAt.toLocaleDateString() : new Date(rev.createdAt).toLocaleDateString();
+                const dateW = doc.getTextWidth(dateStr);
+                doc.setFont('helvetica', 'normal');
+                doc.text(dateStr, pageWidth - margin.right - dateW - 2, cursorY + 5.5);
+                cursorY += 10;
+
+                // Revision Notes
+                if (rev.notes) {
+                    cursorY = this.renderer.render(rev.notes, margin.left + 2, cursorY, contentWidth - 4, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; }) + 6;
+                }
+
+                // Revision Items
+                for (const wg of revWorkgroups) {
+                    await renderWorkgroup(wg, totalItems);
+                }
+                
+                cursorY += 5; // Spacing between revisions
+            }
+
+            // Divider + "Original Checklist" header before main checklist
+            checkPageBreak(25);
+
+            // Draw full-width blue separator line
+            doc.setDrawColor(BRAND_COLORS.BLUE);
+            doc.setLineWidth(0.8);
+            doc.line(margin.left, cursorY, pageWidth - margin.right, cursorY);
+            cursorY += 4;
+
+            // "Original Checklist" section title — reset all state explicitly
+            doc.setFillColor('#ffffff');          // White bg to prevent bleed-through
+            doc.rect(margin.left, cursorY, contentWidth, 10, 'F');
+            doc.setFontSize(13);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor('#000000');          // Explicit hex, avoids constant resolution issues
+            doc.text('Original Checklist', margin.left, cursorY + 7);
+            cursorY += 14;
+        }
+
+        // --- SECTION: MAIN CHECKLIST ---
+        const mainWorkgroups = this.checklist.workgroups.filter(wg => !wg.revisionId);
+        for (const wg of mainWorkgroups) {
+            await renderWorkgroup(wg, totalItems);
+        }
 
         // --- Feature 1: Carpentry Labour Section ---
         if (this.checklist.carpentryLabourImageUrl) {

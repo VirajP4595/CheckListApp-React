@@ -1,3 +1,3 @@
 export { RevisionPanel } from './RevisionPanel';
-export { RevisionCard } from './RevisionCard';
+export { RevisionSection } from './RevisionSection';
 export { RevisionViewer } from './RevisionViewer';

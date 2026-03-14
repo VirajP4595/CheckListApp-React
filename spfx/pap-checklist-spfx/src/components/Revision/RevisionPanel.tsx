@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     Button,
     Input,
@@ -10,144 +10,108 @@ import {
     DialogBody,
     DialogActions,
     DialogContent,
-    Spinner,
 } from '@fluentui/react-components';
-import { Add20Regular } from '@fluentui/react-icons';
-import type { Revision } from '../../models';
-import { getRevisionService } from '../../services';
+import { History24Regular } from '@fluentui/react-icons';
 import { useChecklistStore } from '../../stores';
-import { RevisionCard } from './RevisionCard';
 import { RichTextEditor } from '../Editor/RichTextEditor';
-import styles from './RevisionPanel.module.scss';
+import styles from '../Editor/ChecklistEditor.module.scss'; // Reuse common button styles
+import localStyles from './RevisionPanel.module.scss';
 
 interface RevisionPanelProps {
     checklistId: string;
-    onViewRevision: (revision: Revision) => void;
 }
 
+/**
+ * Now acts as a Header Action Button that triggers the "Create Revision" Dialog
+ */
 export const RevisionPanel: React.FC<RevisionPanelProps> = ({
-    checklistId,
-    onViewRevision,
+    checklistId
 }) => {
-    const { saveChecklist } = useChecklistStore();
-    const [revisions, setRevisions] = useState<Revision[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { activeChecklist, createRevision, isSaving, saveChecklist } = useChecklistStore();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [title, setTitle] = useState('');
     const [notes, setNotes] = useState('');
-    const [isCreating, setIsCreating] = useState(false);
-
-    const loadRevisions = async () => {
-        setIsLoading(true);
-        try {
-            const data = await getRevisionService().getRevisions(checklistId);
-            setRevisions(data);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        void loadRevisions();
-    }, [checklistId]);
+    const [isCreatingInternal, setIsCreatingInternal] = useState(false);
 
     const handleCreate = async () => {
-        if (!title.trim()) return;
+        if (!title.trim() || !activeChecklist) return;
 
-        setIsCreating(true);
+        setIsCreatingInternal(true);
         try {
+            // Ensure data is saved before creating revision marker
             await saveChecklist();
-            const revision = await getRevisionService().createRevision(checklistId, title, notes);
-            setRevisions(prev => [...prev, revision]);
+            
+            await createRevision(title, notes);
+            
             setDialogOpen(false);
             setTitle('');
             setNotes('');
+        } catch (error) {
+            console.error("Failed to create revision", error);
         } finally {
-            setIsCreating(false);
+            setIsCreatingInternal(false);
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className={styles['revision-panel']}>
-                <Spinner label="Loading revisions..." />
-            </div>
-        );
-    }
+    const nextRevisionNumber = (activeChecklist?.revisions?.length || 0) + 1;
 
     return (
-        <div className={styles['revision-panel']}>
-            <div className={styles['revision-list']}>
-                {revisions.length === 0 ? (
-                    <div className={styles['revision-empty']}>
-                        <span>No revisions yet</span>
-                    </div>
-                ) : (
-                    revisions
-                        .sort((a, b) => b.number - a.number)
-                        .map(revision => (
-                            <RevisionCard
-                                key={revision.id}
-                                revision={revision}
-                                onClick={() => onViewRevision(revision)}
-                            />
-                        ))
-                )}
-            </div>
-
-            <div className={styles['create-revision']}>
-                <Dialog open={dialogOpen} onOpenChange={(_, data) => setDialogOpen(data.open)}>
-                    <DialogTrigger disableButtonEnhancement>
-                        <Button appearance="primary" icon={<Add20Regular />} style={{ width: '100%' }}>
-                            Create Revision
+        <Dialog open={dialogOpen} onOpenChange={(_, data) => setDialogOpen(data.open)}>
+            <DialogTrigger disableButtonEnhancement>
+                <Button 
+                    className={styles['editor-action-btn']} 
+                    appearance="subtle" 
+                    icon={<History24Regular />}
+                    title="Create New Revision"
+                >
+                    Revision
+                </Button>
+            </DialogTrigger>
+            <DialogSurface className={localStyles['create-revision-dialog']}>
+                <DialogBody className={localStyles['dialog-body']}>
+                    <DialogTitle>Create Revision Marker</DialogTitle>
+                    <DialogContent className={localStyles['dialog-content']}>
+                        <div className={localStyles['revision-form']}>
+                            <p style={{ marginBottom: '16px', color: '#666' }}>
+                                This will create a new Revision Section (REV {nextRevisionNumber}) where you can add specific workgroups.
+                                The current checklist state will be saved before creating the revision.
+                            </p>
+                            <div>
+                                <Label htmlFor="revision-title" required>Revision Title</Label>
+                                <Input
+                                    id="revision-title"
+                                    placeholder="e.g., Post-Tender Adjustments, Site Visit Changes..."
+                                    value={title}
+                                    onChange={(_, data) => setTitle(data.value)}
+                                    className={localStyles['revision-title-input']}
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                            <div className={localStyles['notes-container']} style={{ marginTop: '16px' }}>
+                                <Label htmlFor="revision-notes">Initial Revision Notes</Label>
+                                <RichTextEditor
+                                    content={notes}
+                                    onChange={(html: string) => setNotes(html)}
+                                    placeholder="Briefly describe the purpose of this revision..."
+                                    className={localStyles['full-height-editor']}
+                                />
+                            </div>
+                        </div>
+                    </DialogContent>
+                    <DialogActions style={{ marginTop: '20px' }}>
+                        <DialogTrigger disableButtonEnhancement>
+                            <Button appearance="secondary">Cancel</Button>
+                        </DialogTrigger>
+                        <Button
+                            appearance="primary"
+                            onClick={handleCreate}
+                            disabled={!title.trim() || isCreatingInternal || isSaving}
+                        >
+                            {isCreatingInternal ? 'Creating...' : 'Create Revision'}
                         </Button>
-                    </DialogTrigger>
-                    <DialogSurface className={styles['create-revision-dialog']}>
-                        <DialogBody className={styles['dialog-body']}>
-                            <DialogTitle>Create Revision</DialogTitle>
-                            <DialogContent className={styles['dialog-content']}>
-                                <div className={styles['revision-form']}>
-                                    <span>
-                                        This will save the current state as REV {revisions.length + 1}.
-                                    </span>
-                                    <div>
-                                        <Label htmlFor="revision-title" required>Title</Label>
-                                        <Input
-                                            id="revision-title"
-                                            placeholder="e.g., Initial Release, Client Feedback Update..."
-                                            value={title}
-                                            onChange={(_, data) => setTitle(data.value)}
-                                            className={styles['revision-title-input']}
-                                        />
-                                    </div>
-                                    <div className={styles['notes-container']}>
-                                        <Label htmlFor="revision-notes">Notes</Label>
-                                        <RichTextEditor
-                                            content={notes}
-                                            onChange={(html: string) => setNotes(html)}
-                                            placeholder="Describe what changed in this revision..."
-                                            className={styles['full-height-editor']}
-                                        />
-                                    </div>
-                                </div>
-                            </DialogContent>
-                            <DialogActions>
-                                <DialogTrigger disableButtonEnhancement>
-                                    <Button className={styles['btn-secondary']} appearance="secondary">Cancel</Button>
-                                </DialogTrigger>
-                                <Button
-                                    className={styles['btn-primary']}
-                                    appearance="primary"
-                                    onClick={handleCreate}
-                                    disabled={!title.trim() || isCreating}
-                                >
-                                    {isCreating ? 'Creating...' : 'Create Revision'}
-                                </Button>
-                            </DialogActions>
-                        </DialogBody>
-                    </DialogSurface>
-                </Dialog>
-            </div>
-        </div>
+                    </DialogActions>
+                </DialogBody>
+            </DialogSurface>
+        </Dialog>
     );
 };

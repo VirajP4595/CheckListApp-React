@@ -122,9 +122,9 @@ export const ChecklistCard: React.FC<ChecklistCardProps> = ({ checklist, onClick
                     </span>
                     {(checklist.jobDetails?.leadEstimator || checklist.jobDetails?.reviewer) && (
                         <span className={styles['checklist-card-estimator']}>
-                            {checklist.jobDetails?.leadEstimator ? `Lead: ${checklist.jobDetails.leadEstimator}` : ''}
+                            {checklist.jobDetails?.leadEstimator ? `Estimator: ${checklist.jobDetails.leadEstimator}` : ''}
                             {checklist.jobDetails?.leadEstimator && checklist.jobDetails?.reviewer ? ' | ' : ''}
-                            {checklist.jobDetails?.reviewer ? `Rev: ${checklist.jobDetails.reviewer}` : ''}
+                            {checklist.jobDetails?.reviewer ? `Reviewer: ${checklist.jobDetails.reviewer}` : ''}
                         </span>
                     )}
                 </div>

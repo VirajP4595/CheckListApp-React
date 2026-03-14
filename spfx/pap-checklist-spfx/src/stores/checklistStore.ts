@@ -35,13 +35,14 @@ interface ChecklistState {
     loadChecklist: (id: string) => Promise<void>;
     fetchRowImages: (rowId: string) => Promise<void>;
     loadRevisions: () => Promise<void>;
-    restoreRevision: (revisionId: string) => Promise<void>;
+    addRevisionWorkgroup: (revisionId: string, sourceWorkgroupNumber: number, sourceWorkgroupName: string) => Promise<void>;
 
     // Actions - Checklist CRUD
     saveChecklist: () => Promise<void>;
     deleteChecklist: (id: string, onProgress?: (status: string, percent: number) => void) => Promise<void>;
     saveRow: (rowId: string) => Promise<void>;
     createRevision: (title: string, notes: string) => Promise<void>;
+    updateRevision: (revisionId: string, updates: Partial<import('../models').Revision>) => Promise<void>;
     uploadClientLogo: (file: File) => Promise<void>;
 
     // Actions - Row Operations
@@ -669,24 +670,75 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         }
     },
 
-    restoreRevision: async (revisionId: string) => {
-        set({ isLoading: true });
+    addRevisionWorkgroup: async (revisionId: string, sourceWorkgroupNumber: number, sourceWorkgroupName: string) => {
+        const { activeChecklist } = get();
+        if (!activeChecklist) return;
+
+        const processId = `add-rev-wg-${revisionId}`;
+        set(state => ({ processingItems: [...state.processingItems, processId], isSaving: true }));
+
         try {
-            const revision = await getRevisionService().getRevision(revisionId);
-            if (revision && revision.snapshot) {
-                set(state => ({
-                    isLoading: false,
+            // Create empty workgroup with same name/number, linked to revision
+            const newWg = await getChecklistService().createWorkgroup(
+                activeChecklist.id,
+                sourceWorkgroupNumber,
+                sourceWorkgroupName,
+                revisionId
+            );
+
+            logActivity(activeChecklist.id, 'revision_workgroup_added', `${sourceWorkgroupName} → REV`);
+
+            set(state => {
+                if (!state.activeChecklist) return {
+                    processingItems: state.processingItems.filter(id => id !== processId),
+                    isSaving: false
+                };
+                return {
+                    isSaving: false,
+                    lastSaved: new Date(),
+                    processingItems: state.processingItems.filter(id => id !== processId),
                     activeChecklist: {
-                        ...revision.snapshot,
-                        // Ensure we mistakenly don't overwrite metadata that shouldn't change if snapshot is old structure
-                        id: state.activeChecklist?.id || revision.snapshot.id,
+                        ...state.activeChecklist,
+                        workgroups: [...state.activeChecklist.workgroups, newWg],
+                        updatedAt: new Date()
                     }
-                }));
-            } else {
-                set({ isLoading: false, error: "Snapshot content missing" });
-            }
+                };
+            });
         } catch (err) {
-            set({ error: (err as Error).message, isLoading: false });
+            set(state => ({
+                error: (err as Error).message,
+                isSaving: false,
+                processingItems: state.processingItems.filter(id => id !== processId)
+            }));
+        }
+    },
+    
+    updateRevision: async (revisionId: string, updates: Partial<import('../models').Revision>) => {
+        const { activeChecklist } = get();
+        if (!activeChecklist) return;
+
+        const revision = activeChecklist.revisions?.find(r => r.id === revisionId);
+        if (!revision) return;
+
+        const updatedRevision = { ...revision, ...updates };
+
+        // Optimistic UI update
+        set(state => {
+            if (!state.activeChecklist) return state;
+            return {
+                activeChecklist: {
+                    ...state.activeChecklist,
+                    revisions: state.activeChecklist.revisions?.map(r => r.id === revisionId ? updatedRevision : r)
+                }
+            };
+        });
+
+        try {
+            await getRevisionService().updateRevision(updatedRevision);
+            logActivity(activeChecklist.id, 'revision_updated', updatedRevision.title);
+        } catch (err) {
+            set({ error: (err as Error).message });
+            // Rollback if needed? For metadata, usually okay.
         }
     },
 

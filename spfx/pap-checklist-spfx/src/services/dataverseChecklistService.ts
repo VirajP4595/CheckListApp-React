@@ -1,7 +1,8 @@
 import { dataverseClient, entities, col, navprops } from './dataverseService';
 import type { IChecklistService } from './interfaces';
 import { getImageService } from './serviceFactory';
-import type { Checklist, Workgroup, ChecklistRow, AnswerState, ChecklistStatus } from '../models';
+import { DataverseRevisionService } from './dataverseRevisionService';
+import type { Checklist, Workgroup, ChecklistRow, AnswerState, ChecklistStatus, Revision } from '../models';
 
 // ─── DATAVERSE RESPONSE TYPES ──────────────────────────────
 
@@ -63,6 +64,7 @@ interface DataverseWorkgroup {
     pap_order: number;
     pap_summarynotes?: string;
     _pap_checklistid_value: string;
+    _pap_revisionid_value?: string;     // Lookup to pap_revision
     // Navigation property - full relationship schema name
     // pap_checklistrow_pap_workgroup_pap_workgroupid
     [key: `pap_checklistrow_${string}`]: DataverseRow[] | undefined;
@@ -161,6 +163,7 @@ function mapWorkgroup(dv: DataverseWorkgroup): Workgroup {
     return {
         id: dv.pap_workgroupid,
         checklistId: dv._pap_checklistid_value,
+        revisionId: dv._pap_revisionid_value || undefined,
         number: parseFloat(dv.pap_number) || 0,
         name: dv.pap_name,
         rows: rows.map(mapRow).sort((a, b) => a.order - b.order),
@@ -263,7 +266,7 @@ export class DataverseChecklistService implements IChecklistService {
         // Load workgroups separately using $filter
         const workgroupsResponse = await dataverseClient.get<{ value: DataverseWorkgroup[] }>(
             entities.workgroups,
-            `$filter=_pap_checklistid_value eq ${id}&$orderby=${col('order')} asc`
+            `$filter=_pap_checklistid_value eq '${id}'&$orderby=${col('order')} asc`
         );
 
         // Load all rows for all workgroups in one query
@@ -272,7 +275,7 @@ export class DataverseChecklistService implements IChecklistService {
 
         if (workgroupIds.length > 0) {
             // Build filter for all workgroup IDs
-            const rowFilter = workgroupIds.map(wgId => `_pap_workgroupid_value eq ${wgId}`).join(' or ');
+            const rowFilter = workgroupIds.map(wgId => `_pap_workgroupid_value eq '${wgId}'`).join(' or ');
 
             // Explicitly select pap_description_primary to ensure it is returned
             const selectRows = [
@@ -305,6 +308,15 @@ export class DataverseChecklistService implements IChecklistService {
                 console.warn('[DataverseService] Failed to load images from SharePoint', err);
             }
         }
+        
+        // Load Revisions from Dataverse (New Metadata Approach)
+        let revisions: Revision[] = [];
+        try {
+            const revisionService = new DataverseRevisionService();
+            revisions = await revisionService.getRevisions(id);
+        } catch (err) {
+            console.warn('[DataverseService] Failed to load revisions', err);
+        }
 
         // Map workgroups with their rows and attach images
         const workgroups = workgroupsResponse.value.map(wg => {
@@ -312,6 +324,7 @@ export class DataverseChecklistService implements IChecklistService {
             return {
                 id: wg.pap_workgroupid,
                 checklistId: wg._pap_checklistid_value,
+                revisionId: wg._pap_revisionid_value || undefined,
                 number: parseFloat(wg.pap_number) || 0,
                 name: wg.pap_name,
                 rows: wgRows.map(r => {
@@ -334,7 +347,7 @@ export class DataverseChecklistService implements IChecklistService {
             currentRevisionNumber: dv.pap_currentrevisionnumber || 0,
             status: STATUS_MAP[dv.pap_status] || 'draft',
             workgroups,
-            revisions: [],
+            revisions,
             clientCorrespondence: dv.pap_clientcorrespondence ? JSON.parse(dv.pap_clientcorrespondence) : [],
             estimateType: dv.pap_estimatetype ? JSON.parse(dv.pap_estimatetype) : [],
             commonNotes: dv.pap_commonnotes || '',
@@ -360,6 +373,61 @@ export class DataverseChecklistService implements IChecklistService {
             createdAt: new Date(dv.createdon),
             updatedAt: new Date(dv.modifiedon)
         };
+    }
+
+    async getHydratedChecklist(id: string, onProgress?: (status: string, percent: number) => void): Promise<Checklist> {
+        if (onProgress) onProgress('Retrieving all images...', 5);
+        const fullChecklist = await this.getChecklist(id, { includeImages: true });
+
+        // Identify all images that need downloading (those without a Data URL source)
+        const allImages: { img: any, id: string }[] = [];
+        fullChecklist.workgroups.forEach(wg => {
+            wg.rows.forEach(r => {
+                if (r.images) {
+                    r.images.forEach(img => {
+                        // We check for id because we need it to download from SharePoint.
+                        // If source already starts with data: it's likely already hydrated.
+                        if (img.id && (!img.source || !img.source.startsWith('data:'))) {
+                            allImages.push({ img, id: img.id });
+                        }
+                    });
+                }
+            });
+        });
+
+        if (allImages.length > 0) {
+            const batchSize = allImages.length;
+            if (onProgress) onProgress(`Hydrating ${batchSize} images...`, 10);
+            
+            const imageService = getImageService();
+            const CONCURRENCY_LIMIT = 5;
+            let completed = 0;
+
+            // Process in chunks to avoid overwhelming the browser/network
+            for (let i = 0; i < allImages.length; i += CONCURRENCY_LIMIT) {
+                const chunk = allImages.slice(i, i + CONCURRENCY_LIMIT);
+                await Promise.all(chunk.map(async (item) => {
+                    try {
+                        const base64 = await imageService.downloadImageContent(item.id);
+                        if (base64) {
+                            // eslint-disable-next-line require-atomic-updates
+                            item.img.source = base64;
+                        }
+                    } catch (e) {
+                        console.warn(`[Hydration] Failed to download image ${item.id}`, e);
+                    } finally {
+                        completed++;
+                        if (onProgress) {
+                            const percent = 10 + Math.floor((completed / batchSize) * 85);
+                            onProgress(`Hydrated ${completed}/${batchSize} images...`, percent);
+                        }
+                    }
+                }));
+            }
+        }
+
+        if (onProgress) onProgress('Finalizing Report Data...', 100);
+        return fullChecklist;
     }
 
     async getAllChecklists(): Promise<Checklist[]> {
@@ -446,20 +514,28 @@ export class DataverseChecklistService implements IChecklistService {
 
     // ─── WORKGROUP ACTIONS ──────────────────────────────────────────────
 
-    async createWorkgroup(checklistId: string, number: number, name: string): Promise<Workgroup> {
+    async createWorkgroup(checklistId: string, number: number, name: string, revisionId?: string): Promise<Workgroup> {
         console.log(`[Dataverse] Creating Workgroup: "${name}" for Checklist: ${checklistId}`);
-        const result = await dataverseClient.create<{ pap_workgroupid: string }>(entities.workgroups, {
+        
+        const payload: Record<string, unknown> = {
             [col('name')]: name,
             [col('number')]: String(number),
-            [col('order')]: number, // Initial order usually matches number, or handled by caller
+            [col('order')]: number,
             [`${col('checklistid')}@odata.bind`]: `/${entities.checklists}(${checklistId})`
-        });
+        };
+
+        if (revisionId) {
+            payload[`${col('revisionid')}@odata.bind`] = `/${entities.revisions}(${revisionId})`;
+        }
+
+        const result = await dataverseClient.create<{ pap_workgroupid: string }>(entities.workgroups, payload);
 
         console.log(`[Dataverse] Workgroup Created: ${result.pap_workgroupid}`);
 
         return {
             id: result.pap_workgroupid,
             checklistId: checklistId,
+            revisionId: revisionId,
             number: number,
             name: name,
             rows: [],

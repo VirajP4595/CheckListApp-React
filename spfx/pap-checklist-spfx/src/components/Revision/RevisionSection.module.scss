@@ -1,0 +1,162 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.revisionSection {
+    @include surface;
+    margin-bottom: $spacing-4;
+    transition: box-shadow $transition-base;
+    overflow: hidden; // Prevent header hover from clipping rounded corners
+}
+
+.revisionHeader {
+    @include flex-between;
+    padding: $spacing-3 $spacing-4;
+    cursor: pointer;
+    gap: $spacing-3;
+    user-select: none;
+    border-radius: $border-radius-md $border-radius-md 0 0; // Match parent's top corners
+
+    // If section is closed, we want all corners rounded
+    &:last-child {
+        border-radius: $border-radius-md;
+    }
+
+    &:hover {
+        background-color: $color-gray-50;
+    }
+}
+
+.revisionLeft {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    flex: 1;
+}
+
+.revisionBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: $spacing-1 $spacing-3;
+    background-color: $color-primary-subtle;
+    color: $color-primary;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    border-radius: $border-radius-full;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.revisionTitle {
+    @include heading-4;
+    @include truncate;
+}
+
+.revisionMeta {
+    @include body-small;
+    color: $color-gray-600;
+    white-space: nowrap;
+}
+
+.revisionRight {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+}
+
+.revisionCount {
+    @include body-small;
+    color: $color-gray-500;
+    white-space: nowrap;
+}
+
+.revisionBody {
+    padding: $spacing-2 $spacing-4 $spacing-4;
+    @include fade-in;
+    border-top: 1px solid $color-gray-100;
+}
+
+.revisionNotes {
+    @include body-small;
+    padding: $spacing-2 $spacing-3;
+    background-color: $color-gray-50;
+    border-radius: $border-radius-sm;
+    margin-bottom: $spacing-3;
+    border-left: 2px solid $color-gray-300;
+}
+
+.addWorkgroupRow {
+    margin-bottom: $spacing-4;
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+}
+
+.filter-dropdown {
+    width: 350px; 
+    min-width: 350px;
+    color: $color-gray-700 !important;
+    text-align: left;
+    justify-content: space-between !important;
+    
+    // Explicitly match FilterBar button style
+    @include input-filled;
+
+    @include mobile {
+        width: 100%;
+        min-width: 100%;
+    }
+}
+
+// Searchable Menu Styles (Copied from FilterBar for matching)
+.search-container {
+    padding: $spacing-2;
+    border-bottom: 1px solid $color-gray-200;
+    position: sticky;
+    top: 0;
+    background: $color-white;
+    z-index: 10;
+}
+
+.search-wrapper {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: $spacing-3;
+    color: $color-gray-400;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.search-input {
+    width: 100%;
+    @include input-filled;
+
+    & {
+        height: 36px !important;
+        min-height: 36px !important;
+        font-size: $font-size-sm;
+        padding-left: 36px !important;
+    }
+
+    &:focus {
+        outline: none;
+    }
+}
+
+.search-list {
+    max-height: 300px;
+    overflow-y: auto;
+    @include scrollbar;
+}
+
+.revisionWorkgroups {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+}

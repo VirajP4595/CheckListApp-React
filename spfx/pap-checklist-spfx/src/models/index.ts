@@ -56,6 +56,7 @@ export interface ChecklistRow {
 export interface Workgroup {
     id: string;
     checklistId: string;
+    revisionId?: string;       // If set, belongs to a revision section (not the original checklist body)
     number: number;        // 20, 40, 180, 510
     name: string;
     rows: ChecklistRow[];
@@ -70,7 +71,7 @@ export interface Revision {
     number: number;        // REV 1, REV 2...
     title: string;         // Short revision title (pap_name)
     notes: string;         // Rich text body (pap_summary)
-    snapshot: Checklist;   // Read-only copy at time of revision
+    snapshot?: Checklist;  // Optional snapshot for browser-based preview
     createdBy: string;
     createdAt: Date;
 }

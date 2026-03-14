@@ -293,6 +293,20 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                         {filteredRows.length === 0 ? (
                             <div className={styles['workgroup-empty']}>
                                 <span>{workgroup.rows.length === 0 ? 'No items in this workgroup yet.' : 'No items match the current filters.'}</span>
+                                {workgroup.rows.length === 0 && (
+                                    <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
+                                        <button
+                                            className={styles['insert-row-btn']}
+                                            onClick={handleAddRow}
+                                            disabled={isAdding}
+                                            style={{ opacity: 1 }} // Always show in empty state
+                                        >
+                                            <span className={styles['insert-row-icon']}>+</span>
+                                            <span className={styles['insert-row-label']}>Add first row</span>
+                                            {isAdding && <Spinner size="extra-tiny" style={{ marginLeft: '8px' }} />}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className={styles['workgroup-rows']}>

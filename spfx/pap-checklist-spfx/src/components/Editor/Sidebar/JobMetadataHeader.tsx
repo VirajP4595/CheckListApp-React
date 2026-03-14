@@ -90,14 +90,6 @@ export const JobMetadataHeader: React.FC<JobMetadataHeaderProps> = ({ checklist 
                     )}
                 </div>
 
-                {/* Engineering */}
-                <div className={styles['job-metadata-field']}>
-                    <span className={styles['job-metadata-label']}>Engineering</span>
-                    <span className={styles['job-metadata-value']}>
-                        {renderBoolean(job.engineering)}
-                    </span>
-                </div>
-
                 {/* 3D */}
                 <div className={styles['job-metadata-field']}>
                     <span className={styles['job-metadata-label']}>3D</span>

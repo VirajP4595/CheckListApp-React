@@ -35,57 +35,29 @@ export const usePdfExport = () => {
         setLoadingProgress({ open: true, title: 'Generating PDF Report', status: 'Initializing...', percent: 0, cancelled: false });
 
         try {
-            // STEP 1: Retrieve all images (Pre-fetch for collapsed rows)
-            setLoadingProgress(prev => ({ ...prev, status: 'Retrieving all images...', percent: 5 }));
-            const fullChecklist = await getChecklistService().getChecklist(activeChecklist.id, { includeImages: true });
+            // STEP 1: Retrieve all images (Pre-fetch for collapsed rows and download content)
+            const hydratedChecklist = await getChecklistService().getHydratedChecklist(activeChecklist.id, (status, percent) => {
+                // Map hydration percent (0-100) to our loading scale (5-15)
+                const mappedPercent = 5 + (percent * 0.1);
+                setLoadingProgress(prev => ({ ...prev, status, percent: mappedPercent }));
+            });
 
             if (isCancelledRef.current) throw new Error("Cancelled");
 
             // Filter out internal-only rows from PDF export
             const exportableChecklist: Checklist = {
-                ...fullChecklist,
-                workgroups: fullChecklist.workgroups.map(wg => ({
+                ...hydratedChecklist,
+                workgroups: hydratedChecklist.workgroups.map(wg => ({
                     ...wg,
                     rows: wg.rows.filter(row => !row.internalOnly)
                 }))
             };
 
-            // STEP 2: Download Image Content (Bypass CORS)
-            const allImages: { img: any, id: string }[] = [];
-            exportableChecklist.workgroups.forEach(wg => {
-                wg.rows.forEach(r => {
-                    if (r.images) {
-                        r.images.forEach(img => {
-                            if (img.id && !img.source.startsWith('data:')) {
-                                allImages.push({ img, id: img.id });
-                            }
-                        });
-                    }
-                });
-            });
-
-            if (allImages.length > 0) {
-                setLoadingProgress(prev => ({ ...prev, status: `Downloading ${allImages.length} images...`, percent: 10 }));
-                const imageService = getImageService();
-                const getImageContent = async (item: { img: any, id: string }) => {
-                    try {
-                        if (isCancelledRef.current) return;
-                        const base64 = await imageService.downloadImageContent(item.id);
-                        // eslint-disable-next-line require-atomic-updates
-                        item.img.source = base64; // Replace URL with Data URL
-                    } catch (err) {
-                        console.warn(`Failed to download image ${item.id}`, err);
-                    }
-                };
-
-                await Promise.all(allImages.map(getImageContent));
-            }
-
             const generator = new PdfGeneratorService(exportableChecklist);
 
             // STEP 3: Fetch Branding Logo (Securely via Graph)
             let logoBlob: Blob | null = null;
-            if (fullChecklist.clientLogoUrl) {
+            if (hydratedChecklist.clientLogoUrl) {
                 try {
                     setLoadingProgress(prev => ({ ...prev, status: 'Fetching branding...', percent: 15 }));
                     // Use secure download instead of fetch(url) to avoid CORS

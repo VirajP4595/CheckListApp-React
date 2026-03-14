@@ -125,10 +125,6 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
                             </div>
                         </div>
                         <div className={styles['job-info-item']}>
-                            <span className={styles['job-info-label']}>Engineering</span>
-                            <span className={styles['job-info-value']}>{renderBoolean(job.engineering)}</span>
-                        </div>
-                        <div className={styles['job-info-item']}>
                             <span className={styles['job-info-label']}>3D</span>
                             <span className={styles['job-info-value']}>{renderBoolean(job.threeDModel)}</span>
                         </div>

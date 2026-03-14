@@ -1,0 +1,266 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.description {
+    color: $color-gray-500;
+    font-size: $font-size-sm;
+    margin-bottom: $spacing-4;
+    display: block;
+}
+
+.empty-state {
+    padding: $spacing-6;
+    text-align: center;
+    color: $color-gray-400;
+    background: $color-gray-50;
+    border: 1px dashed $color-gray-200;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+}
+
+.header-with-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-2;
+}
+
+.create-btn {
+    height: 36px !important;
+    font-size: $font-size-sm !important;
+    @include button-premium-glow;
+}
+
+.revision-item {
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-md;
+    margin-bottom: $spacing-2;
+    background: white;
+    transition: all $transition-base;
+    overflow: hidden;
+
+    &:hover {
+        border-color: $color-primary-light;
+        box-shadow: $shadow-sm;
+    }
+}
+
+.item-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    padding: $spacing-2 $spacing-3;
+    width: 100%;
+    text-align: left;
+    position: relative;
+}
+
+.badge {
+    background: $color-primary;
+    color: white;
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+    padding: 2px 8px;
+    border-radius: $border-radius-sm;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+}
+
+.header-title {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex-grow: 1;
+}
+
+.meta {
+    color: $color-gray-400;
+    font-size: $font-size-xs;
+}
+
+.header-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-2;
+    width: 100%;
+}
+
+.revision-title {
+    flex: 1;
+    font-weight: $font-weight-normal;
+    color: $color-gray-900;
+    font-size: $font-size-base;
+    padding: $spacing-2 $spacing-3;
+    background-color: $color-gray-100;
+    border: 1px solid transparent;
+    border-radius: $border-radius-md;
+    @include truncate;
+}
+
+.inline-edit-btn {
+    opacity: 0;
+    transition: opacity $transition-fast;
+    color: $color-primary !important;
+    padding: 4px;
+    height: 32px;
+    width: 32px;
+    min-width: 0;
+    border-radius: $border-radius-full;
+
+    // Show when visible class is applied (via state)
+    &.is-visible {
+        opacity: 1;
+    }
+
+    &:hover {
+        background-color: rgba($color-primary, 0.05) !important;
+    }
+}
+
+.item-content {
+    padding: 0 $spacing-3 $spacing-3;
+    border-top: 1px solid $color-gray-100;
+}
+
+.view-content {
+    background: $color-white;
+    padding: $spacing-3;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-sm;
+    margin-top: $spacing-3;
+}
+
+.notes-preview {
+    font-size: $font-size-sm;
+    color: $color-gray-700;
+    line-height: $line-height-relaxed;
+
+    p { margin: 0 0 $spacing-2 0; }
+    p:last-child { margin-bottom: 0; }
+}
+
+.edit-form, .create-form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-6; // Increased gap for better breathing room
+    padding: $spacing-2 0;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+}
+
+.field-label {
+    @include label;
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+    margin-bottom: $spacing-1;
+    font-weight: $font-weight-bold;
+}
+
+.full-width {
+    width: 100%;
+    @include input-filled;
+}
+
+.small-editor {
+    min-height: 120px;
+    margin-top: $spacing-1;
+    
+    :global(.editor-container) {
+        background-color: $color-gray-100 !important;
+        @include input-filled;
+        
+        &:focus-within {
+            background-color: $color-white !important;
+        }
+    }
+}
+
+.medium-editor {
+    min-height: 250px;
+    margin-top: $spacing-1;
+    display: flex;
+    flex-direction: column;
+
+    :global(.editor-container) {
+        background-color: $color-gray-100 !important;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        @include input-filled;
+        
+        &:focus-within {
+            background-color: $color-white !important;
+        }
+    }
+
+    :global(.editor-content) {
+        flex: 1;
+        min-height: 200px;
+    }
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-3;
+    margin-top: $spacing-3;
+
+    .save-btn {
+        min-width: 120px !important;
+        @include button-primary;
+    }
+
+    .cancel-btn {
+        min-width: 100px !important;
+        @include button-secondary;
+    }
+}
+
+.dialog-close-btn {
+    position: absolute;
+    top: $spacing-3;
+    right: $spacing-3;
+    z-index: 10;
+}
+
+.large-dialog-surface {
+    width: 90vw !important;
+    max-width: 800px !important;
+    height: 80vh !important;
+    max-height: 700px !important;
+    padding: $spacing-6 !important; // Add consistent padding
+    box-sizing: border-box !important;
+
+    :global(.fui-DialogBody) {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: $spacing-4 !important;
+    }
+
+    :global(.fui-DialogTitle) {
+        margin: 0 !important;
+        padding-bottom: $spacing-2 !important;
+        border-bottom: 1px solid $color-gray-200 !important;
+    }
+
+    :global(.fui-DialogContent) {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        padding: $spacing-4 0 !important;
+    }
+
+    :global(.fui-DialogActions) {
+        margin: 0 !important;
+        padding-top: $spacing-4 !important;
+        border-top: 1px solid $color-gray-200 !important;
+        gap: $spacing-3 !important;
+    }
+}

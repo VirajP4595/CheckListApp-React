@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { makeStyles, TabList, Tab, SelectTabData, TabValue, tokens, shorthands, SelectTabEvent } from '@fluentui/react-components';
 import { History24Regular, Chat24Regular, NoteEdit24Regular, Folder24Regular, Info24Regular, ClipboardPulse24Regular } from '@fluentui/react-icons';
 import { Checklist } from '../../../models';
-import { RevisionPanel } from '../../Revision/RevisionPanel';
 import { ChecklistChat } from './ChecklistChat';
 import { CommonNotes } from './CommonNotes';
 import { ChecklistFiles } from './ChecklistFiles';
@@ -30,10 +29,9 @@ const useStyles = makeStyles({
 
 interface CollaborationSidebarProps {
     checklist: Checklist;
-    onViewRevision: (revision: any) => void;
 }
 
-export const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({ checklist, onViewRevision }) => {
+export const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({ checklist }) => {
     const styles = useStyles();
     const [selectedTab, setSelectedTab] = useState<TabValue>('info');
     const { updateChecklist } = useChecklistStore();
@@ -54,7 +52,6 @@ export const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({ chec
                     <Tab value="chat" icon={<Chat24Regular />}>Chat</Tab>
                     <Tab value="notes" icon={<NoteEdit24Regular />}>Notes</Tab>
                     <Tab value="files" icon={<Folder24Regular />}>Files</Tab>
-                    <Tab value="revisions" icon={<History24Regular />}>Revisions</Tab>
                     <Tab value="activity" icon={<ClipboardPulse24Regular />}>Activity</Tab>
                 </TabList>
             </div>
@@ -86,12 +83,6 @@ export const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({ chec
                         checklist={checklist}
                         onUpdate={handleUpdate}
                         readOnly={checklist.status === 'final'}
-                    />
-                )}
-                {selectedTab === 'revisions' && (
-                    <RevisionPanel
-                        checklistId={checklist.id}
-                        onViewRevision={onViewRevision}
                     />
                 )}
                 {selectedTab === 'activity' && (

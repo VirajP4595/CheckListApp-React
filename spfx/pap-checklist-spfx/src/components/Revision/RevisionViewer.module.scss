@@ -133,6 +133,78 @@
     letter-spacing: 0.025em;
 }
 
+.historical-revisions-title {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-gray-800;
+    margin: $spacing-6 0 $spacing-4;
+    padding-bottom: $spacing-2;
+    border-bottom: 2px solid $color-primary;
+}
+
+.historical-revision-block {
+    margin-bottom: $spacing-8;
+    background: #e5e8eb; // Matched with editor revision background
+    border: 1px solid #e5e7eb;
+    border-radius: $border-radius-lg;
+    overflow: hidden;
+    box-shadow: $shadow-sm;
+    padding: $spacing-6;
+    transition: box-shadow $transition-base;
+
+    &:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+}
+
+.historical-revision-header {
+    background: $color-gray-50;
+    padding: $spacing-4;
+    border-bottom: 1px solid $color-border;
+    border-left: 4px solid $color-accent;
+}
+
+.historical-revision-title-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    margin-bottom: $spacing-1;
+}
+
+.historical-revision-badge {
+    background: $color-accent;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+}
+
+.historical-revision-title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-gray-900;
+}
+
+.historical-revision-date {
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    margin-left: auto;
+}
+
+.historical-revision-notes {
+    margin-top: $spacing-2;
+}
+
+.historical-revision-content {
+    padding: $spacing-4;
+    
+    // Nested workgroups should have no extra margin at bottom
+    .revision-workgroup:last-child {
+        margin-bottom: 0;
+    }
+}
+
 // Workgroup
 .revision-workgroup {
     @include card;

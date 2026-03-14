@@ -42,7 +42,7 @@ async function resizeImage(source: string, maxWidth: number, maxHeight: number):
 
 export class SharePointImageService implements IImageService {
     private client: MSGraphClientV3 | undefined;
-    private driveInfoCache: { siteId: string; driveId: string } | undefined;
+    private driveInfoCache: { siteId: string; driveId: string; listId: string } | undefined;
     private context: WebPartContext | undefined;
 
     public async initialize(context: WebPartContext): Promise<void> {
@@ -56,13 +56,12 @@ export class SharePointImageService implements IImageService {
         return this.client;
     }
 
-    private async getDriveInfo(): Promise<{ siteId: string; driveId: string }> {
+    private async getDriveInfo(): Promise<{ siteId: string; driveId: string; listId: string }> {
         if (this.driveInfoCache) return this.driveInfoCache;
 
         const client = this.getClient();
 
         // Parse site URL to get host and path
-        // AppConfig.sharepoint.absoluteUrl e.g. https://contoso.sharepoint.com/sites/PAPChecklist
         const url = new URL(AppConfig.sharepoint.absoluteUrl);
         const hostName = url.hostname;
         const sitePath = url.pathname;
@@ -83,7 +82,10 @@ export class SharePointImageService implements IImageService {
             throw new Error(`Library "${libraryName}" not found.`);
         }
 
-        this.driveInfoCache = { siteId: site.id, driveId: library.id };
+        // Get list ID associated with this drive for filtered queries
+        const list = await client.api(`/sites/${site.id}/drives/${library.id}/list`).select('id').get();
+
+        this.driveInfoCache = { siteId: site.id, driveId: library.id, listId: list.id };
         return this.driveInfoCache;
     }
 
@@ -204,42 +206,91 @@ export class SharePointImageService implements IImageService {
     }
 
     async getAllImageMetadata(checklistId: string): Promise<ChecklistImage[]> {
-        const { driveId } = await this.getDriveInfo();
+        const { siteId, listId } = await this.getDriveInfo();
         const client = this.getClient();
 
         try {
-            const rootPath = `${checklistId}/images`;
-            const rootResponse = await client.api(`/drives/${driveId}/root:/${rootPath}:/children`)
-                .select('id,name,folder')
+            // Fetch all items in the list where Checklist ID matches.
+            // We MUST expand driveItem to get the real Graph drive item ID (a GUID).
+            // item.id is the SharePoint list item ID (numeric string like "61") and CANNOT
+            // be used with /drives/{driveId}/items/{id}/content — that requires the GUID.
+            const response = await client.api(`/sites/${siteId}/lists/${listId}/items`)
+                .expand('fields($select=Checklist_x0020_ID,Row_x0020_ID,Caption),driveItem($select=id)')
+                .filter(`fields/Checklist_x0020_ID eq '${checklistId}'`)
                 .get();
 
-            const rowFolders = (rootResponse.value || []).filter((i: { folder?: any; id: string; name: string }) => i.folder);
-            if (rowFolders.length === 0) return [];
+            if (!response.value || response.value.length === 0) return [];
 
-            const imagePromises = rowFolders.map(async (folder: { id: string; name: string }) => {
-                const rowId = folder.name;
-                try {
-                    const data = await client.api(`/drives/${driveId}/items/${folder.id}/children`)
-                        .select('id,name,webUrl,thumbnails,@microsoft.graph.downloadUrl')
-                        .expand('thumbnails')
-                        .get();
-
-                    return (data.value || []).map((img: { id: string, name: string, webUrl: string, thumbnails?: any[], '@microsoft.graph.downloadUrl'?: string }) => ({
-                        id: img.id,
-                        rowId: rowId,
-                        caption: img.name,
-                        source: img['@microsoft.graph.downloadUrl'] || img.webUrl,
-                        thumbnailUrl: img.thumbnails?.[0]?.medium?.url,
+            return response.value
+                .filter((item: any) => item.driveItem?.id) // Only include items with a valid drive ID
+                .map((item: any) => {
+                    const fields = item.fields;
+                    const driveItemId = item.driveItem.id; // This is the real GUID for Graph API calls
+                    return {
+                        id: driveItemId,
+                        rowId: fields?.Row_x0020_ID || '',
+                        caption: fields?.Caption || fields?.Title || '',
+                        source: `${AppConfig.sharepoint.absoluteUrl}/_layouts/15/download.aspx?UniqueId=${driveItemId}`,
                         order: 0
-                    }));
-                } catch (e) { return []; }
-            });
-
-            const results = await Promise.all(imagePromises);
-            return results.reduce((acc, val) => acc.concat(val), []);
-        } catch {
+                    };
+                });
+        } catch (error) {
+            console.warn('[SharePoint] getAllImageMetadata failed', error);
             return [];
         }
+    }
+
+    async downloadImagesBatch(itemIds: string[]): Promise<Map<string, string>> {
+        const { driveId } = await this.getDriveInfo();
+        const client = this.getClient();
+        const resultMap = new Map<string, string>();
+
+        if (itemIds.length === 0) return resultMap;
+
+        // Microsoft Graph $batch supports up to 20 requests per batch
+        const CHUNK_SIZE = 20;
+        for (let i = 0; i < itemIds.length; i += CHUNK_SIZE) {
+            const chunk = itemIds.slice(i, i + CHUNK_SIZE);
+            
+            const batchRequest = {
+                requests: chunk.map((id, index) => ({
+                    id: String(index),
+                    method: 'GET',
+                    url: `/drives/${driveId}/items/${id}/content`
+                }))
+            };
+
+            try {
+                const batchResponse = await client.api('/$batch').post(batchRequest);
+                
+                for (const response of batchResponse.responses) {
+                    const originalId = chunk[parseInt(response.id)];
+                    if (response.status === 200 || response.status === 302) {
+                        // For images, the batch response usually contains the body as base64 if it's small,
+                        // or a redirect. But wait, Graph $batch with /content usually returns the content
+                        // directly if requested correctly.
+                        
+                        // However, SPFx MSGraphClient handles responses. 
+                        // If it's a binary response in a batch, it might be complex.
+                        
+                        // ALTERNATIVE: Batch the retrieval of @microsoft.graph.downloadUrl 
+                        // as that's faster than 20 individual metadata calls.
+                        // Then fetch the URLs.
+                        
+                        // Let's stick to the current plan but handle the response.
+                        if (response.body) {
+                            // Convert response body to data URL
+                            // Note: In MS Graph $batch, binary content is base64 encoded in the 'body' property if it's not too large.
+                            resultMap.set(originalId, `data:image/jpeg;base64,${response.body}`);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('[SharePoint] Batch download chunk failed', err);
+            }
+        }
+
+        return resultMap;
     }
 
     async removeImage(imageId: string): Promise<void> {

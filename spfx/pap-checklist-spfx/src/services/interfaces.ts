@@ -3,6 +3,7 @@ import type { Checklist, ChecklistRow, Workgroup, ChecklistImage, Revision, User
 // ─── CHECKLIST SERVICE ───────────────────────────────────
 export interface IChecklistService {
     getChecklist(id: string, options?: { includeImages?: boolean }): Promise<Checklist>;
+    getHydratedChecklist(id: string, onProgress?: (status: string, percent: number) => void): Promise<Checklist>;
     getAllChecklists(): Promise<Checklist[]>;
 
     // Metadata Only
@@ -10,7 +11,7 @@ export interface IChecklistService {
     deleteChecklist(id: string, onProgress?: (status: string, percent: number) => void): Promise<void>;
 
     // Workgroup Actions
-    createWorkgroup(checklistId: string, number: number, name: string): Promise<Workgroup>;
+    createWorkgroup(checklistId: string, number: number, name: string, revisionId?: string): Promise<Workgroup>;
     updateWorkgroup(workgroup: Workgroup): Promise<Workgroup>;
     deleteWorkgroup(workgroupId: string): Promise<void>;
 
@@ -23,8 +24,8 @@ export interface IChecklistService {
 // ─── REVISION SERVICE ────────────────────────────────────
 export interface IRevisionService {
     createRevision(checklistId: string, title: string, notes: string): Promise<Revision>;
+    updateRevision(revision: Revision): Promise<Revision>;
     getRevisions(checklistId: string): Promise<Revision[]>;
-    getRevision(revisionId: string): Promise<Revision | null>;
 }
 
 // ─── UTILS ────────────────────────────────────────────────
@@ -46,6 +47,7 @@ export interface IImageService {
     uploadFile(checklistId: string, file: File): Promise<ChecklistFileResult>;
     uploadPDFReport(checklistId: string, filename: string, blob: Blob): Promise<string>;
     downloadImageContent(itemId: string): Promise<string>;
+    downloadImagesBatch(itemIds: string[]): Promise<Map<string, string>>;
     downloadClientLogoContent(checklistId: string): Promise<Blob | null>;
     uploadCarpentryImage(checklistId: string, file: File): Promise<string>;
     downloadCarpentryImage(checklistId: string): Promise<Blob | null>;

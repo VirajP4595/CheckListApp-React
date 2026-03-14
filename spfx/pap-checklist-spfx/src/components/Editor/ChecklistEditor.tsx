@@ -1,13 +1,12 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
-import { Button, Spinner, Dialog, DialogTrigger, DialogSurface, DialogTitle, DialogBody, DialogActions, DialogContent } from '@fluentui/react-components';
+import { Button, Spinner, Dialog, DialogTrigger, DialogSurface, DialogTitle, DialogBody, DialogActions, DialogContent, Text } from '@fluentui/react-components';
 import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular, ClipboardPulse24Regular, Delete24Regular, ArrowDownload24Regular } from '@fluentui/react-icons';
 import { Panel, PanelType } from '@fluentui/react/lib/Panel';
 import { useChecklistStore, useUserStore } from '../../stores';
 import { STATUS_CONFIG, type Revision } from '../../models';
 import { WorkgroupSection } from './WorkgroupSection';
 import { AutoSaveIndicator } from './AutoSaveIndicator';
-import { RevisionPanel } from '../Revision/RevisionPanel';
-import { RevisionViewer } from '../Revision/RevisionViewer';
+import { RevisionSection, RevisionViewer } from '../Revision';
 
 import { FilterBar, type FilterState } from './FilterBar';
 import { usePdfExport } from '../../hooks/usePdfExport';
@@ -51,12 +50,11 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
     const { exportBtc, loadingProgress: btcLoadingProgress, cancelExport: cancelBtcExport } = useBtcExport();
 
     // Local state for full load overlay (initial load/preview)
-    const [showRevisionPanel, setShowRevisionPanel] = useState(false);
     const [showActivityPanel, setShowActivityPanel] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [viewingRevision, setViewingRevision] = useState<Revision | null>(null);
 
     const [loadingProgress, setLoadingProgress] = useState<{ open: boolean; title: string; status: string; percent: number; cancelled: boolean }>({ open: false, title: 'Loading...', status: '', percent: 0, cancelled: false });
+    const [viewingRevision, setViewingRevision] = useState<Revision | null>(null);
     const [deleteProgress, setDeleteProgress] = useState<{ open: boolean; status: string; percent: number }>({ open: false, status: '', percent: 0 });
     const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, notifyAdmin: null, builderToConfirm: null, workgroupIds: [] });
     const [expandWorkgroups, setExpandWorkgroups] = useState(false);  // Collapsed by default
@@ -86,84 +84,38 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
         };
     }, []);
 
-    const handleViewRevision = async (revision: Revision) => {
-        setLoadingProgress({ open: true, title: 'Loading Revision', status: 'Fetching data...', percent: 10, cancelled: false });
-        try {
-            // Simulated progress for better UX
-            setLoadingProgress(prev => ({ ...prev, percent: 40 }));
-
-            // Fetch full revision with snapshot
-            const fullRevision = await getRevisionService().getRevision(revision.id);
-            setLoadingProgress(prev => ({ ...prev, percent: 90, status: 'Preparing view...' }));
-
-            setViewingRevision(fullRevision || revision);
-        } catch (error) {
-            console.error("Failed to load revision", error);
-        } finally {
-            // Close progress modal
-            setLoadingProgress(prev => ({ ...prev, open: false }));
-        }
-    };
-
     const handleViewPreview = async () => {
         if (!activeChecklist) return;
 
-        // Fetch full checklist to get all server images (uncovering collapsed rows)
-        setLoadingProgress({ open: true, title: 'Generating Preview', status: 'Synchronizing data...', percent: 10, cancelled: false });
+        setLoadingProgress({ open: true, title: 'Preparing Preview', status: 'Fetching images...', percent: 0, cancelled: false });
+        isCancelledRef.current = false;
 
         try {
-            // 1. Get Local Snapshot (has unsaved text/metadata changes)
-            const snapshot = JSON.parse(JSON.stringify(activeChecklist));
-
-            // 2. Fetch Server Data (has all images, including those not loaded locally)
-            const fullChecklist = await getChecklistService().getChecklist(activeChecklist.id, { includeImages: true });
+            const hydratedChecklist = await getChecklistService().getHydratedChecklist(activeChecklist.id, (status, percent) => {
+                if (isCancelledRef.current) return;
+                setLoadingProgress(prev => ({ ...prev, status, percent }));
+            });
 
             if (isCancelledRef.current) return;
 
-            // 3. Merge Strategies
-            // reliable way to know if images are loaded: check store.loadedRowImages
-            const loadedRowImages = useChecklistStore.getState().loadedRowImages;
-
-            snapshot.workgroups.forEach((wg: any) => {
-                wg.rows.forEach((row: any) => {
-                    // Find corresponding server row
-                    const serverWg = fullChecklist.workgroups.find((swg: any) => swg.id === wg.id);
-                    const serverRow = serverWg?.rows.find((sr: any) => sr.id === row.id);
-
-                    if (serverRow) {
-                        // If we haven't explicitely loaded images for this row locally, trust the server
-                        // This handles collapsed rows or rows never expanded
-                        if (!loadedRowImages[row.id]) {
-                            row.images = serverRow.images;
-                        } else {
-                            // If loaded locally, trust local (might have unsaved additions/deletions)
-                            // row.images is already set from activeChecklist
-                        }
-                    }
-                });
-            });
-
-            const previewRevision: Revision = {
+            // Create a pseudo-revision for preview with hydrated data
+            const previewRev: Revision = {
                 id: 'preview',
-                checklistId: activeChecklist.id,
+                checklistId: hydratedChecklist.id,
                 number: 0,
                 title: 'Current Preview',
                 notes: '',
                 createdAt: new Date(),
-                createdBy: activeChecklist.createdBy || '',
-                snapshot: snapshot
+                createdBy: hydratedChecklist.createdBy,
+                snapshot: hydratedChecklist
             };
-
-            setLoadingProgress(prev => ({ ...prev, percent: 100, status: 'Ready!' }));
-
-            setTimeout(() => {
-                setViewingRevision(previewRevision);
-                setLoadingProgress(prev => ({ ...prev, open: false }));
-            }, 300);
-
-        } catch (error: any) {
-            console.error("Failed to load preview", error);
+            
             setLoadingProgress(prev => ({ ...prev, open: false }));
+            setViewingRevision(previewRev);
+        } catch (error) {
+            console.error('[Editor] Preview Prep Failed', error);
+            setLoadingProgress(prev => ({ ...prev, status: 'Error: ' + (error as Error).message, percent: 0 }));
+            setTimeout(() => setLoadingProgress(prev => ({ ...prev, open: false })), 3000);
         }
     };
 
@@ -262,7 +214,6 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                         <AutoSaveIndicator isSaving={isSaving} lastSaved={lastSaved} />
                         <ChecklistInfoDialog
                             checklist={activeChecklist}
-                            onViewRevision={handleViewRevision}
                             triggerClassName={styles['editor-action-btn']}
                         />
 
@@ -320,6 +271,9 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
             < div className={styles['editor-layout']} >
                 <main className={styles['editor-main']}>
                     <JobMetadataHeader checklist={activeChecklist} />
+
+
+
                     <CommonNotes
                         checklist={activeChecklist}
                         onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
@@ -329,15 +283,54 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                     <FilterBar
                         filters={filters}
                         onFiltersChange={setFilters}
-                        workgroups={activeChecklist.workgroups}
+                        workgroups={activeChecklist.workgroups.filter(wg => !wg.revisionId)}
                         expandWorkgroups={expandWorkgroups}
                         onExpandWorkgroupsChange={setExpandWorkgroups}
                         expandTasks={expandTasks}
                         onExpandTasksChange={setExpandTasks}
                     />
 
+                    {/* ─── Revision Sections (descending order, filtered) ─── */}
+                    {activeChecklist.revisions.length > 0 && (
+                        <div className={styles['editor-revisions']} style={{ marginTop: '20px' }}>
+                            <div className={styles['revisions-header']}>
+                                <Text size={400} weight="semibold">Revision History</Text>
+                            </div>
+                            {activeChecklist.revisions
+                                .sort((a, b) => b.number - a.number)
+                                .map(revision => {
+                                    // Get the numbers of the original workgroups that match the current filters
+                                    const filteredNumbers = activeChecklist.workgroups
+                                        .filter(wg => !wg.revisionId && (filters.workgroupIds.length === 0 || filters.workgroupIds.includes(wg.id)))
+                                        .map(wg => wg.number);
+
+                                    const revisionWorkgroups = activeChecklist.workgroups.filter(
+                                        wg => wg.revisionId === revision.id && filteredNumbers.includes(wg.number)
+                                    );
+
+                                    // If we are filtering and no workgroups in this revision match, hide it (optional - could also just show it empty)
+                                    if (filters.workgroupIds.length > 0 && revisionWorkgroups.length === 0) return null;
+
+                                    return (
+                                        <RevisionSection
+                                            key={revision.id}
+                                            revision={revision}
+                                            revisionWorkgroups={revisionWorkgroups}
+                                            originalWorkgroups={activeChecklist.workgroups.filter(
+                                                wg => !wg.revisionId
+                                            )}
+                                            onRowChange={triggerAutoSave}
+                                            filters={filters}
+                                            expandTasks={expandTasks}
+                                        />
+                                    );
+                                })}
+                        </div>
+                    )}
+
                     <div className={styles['editor-workgroups']} id="checklist-print-content">
                         {activeChecklist.workgroups
+                            .filter(wg => !wg.revisionId)
                             .filter(wg => filters.workgroupIds.length === 0 || filters.workgroupIds.includes(wg.id))
                             .sort((a, b) => a.order - b.order)
                             .map(workgroup => (
@@ -352,12 +345,14 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                             ))}
                     </div>
 
+
                     <Button
                         className={styles['editor-add-workgroup']}
                         appearance="outline"
                         icon={processingItems.includes(`add-wg-${activeChecklist.id}`) ? <Spinner size="extra-tiny" /> : <Add24Regular />}
                         onClick={() => {
-                            const nextNumber = Math.max(...activeChecklist.workgroups.map(w => w.number), 0) + 10;
+                            const originalWgs = activeChecklist.workgroups.filter(wg => !wg.revisionId);
+                            const nextNumber = Math.max(...originalWgs.map(w => w.number), 0) + 10;
                             void addWorkgroup(nextNumber, 'New Workgroup');
                         }}
                         disabled={processingItems.includes(`add-wg-${activeChecklist.id}`)}
@@ -365,39 +360,9 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                         {processingItems.includes(`add-wg-${activeChecklist.id}`) ? 'Adding...' : 'Add Workgroup'}
                     </Button>
 
-                    {/* Mobile Actions */}
-                    <div className={styles['editor-mobile-actions']}>
-                        <Button
-                            className={styles['btn-ghost']}
-                            appearance="outline"
-                            icon={<History24Regular />}
-                            onClick={() => setShowRevisionPanel(!showRevisionPanel)}
-                        >
-                            Revisions
-                        </Button>
-                    </div>
-
-                    {/* Mobile Revision Panel */}
-                    {showRevisionPanel && (
-                        <div className={styles['editor-mobile-revision']}>
-                            <RevisionPanel
-                                checklistId={checklistId}
-                                onViewRevision={handleViewRevision}
-                            />
-                        </div>
-                    )}
                 </main>
             </div >
 
-            {/* Revision Viewer Overlay */}
-            {
-                viewingRevision && (
-                    <RevisionViewer
-                        revision={viewingRevision}
-                        onClose={handleCloseRevision}
-                    />
-                )
-            }
 
             <Panel
                 isOpen={showActivityPanel}
@@ -411,12 +376,16 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
             {/* PDF / Preview Progress Modal */}
             <PdfGenerationProgressModal
-                open={pdfLoadingProgress.open}
-                onCancel={cancelPdfExport}
-                title={pdfLoadingProgress.title}
-                iconType={pdfLoadingProgress.title.toLowerCase().includes('preview') ? 'preview' : 'pdf'}
-                status={pdfLoadingProgress.status}
-                percent={pdfLoadingProgress.percent}
+                open={pdfLoadingProgress.open || loadingProgress.open}
+                onCancel={() => {
+                    cancelPdfExport();
+                    isCancelledRef.current = true;
+                    setLoadingProgress(prev => ({ ...prev, open: false, cancelled: true }));
+                }}
+                title={pdfLoadingProgress.open ? pdfLoadingProgress.title : loadingProgress.title}
+                iconType={(pdfLoadingProgress.title || loadingProgress.title).toLowerCase().includes('preview') ? 'preview' : 'pdf'}
+                status={pdfLoadingProgress.open ? pdfLoadingProgress.status : loadingProgress.status}
+                percent={pdfLoadingProgress.open ? pdfLoadingProgress.percent : loadingProgress.percent}
             />
 
             {/* BTC Export Progress Modal */}
@@ -436,6 +405,10 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                 status={deleteProgress.status}
                 percent={deleteProgress.percent}
             />
+
+            {viewingRevision && (
+                <RevisionViewer revision={viewingRevision} onClose={handleCloseRevision} />
+            )}
 
             {/* Permanent Deletion Confirmation Dialog */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={(e, data) => setIsDeleteDialogOpen(data.open)}>

@@ -15,21 +15,20 @@ import {
 } from '@fluentui/react-components';
 import { Dismiss24Regular, Info24Regular, Chat24Regular, Folder24Regular, History24Regular, Image24Regular } from '@fluentui/react-icons';
 import { Checklist } from '../../../models';
-import { RevisionPanel } from '../../Revision/RevisionPanel';
 import { ChecklistChat } from './ChecklistChat';
 import { ChecklistFiles } from './ChecklistFiles';
 import { ChecklistInfoPanel } from './ChecklistInfoPanel';
 import { BrandingPanel } from './BrandingPanel';
+import { RevisionListTab } from './RevisionListTab';
 import { useChecklistStore } from '../../../stores';
 import styles from './ChecklistInfoDialog.module.scss';
 
 interface ChecklistInfoDialogProps {
     checklist: Checklist;
-    onViewRevision: (revision: any) => void;
     triggerClassName?: string;
 }
 
-export const ChecklistInfoDialog: React.FC<ChecklistInfoDialogProps> = ({ checklist, onViewRevision, triggerClassName }) => {
+export const ChecklistInfoDialog: React.FC<ChecklistInfoDialogProps> = ({ checklist, triggerClassName }) => {
     const [open, setOpen] = useState(false);
     const [selectedTab, setSelectedTab] = useState<TabValue>('info');
     const { updateChecklist } = useChecklistStore();
@@ -40,11 +39,6 @@ export const ChecklistInfoDialog: React.FC<ChecklistInfoDialogProps> = ({ checkl
 
     const handleUpdate = (updates: Partial<Checklist>, logMessage?: string) => {
         updateChecklist(checklist.id, updates, logMessage);
-    };
-
-    const handleViewRevision = (revision: any) => {
-        setOpen(false);
-        onViewRevision(revision);
     };
 
     return (
@@ -111,14 +105,13 @@ export const ChecklistInfoDialog: React.FC<ChecklistInfoDialogProps> = ({ checkl
                                     readOnly={false}
                                 />
                             )}
-                            {selectedTab === 'revisions' && (
-                                <RevisionPanel
-                                    checklistId={checklist.id}
-                                    onViewRevision={handleViewRevision}
-                                />
-                            )}
                             {selectedTab === 'branding' && (
                                 <BrandingPanel
+                                    checklist={checklist}
+                                />
+                            )}
+                            {selectedTab === 'revisions' && (
+                                <RevisionListTab
                                     checklist={checklist}
                                 />
                             )}

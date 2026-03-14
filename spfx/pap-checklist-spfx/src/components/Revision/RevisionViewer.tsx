@@ -63,6 +63,90 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
         };
     };
 
+    const renderWorkgroup = (workgroup: any) => {
+        // Filter rows - hide BLANK items
+        const visibleRows = workgroup.rows.filter((r: any) =>
+            r.answer && r.answer !== 'BLANK' && r.answer.trim() !== ''
+        );
+
+        if (visibleRows.length === 0) return null;
+
+        return (
+            <div key={workgroup.id} className={styles['revision-workgroup']}>
+                <div className={styles['revision-workgroup-header']}>
+                    <span className={styles['revision-workgroup-number']}>{workgroup.number}</span>
+                    <span className={styles['revision-workgroup-name']}>{workgroup.name}</span>
+                </div>
+
+                {visibleRows.map((row: any) => (
+                    <div key={row.id} className={styles['revision-row']}>
+                        <div className={styles['revision-row-content']}>
+                            <div className={styles['revision-row-header']}>
+                                <span className={styles['revision-row-name']}>{row.name}</span>
+                                <span
+                                    className={styles['revision-status-pill']}
+                                    style={getAnswerStyle(row.answer)}
+                                >
+                                    {ANSWER_CONFIG[row.answer as AnswerState]?.label || row.answer}
+                                </span>
+                            </div>
+
+                            {/* Description (Rich Text or plain) */}
+                            {row.description && (
+                                <div className={styles['revision-row-description']}>
+                                    <RichTextEditor
+                                        content={row.description}
+                                        readOnly={true}
+                                        className={styles['compact-rte']}
+                                    />
+                                </div>
+                            )}
+
+                            {row.notes && (
+                                <div className={styles['revision-row-notes']}>
+                                    <span className={styles['revision-notes-label']}>Notes:</span>
+                                    <RichTextEditor
+                                        content={row.notes}
+                                        readOnly={true}
+                                        className={styles['compact-rte']}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Images Grid */}
+                            {row.images && row.images.length > 0 && (
+                                <div className={styles['revision-images']}>
+                                    {row.images.map((img: any, idx: number) => (
+                                        <div
+                                            key={idx}
+                                            className={styles['revision-image-card']}
+                                            onClick={() => {
+                                                const needsLoad = img.id && !img.source.startsWith('data:') && !img.source.startsWith('blob:');
+                                                setPreviewImage({
+                                                    src: img.source,
+                                                    caption: img.caption,
+                                                    id: img.id,
+                                                    loading: !!needsLoad
+                                                });
+                                            }}
+                                        >
+                                            <img
+                                                src={img.source?.startsWith('data:') ? img.source : (img.thumbnailUrl || img.source)}
+                                                alt={img.caption}
+                                                className={styles['revision-image']}
+                                            />
+                                            {img.caption && <span className={styles['revision-image-caption']}>{img.caption}</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
     const content = (
         <div
             className={styles['revision-overlay']}
@@ -107,16 +191,16 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
             {/* Content Container */}
             <div className={styles['revision-content']}>
                 <div style={{ width: '100%' }}> {/* Full Width Container */}
-                    {/* Revision Title (Always show) */}
-                    {revision.title && (
+                    {/* Revision Title (Show only for REAL revisions, not pseudo-preview) */}
+                    {revision.title && revision.id !== 'preview' && (
                         <div className={styles['revision-summary']}>
                             <span className={styles['revision-summary-label']}>Revision: </span>
                             <span className={styles['revision-summary-text']}>{revision.title}</span>
                         </div>
                     )}
 
-                    {/* Revision Notes (Rich Text) */}
-                    {revision.notes && (
+                    {/* Revision Notes (Rich Text) - Show only for real revisions */}
+                    {revision.notes && revision.id !== 'preview' && (
                         <div className={styles['revision-notes-section']}>
                             <RichTextEditor
                                 content={revision.notes}
@@ -138,90 +222,49 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
                         </div>
                     )}
 
-                    {/* Workgroups */}
-                    {snapshot?.workgroups?.map(workgroup => {
-                        // Filter rows - hide BLANK items
-                        const visibleRows = workgroup.rows.filter(r =>
-                            r.answer && r.answer !== 'BLANK' && r.answer.trim() !== ''
-                        );
-
-                        if (visibleRows.length === 0) return null;
+                    {/* 
+                        ─────── REVISION SECTIONS ─────── 
+                        In Preview mode, we show historical revisions at the top.
+                    */}
+                    {revision.id === 'preview' && (snapshot?.revisions?.length ?? 0) > 0 && (
+                        <div className={styles['historical-revisions-title']}>Revision History</div>
+                    )}
+                    {revision.id === 'preview' && snapshot?.revisions?.slice().sort((a, b) => b.number - a.number).map(rev => {
+                        const revWorkgroups = snapshot.workgroups.filter(wg => wg.revisionId === rev.id);
+                        if (revWorkgroups.length === 0 && !rev.notes) return null;
 
                         return (
-                            <div key={workgroup.id} className={styles['revision-workgroup']}>
-                                <div className={styles['revision-workgroup-header']}>
-                                    <span className={styles['revision-workgroup-number']}>{workgroup.number}</span>
-                                    <span className={styles['revision-workgroup-name']}>{workgroup.name}</span>
-                                </div>
-
-                                {visibleRows.map(row => (
-                                    <div key={row.id} className={styles['revision-row']}>
-                                        <div className={styles['revision-row-content']}>
-                                            <div className={styles['revision-row-header']}>
-                                                <span className={styles['revision-row-name']}>{row.name}</span>
-                                                <span
-                                                    className={styles['revision-status-pill']}
-                                                    style={getAnswerStyle(row.answer)}
-                                                >
-                                                    {ANSWER_CONFIG[row.answer]?.label || row.answer}
-                                                </span>
-                                            </div>
-
-                                            {/* Description (Rich Text or plain) */}
-                                            {row.description && (
-                                                <div className={styles['revision-row-description']}>
-                                                    <RichTextEditor
-                                                        content={row.description}
-                                                        readOnly={true}
-                                                        className={styles['compact-rte']}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {row.notes && (
-                                                <div className={styles['revision-row-notes']}>
-                                                    <span className={styles['revision-notes-label']}>Notes:</span>
-                                                    <RichTextEditor
-                                                        content={row.notes}
-                                                        readOnly={true}
-                                                        className={styles['compact-rte']}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {/* Images Grid - Moved to bottom */}
-                                            {row.images && row.images.length > 0 && (
-                                                <div className={styles['revision-images']}>
-                                                    {row.images.map((img, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            className={styles['revision-image-card']}
-                                                            onClick={() => {
-                                                                const needsLoad = img.id && !img.source.startsWith('data:') && !img.source.startsWith('blob:');
-                                                                setPreviewImage({
-                                                                    src: img.source,
-                                                                    caption: img.caption,
-                                                                    id: img.id,
-                                                                    loading: !!needsLoad
-                                                                });
-                                                            }}
-                                                        >
-                                                            <img
-                                                                src={img.thumbnailUrl || img.source}
-                                                                alt={img.caption}
-                                                                className={styles['revision-image']}
-                                                            />
-                                                            {img.caption && <span className={styles['revision-image-caption']}>{img.caption}</span>}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
+                            <div key={rev.id} className={styles['historical-revision-block']}>
+                                <div className={styles['historical-revision-header']}>
+                                    <div className={styles['historical-revision-title-row']}>
+                                        <span className={styles['historical-revision-badge']}>REV {rev.number}</span>
+                                        <span className={styles['historical-revision-title']}>{rev.title}</span>
+                                        <span className={styles['historical-revision-date']}>
+                                            {rev.createdAt instanceof Date ? rev.createdAt.toLocaleDateString() : new Date(rev.createdAt).toLocaleDateString()}
+                                        </span>
                                     </div>
-                                ))}
+                                    {rev.notes && (
+                                        <div className={styles['historical-revision-notes']}>
+                                            <RichTextEditor
+                                                content={rev.notes}
+                                                readOnly={true}
+                                                className={styles['compact-rte']}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className={styles['historical-revision-content']}>
+                                    {revWorkgroups.map(wg => renderWorkgroup(wg))}
+                                </div>
                             </div>
                         );
                     })}
+
+                    {/* 
+                        ─────── MAIN CHECKLIST WORKGROUPS ─────── 
+                        Workgroups that don't belong to any specific revision.
+                    */}
+                    {snapshot?.workgroups?.filter(wg => !wg.revisionId).map(workgroup => renderWorkgroup(workgroup))}
                 </div>
             </div>
 
