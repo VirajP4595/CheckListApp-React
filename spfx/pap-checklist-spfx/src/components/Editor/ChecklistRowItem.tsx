@@ -73,7 +73,8 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
         if (!row.notifyAdmin) {
             updateRow(row.id, { notifyAdmin: true });
             void saveRow(row.id);
-            setShowNotifyDialog(true);
+            // Notifications Paused - Toggled Off as requested
+            // setShowNotifyDialog(true);
         } else {
             updateRow(row.id, { notifyAdmin: false });
             void saveRow(row.id);

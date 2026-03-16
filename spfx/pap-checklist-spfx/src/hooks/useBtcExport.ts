@@ -36,48 +36,50 @@ export const useBtcExport = () => {
         try {
             const service = new BtcExportService();
 
-            // 1. Check if there are any items before doing anything heavy
-            const btcChecklist = service.filterBtcChecklist(activeChecklist);
-            const hasItems = btcChecklist.workgroups.some(wg => wg.rows.length > 0);
-            if (!hasItems) {
-                throw new Error("No Builder to Confirm items found.");
-            }
-
-            setLoadingProgress(prev => ({ ...prev, status: 'Fetching branding...', percent: 10 }));
-
-            // 2. Fetch Logo
-            let logoBlob: Blob | null = null;
-            try {
-                logoBlob = await getImageService().downloadClientLogoContent(activeChecklist.id);
-            } catch { /* ignore missing logo */ }
-
-            if (isCancelledRef.current) throw new Error("Cancelled");
-
-            // 3. Generate PDF
-            const pdfBlob = await service.generateBtcPdf(activeChecklist, logoBlob, (status, percent) => {
+            // 1. Hydrate the checklist to ensure all images are downloaded as Base64 for the PDF
+            const hydratedChecklist = await getChecklistService().getHydratedChecklist(activeChecklist.id, (status, percent) => {
                 if (isCancelledRef.current) return false;
-                setLoadingProgress(prev => ({ ...prev, status, percent: 10 + (percent * 0.8) }));
+                // Map hydration percent (0-100) to our loading scale (5-15)
+                const mappedPercent = 5 + (percent * 0.1);
+                setLoadingProgress(prev => ({ ...prev, status, percent: mappedPercent }));
                 return true;
             });
 
             if (isCancelledRef.current) throw new Error("Cancelled");
-            setLoadingProgress(prev => ({ ...prev, status: 'Downloading PDF...', percent: 95 }));
 
-            // 4. Download PDF locally
-            const cleanTitle = activeChecklist.title.replace(/[^a-z0-9]/gi, '_');
-            const url = window.URL.createObjectURL(pdfBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `[BTC SUMMARY] ${cleanTitle}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+            // 2. Check if there are any items before doing anything heavy
+            const btcChecklist = service.filterBtcChecklist(hydratedChecklist);
+            const hasItems = btcChecklist.workgroups.some(wg => wg.rows.length > 0);
 
-            setLoadingProgress(prev => ({ ...prev, status: 'Opening email draft...', percent: 100 }));
+            if (!hasItems) {
+                throw new Error("No Builder to Confirm items found.");
+            }
 
-            // 5. Open Outlook Draft
-            service.draftBtcEmail(activeChecklist);
+            setLoadingProgress(prev => ({ ...prev, status: 'Fetching branding...', percent: 15 }));
+
+            // 3. Fetch Logo
+            let logoBlob: Blob | null = null;
+            try {
+                logoBlob = await getImageService().downloadClientLogoContent(hydratedChecklist.id);
+            } catch { /* ignore missing logo */ }
+
+            if (isCancelledRef.current) throw new Error("Cancelled");
+
+            // 4. Generate PDF
+            const pdfBlob = await service.generateBtcPdf(hydratedChecklist, logoBlob, (status, percent) => {
+                if (isCancelledRef.current) return false;
+                setLoadingProgress(prev => ({ ...prev, status, percent: 15 + (percent * 0.8) }));
+                return true;
+            });
+
+            if (isCancelledRef.current) throw new Error("Cancelled");
+            setLoadingProgress(prev => ({ ...prev, status: 'Sending email...', percent: 95 }));
+
+            // 4. Send Email via Graph API
+            await service.sendBtcEmail(hydratedChecklist, pdfBlob);
+
+            if (isCancelledRef.current) throw new Error("Cancelled");
+            setLoadingProgress(prev => ({ ...prev, status: 'Email sent successfully!', percent: 100 }));
 
             setTimeout(() => setLoadingProgress({ open: false, title: '', status: '', percent: 0, cancelled: false }), 2000);
 

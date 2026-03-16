@@ -133,9 +133,16 @@ export class PdfGeneratorService {
         const renderWorkgroup = async (wg: Workgroup, totalItemsCount: number) => {
             // Pre-calculate visible rows for this workgroup
             const visibleRows = wg.rows.filter((row: ChecklistRow) => {
+                const isBtcExport = this.checklist.title.startsWith('[BTC');
+                
+                // If it's a BTC checklist, ONLY show BTC rows (including internal ones if they are BTC)
+                if (isBtcExport) {
+                    return row.builderToConfirm;
+                }
+
+                // Normal export rules:
                 if (row.internalOnly) return false;
-                if (row.builderToConfirm) return true;
-                if (row.answer === 'BLANK') return false;
+                if (row.answer === 'BLANK' && !row.builderToConfirm) return false;
                 return true;
             });
 
@@ -156,8 +163,11 @@ export class PdfGeneratorService {
 
             for (const row of visibleRows) {
                 processedItems++;
-                if (!onProgress(`Drawing Row ${processedItems}...`, 10 + (processedItems / totalItemsCount) * 85)) {
-                    throw new Error("Cancelled");
+                // Check for progress
+                if (totalItemsCount > 0) {
+                    if (!onProgress(`Drawing Row ${processedItems}...`, 10 + (processedItems / totalItemsCount) * 85)) {
+                        throw new Error("Cancelled");
+                    }
                 }
 
                 const col2W = contentWidth - 12 - 4;
@@ -173,7 +183,7 @@ export class PdfGeneratorService {
 
                 let drawY = cursorY + 4;
                 const fullW = contentWidth;
-                const answerConf = ANSWER_CONFIG[row.answer as AnswerState];
+                const answerConf = ANSWER_CONFIG[row.answer as AnswerState] || ANSWER_CONFIG['BLANK'];
 
                 if (title) {
                     doc.setTextColor(BRAND_COLORS.BLACK);
@@ -213,7 +223,9 @@ export class PdfGeneratorService {
 
                 if (row.images && row.images.length > 0) {
                     for (const img of row.images) {
-                        workgroupImages.push({ data: img.source, ratio: 1.77, caption: row.name });
+                        if (img.source) {
+                            workgroupImages.push({ data: img.source, ratio: 1.77, caption: row.name });
+                        }
                     }
                 }
                 cursorY = drawY;
@@ -242,8 +254,14 @@ export class PdfGeneratorService {
                                 d = await this.readBlobAsDataURL(b);
                             } else continue;
                         }
+                        
+                        // Detect format for jsPDF
+                        let format = 'JPEG';
+                        if (d.startsWith('data:image/png')) format = 'PNG';
+                        else if (d.startsWith('data:image/webp')) format = 'WEBP';
+
                         const props = await this.getImageProperties(d).catch(() => ({ ratio: 1.77 }));
-                        loadedImages.push({ data: d, ratio: props.ratio });
+                        loadedImages.push({ data: d, ratio: props.ratio, format });
                     } catch (e) { console.error("Img Load Err", e); }
                 }
 
@@ -252,8 +270,8 @@ export class PdfGeneratorService {
                     const h1 = gridW / img1.ratio; const h2 = img2 ? (gridW / img2.ratio) : 0;
                     const rH = Math.max(h1, h2);
                     if (cursorY + rH > pageHeight - margin.bottom) { doc.addPage(); cursorY = margin.top; }
-                    doc.addImage(img1.data, 'JPEG', margin.left, cursorY, gridW, h1);
-                    if (img2) doc.addImage(img2.data, 'JPEG', margin.left + gridW + gap, cursorY, gridW, h2);
+                    doc.addImage(img1.data, img1.format, margin.left, cursorY, gridW, h1);
+                    if (img2) doc.addImage(img2.data, img2.format, margin.left + gridW + gap, cursorY, gridW, h2);
                     cursorY += rH + 4;
                 }
                 cursorY += 5;

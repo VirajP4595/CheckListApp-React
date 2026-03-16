@@ -1,10 +1,17 @@
 import { MSGraphClientV3 } from '@microsoft/sp-http';
 import { WebPartContext } from '@microsoft/sp-webpart-base';
 
+export interface EmailAttachment {
+    name: string;
+    contentBytes: string; // Base64 string
+    contentType: string;
+}
+
 export interface EmailMessagePayload {
     toRecipients: string[];
     subject: string;
     bodyHtml: string;
+    attachments?: EmailAttachment[];
 }
 
 export class GraphEmailService {
@@ -23,7 +30,7 @@ export class GraphEmailService {
     public async sendEmail(payload: EmailMessagePayload): Promise<void> {
         const client = this.getClient();
 
-        const graphPayload = {
+        const graphPayload: any = {
             message: {
                 subject: payload.subject,
                 body: {
@@ -36,6 +43,15 @@ export class GraphEmailService {
             },
             saveToSentItems: true
         };
+
+        if (payload.attachments && payload.attachments.length > 0) {
+            graphPayload.message.attachments = payload.attachments.map(att => ({
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                name: att.name,
+                contentType: att.contentType,
+                contentBytes: att.contentBytes
+            }));
+        }
 
         await client.api('/me/sendMail').post(graphPayload);
     }

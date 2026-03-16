@@ -14,7 +14,8 @@ export const AppConfig = {
     },
     // Auth config removed - handled by SPFx Context
     admin: {
-        superAdminGroup: "SP_Checklist_SuperAdmin"
+        superAdminGroup: "SP_Checklist_SuperAdmin",
+        btcAdminEmail: "IT_Team@priceaplan.com.au;adrienne@priceaplan.com.au"
     },
     powerAutomate: {
         //DEV

@@ -397,6 +397,7 @@ export class DataverseChecklistService implements IChecklistService {
 
         if (allImages.length > 0) {
             const batchSize = allImages.length;
+            console.log(`[Hydration] Starting hydration for ${batchSize} images...`);
             if (onProgress) onProgress(`Hydrating ${batchSize} images...`, 10);
             
             const imageService = getImageService();
