@@ -24,6 +24,7 @@ export interface DashboardFilterState {
     // So we should have a "Job" filter that selects specific jobs.
     selectedJobIds: string[];
     selectedClientNames: string[];
+    selectedEstimatorNames: string[];
     selectedJobTypes: string[];
     selectedStatuses: ChecklistStatus[];
     sort: SortParams;
@@ -214,6 +215,95 @@ const ClientFilter: React.FC<{
     );
 };
 
+const EstimatorFilter: React.FC<{
+    checklists: Checklist[];
+    selectedNames: string[];
+    onChange: (names: string[]) => void;
+}> = ({ checklists, selectedNames, onChange }) => {
+    const [search, setSearch] = useState('');
+    const [open, setOpen] = useState(false);
+
+    const estimatorOptions = useMemo(() => {
+        const names = new Set<string>();
+        checklists.forEach(c => {
+            if (c.jobDetails?.leadEstimator) names.add(c.jobDetails.leadEstimator);
+        });
+        return Array.from(names).sort();
+    }, [checklists]);
+
+    const filteredOptions = useMemo(() => {
+        if (!search.trim()) return estimatorOptions;
+        const q = search.toLowerCase();
+        return estimatorOptions.filter(name => name.toLowerCase().includes(q));
+    }, [estimatorOptions, search]);
+
+    const handleSelect = (name: string, checked: boolean) => {
+        if (checked) {
+            onChange([...selectedNames, name]);
+        } else {
+            onChange(selectedNames.filter(x => x !== name));
+        }
+    };
+
+    const count = selectedNames.length;
+    let label = 'Filter by Estimator';
+    if (count === estimatorOptions.length && count > 0) label = 'All Estimators';
+    else if (count > 0) label = `${count} Estimators`;
+
+    return (
+        <Menu open={open} onOpenChange={(_, data) => setOpen(data.open)}>
+            <MenuTrigger disableButtonEnhancement>
+                <Button
+                    className={styles['filter-dropdown']}
+                    appearance="outline"
+                    icon={<ChevronDown20Regular />}
+                    iconPosition="after"
+                    style={{ justifyContent: 'space-between', fontWeight: 400 }}
+                >
+                    <span style={{ color: count === 0 ? '#616161' : 'inherit' }}>{label}</span>
+                </Button>
+            </MenuTrigger>
+            <MenuPopover>
+                <div className={styles['search-container']} onClick={(e) => e.stopPropagation()}>
+                    <div className={styles['search-wrapper']}>
+                        <Search20Regular className={styles['search-icon']} />
+                        <input
+                            className={styles['search-input']}
+                            placeholder="Search estimators..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            autoFocus
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                </div>
+                <MenuList className={styles['search-list']} checkedValues={{ estimator: selectedNames }}>
+                    {filteredOptions.length === 0 ? (
+                        <div style={{ padding: '8px', color: '#666', fontSize: '12px' }}>
+                            No estimators found
+                        </div>
+                    ) : (
+                        filteredOptions.map(name => (
+                            <MenuItemCheckbox
+                                key={name}
+                                name="estimator"
+                                value={name}
+                                onClick={(e) => {
+                                    handleSelect(name, !selectedNames.includes(name));
+                                    e.stopPropagation();
+                                }}
+                            >
+                                {name}
+                            </MenuItemCheckbox>
+                        ))
+                    )}
+                </MenuList>
+            </MenuPopover>
+        </Menu>
+    );
+};
+
 const JobTypeFilter: React.FC<{
     checklists: Checklist[];
     selectedTypes: string[];
@@ -275,6 +365,10 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
         onFiltersChange({ ...filters, selectedJobTypes: types });
     };
 
+    const handleEstimatorChange = (names: string[]) => {
+        onFiltersChange({ ...filters, selectedEstimatorNames: names });
+    };
+
     const handleSortChange = (value: string) => {
         const [field, direction] = value.split('-');
         onFiltersChange({
@@ -288,13 +382,14 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
             ...filters,
             selectedJobIds: [],
             selectedClientNames: [],
+            selectedEstimatorNames: [],
             selectedJobTypes: [],
             selectedStatuses: [],
             search: '' // ensure search reset if we add it later
         });
     };
 
-    const hasActiveFilters = filters.selectedJobIds.length > 0 || filters.selectedClientNames.length > 0 || filters.selectedJobTypes.length > 0 || filters.selectedStatuses.length > 0;
+    const hasActiveFilters = filters.selectedJobIds.length > 0 || filters.selectedClientNames.length > 0 || filters.selectedEstimatorNames.length > 0 || filters.selectedJobTypes.length > 0 || filters.selectedStatuses.length > 0;
     const sortValue = `${filters.sort.field}-${filters.sort.direction}`;
 
     return (
@@ -317,6 +412,13 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
                     checklists={checklists}
                     selectedNames={filters.selectedClientNames}
                     onChange={handleClientChange}
+                />
+
+                {/* Estimator Filter */}
+                <EstimatorFilter
+                    checklists={checklists}
+                    selectedNames={filters.selectedEstimatorNames}
+                    onChange={handleEstimatorChange}
                 />
 
                 {/* Job Type Filter */}

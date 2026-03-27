@@ -111,6 +111,61 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
 }
 
 // ============================================
+// RFQ Supplier Fields
+// ============================================
+
+.row-rfq-fields {
+    display: flex;
+    gap: $spacing-4;
+    padding: $spacing-3;
+    background-color: rgba($color-primary, 0.03);
+    border: 1px dashed rgba($color-primary, 0.2);
+    border-radius: $border-radius-md;
+    margin-top: $spacing-1;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rfq-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+}
+
+.rfq-field-label {
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.rfq-input {
+    @include input-filled;
+    
+    // Wrapped in & {} to fix Sass mixed-decls deprecation warning
+    & {
+        background-color: $color-white !important;
+        font-size: $font-size-sm;
+    }
+
+    &:focus {
+        background-color: $color-white !important;
+    }
+}
+
+// ============================================
 // Description
 // ============================================
 

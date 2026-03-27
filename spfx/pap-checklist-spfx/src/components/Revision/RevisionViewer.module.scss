@@ -235,9 +235,18 @@
 }
 
 .revision-workgroup-name {
-    font-size: $font-size-lg;
-    font-weight: $font-weight-semibold;
     color: $color-gray-800;
+}
+
+.revision-section-header {
+    background: $color-gray-50;
+    padding: $spacing-2 $spacing-4;
+    border-bottom: 1px solid $color-border;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 // Row
@@ -323,6 +332,26 @@
     font-size: 11px;
     text-transform: uppercase;
     color: #8a6d3b;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.revision-row-rfq-info {
+    margin-top: 4px;
+    padding: 8px 12px;
+    background-color: #ebf3fc;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #004578;
+    border-left: 3px solid #0078d4;
+}
+
+.revision-rfq-label {
+    font-weight: 600;
+    margin-right: 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #0078d4;
     display: block;
     margin-bottom: 2px;
 }

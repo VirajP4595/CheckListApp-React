@@ -36,6 +36,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
 
         selectedJobIds: [],
         selectedClientNames: [],
+        selectedEstimatorNames: [],
         selectedJobTypes: [],
         selectedStatuses: [],
         sort: { field: 'updatedAt', direction: 'desc' }
@@ -111,13 +112,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
             result = result.filter(c => c.jobDetails?.clientName && selectedClientNames.includes(c.jobDetails.clientName));
         }
 
-        // 3. Filter by Status
+        // 3. Filter by Estimator Name
+        const selectedEstimatorNames = filters.selectedEstimatorNames;
+        if (selectedEstimatorNames && selectedEstimatorNames.length > 0) {
+            result = result.filter(c => c.jobDetails?.leadEstimator && selectedEstimatorNames.includes(c.jobDetails.leadEstimator));
+        }
+
+        // 4. Filter by Status
         const selectedStatuses = filters.selectedStatuses;
         if (selectedStatuses && selectedStatuses.length > 0) {
             result = result.filter(c => selectedStatuses.includes(c.status));
         }
 
-        // 4. Filter by Job Type
+        // 5. Filter by Job Type
         const selectedJobTypes = filters.selectedJobTypes;
         if (selectedJobTypes && selectedJobTypes.length > 0) {
             result = result.filter(c => c.jobDetails?.jobType && selectedJobTypes.includes(c.jobDetails.jobType));

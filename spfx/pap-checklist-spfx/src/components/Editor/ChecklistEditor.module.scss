@@ -146,6 +146,12 @@
         color: color.adjust($color-success, $lightness: 10%);
         border: 1px solid rgba($color-success, 0.4);
     }
+
+    &--in-revision {
+        background-color: rgba(91, 95, 199, 0.15);
+        color: #5b5fc7;
+        border: 1px solid rgba(91, 95, 199, 0.3);
+    }
 }
 
 // Status Badge (read-only display)
@@ -178,6 +184,12 @@
         background-color: rgba($color-success, 0.25);
         color: color.adjust($color-success, $lightness: 15%);
         border: 1px solid rgba($color-success, 0.4);
+    }
+
+    &--in-revision {
+        background-color: rgba(91, 95, 199, 0.2);
+        color: #e1e2fd; // Lighter purple for dark header
+        border: 1px solid rgba(91, 95, 199, 0.4);
     }
 }
 

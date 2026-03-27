@@ -74,14 +74,15 @@ export class BtcExportService {
 
         // Loop through all filtered workgroups once
         // We separate them into "Original" and "Revision" categories for the email list
-        const mainWg = btcChecklist.workgroups.filter(wg => !wg.revisionId);
-        const revWg = btcChecklist.workgroups.filter(wg => !!wg.revisionId);
+        const mainWg = btcChecklist.workgroups.filter(wg => !wg.revisionId).sort((a, b) => a.number - b.number);
+        const revWg = btcChecklist.workgroups.filter(wg => !!wg.revisionId).sort((a, b) => a.number - b.number);
 
         // Add main items
         mainWg.forEach(wg => {
             wg.rows.forEach(row => {
                 const rowName = row.name || (row.description ? row.description.replace(/<[^>]*>?/gm, '').substring(0, 50) + '...' : 'Untitled Item');
-                btcItems.push(`<li><strong>${wg.number}</strong>: ${rowName}</li>`);
+                const sectionTag = row.section === 'estimator' ? ' [Estimator]' : (row.section === 'client' ? ' [Client]' : '');
+                btcItems.push(`<li><strong>${wg.number}${sectionTag}</strong>: ${rowName}</li>`);
             });
         });
 
@@ -93,7 +94,8 @@ export class BtcExportService {
             thisRevWorkgroups.forEach(wg => {
                 wg.rows.forEach(row => {
                     const rowName = row.name || (row.description ? row.description.replace(/<[^>]*>?/gm, '').substring(0, 50) + '...' : 'Untitled Item');
-                    btcItems.push(`<li><strong>[REV ${rev.number}] ${wg.number}</strong>: ${rowName}</li>`);
+                    const sectionTag = row.section === 'estimator' ? ' [Estimator]' : (row.section === 'client' ? ' [Client]' : '');
+                    btcItems.push(`<li><strong>[REV ${rev.number}] ${wg.number}${sectionTag}</strong>: ${rowName}</li>`);
                 });
             });
         });

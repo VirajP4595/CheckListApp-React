@@ -1,7 +1,7 @@
 // ─── ANSWER STATE ────────────────────────────────────────
-export type AnswerState = 'YES' | 'NO' | 'BLANK' | 'PS' | 'PC' | 'SUB' | 'OTS' | 'TBC' | 'OPT_EXTRA' | 'BUILDER_SPEC';
+export type AnswerState = 'YES' | 'NO' | 'BLANK' | 'PS' | 'PC' | 'SUB' | 'OTS' | 'TBC' | 'OPT_EXTRA' | 'BUILDER_SPEC' | 'RFQ';
 
-export const ANSWER_STATES: AnswerState[] = ['YES', 'NO', 'BLANK', 'PS', 'PC', 'SUB', 'OTS', 'TBC', 'OPT_EXTRA', 'BUILDER_SPEC'];
+export const ANSWER_STATES: AnswerState[] = ['YES', 'NO', 'BLANK', 'PS', 'PC', 'SUB', 'OTS', 'TBC', 'OPT_EXTRA', 'BUILDER_SPEC', 'RFQ'];
 
 export const ANSWER_CONFIG: Record<AnswerState, { label: string; color: string; description: string }> = {
     YES: { label: 'Yes', color: '#107c10', description: 'Included' },
@@ -14,14 +14,26 @@ export const ANSWER_CONFIG: Record<AnswerState, { label: string; color: string; 
     TBC: { label: 'TBC', color: '#a4262c', description: 'To Be Confirmed' },
     OPT_EXTRA: { label: 'Optional Extra', color: '#ca5010', description: 'Optional extra item' },
     BUILDER_SPEC: { label: 'Builder Spec / Standard', color: '#498205', description: 'Builder specification or standard' },
+    RFQ: { label: 'RFQ', color: '#986f0b', description: 'Request for Quote' },
 };
 
+// ─── ROW SECTION ─────────────────────────────────────────
+export type RowSection = 'client' | 'estimator';
+
+export const SECTION_CONFIG: Record<RowSection, { label: string; color: string }> = {
+    'client': { label: 'Checklist Filler / Client', color: '#0078d4' },
+    'estimator': { label: 'Estimator', color: '#8764b8' },
+};
+
+export const ROW_SECTIONS: RowSection[] = ['client', 'estimator'];
+
 // ─── CHECKLIST STATUS ────────────────────────────────────
-export type ChecklistStatus = 'draft' | 'in-review' | 'final';
+export type ChecklistStatus = 'draft' | 'in-review' | 'in-revision' | 'final';
 
 export const STATUS_CONFIG: Record<ChecklistStatus, { label: string; color: string }> = {
     'draft': { label: 'Draft', color: '#8a8886' },
     'in-review': { label: 'In Review', color: '#ff8c00' },
+    'in-revision': { label: 'In Revision', color: '#5b5fc7' },
     'final': { label: 'Final', color: '#107c10' },
 };
 
@@ -39,9 +51,12 @@ export interface ChecklistImage {
 export interface ChecklistRow {
     id: string;
     workgroupId: string;
+    section?: RowSection;   // Which section this row belongs to
     name: string;           // Short title/name for the row item
     description: string;    // Longer description text
     answer: AnswerState;
+    supplierName?: string;  // Only relevant when answer = 'RFQ'
+    supplierEmail?: string; // Only relevant when answer = 'RFQ'
     notes: string;
     markedForReview: boolean;
     notifyAdmin: boolean;
@@ -156,10 +171,11 @@ export function generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-export function createEmptyRow(workgroupId: string, order: number): ChecklistRow {
+export function createEmptyRow(workgroupId: string, order: number, section?: RowSection): ChecklistRow {
     return {
         id: generateId(),
         workgroupId,
+        section,
         name: '',
         description: '',
         answer: 'BLANK',

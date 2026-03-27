@@ -131,6 +131,14 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
         });
     }, [workgroup.rows, filters, activeChecklist?.jobDetails?.meetingOccurred]);
 
+    const { clientRows, estimatorRows } = useMemo(() => {
+        const sorted = [...filteredRows].sort((a, b) => a.order - b.order);
+        return {
+            clientRows: sorted.filter(r => r.section !== 'estimator'), // default to client
+            estimatorRows: sorted.filter(r => r.section === 'estimator')
+        };
+    }, [filteredRows]);
+
     // Check if any row-level filters are active
     const hasActiveRowFilters = filters && (
         (filters.answerStates && filters.answerStates.length > 0) ||
@@ -290,60 +298,95 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
             {
                 !collapsed && (
                     <div className={styles['workgroup-content']}>
-                        {filteredRows.length === 0 ? (
-                            <div className={styles['workgroup-empty']}>
-                                <span>{workgroup.rows.length === 0 ? 'No items in this workgroup yet.' : 'No items match the current filters.'}</span>
-                                {workgroup.rows.length === 0 && (
-                                    <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
+                        {(clientRows.length > 0 || estimatorRows.length > 0 || workgroup.rows.length === 0) ? (
+                            <div className={styles['workgroup-rows-container']}>
+                                {/* Client Section */}
+                                <div className={styles['section-group']}>
+                                    <div className={styles['section-header']}>
+                                        <span className={styles['section-title']}>Client Checklist</span>
                                         <button
-                                            className={styles['insert-row-btn']}
-                                            onClick={handleAddRow}
+                                            className={styles['section-add-btn']}
+                                            onClick={() => addRow(workgroup.id, undefined, 'client')}
                                             disabled={isAdding}
-                                            style={{ opacity: 1 }} // Always show in empty state
                                         >
-                                            <span className={styles['insert-row-icon']}>+</span>
-                                            <span className={styles['insert-row-label']}>Add first row</span>
-                                            {isAdding && <Spinner size="extra-tiny" style={{ marginLeft: '8px' }} />}
+                                            <Add20Regular /> Add Row
                                         </button>
                                     </div>
-                                )}
+                                    <div className={styles['section-content']}>
+                                        {clientRows.length === 0 ? (
+                                            <div className={styles['section-empty']}>No client items.</div>
+                                        ) : (
+                                            clientRows.map((row) => (
+                                                <React.Fragment key={row.id}>
+                                                    <ChecklistRowItem
+                                                        row={row}
+                                                        workgroupId={workgroup.id}
+                                                        isCompact={!expandTasks}
+                                                    />
+                                                    <div className={styles['insert-row-divider']}>
+                                                        <button
+                                                            className={styles['insert-row-btn']}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (!isAdding) void addRow(workgroup.id, row.id, 'client');
+                                                            }}
+                                                            title="Insert row here"
+                                                        >
+                                                            <span className={styles['insert-row-icon']}>+</span>
+                                                            <span className={styles['insert-row-label']}>Add item</span>
+                                                        </button>
+                                                    </div>
+                                                </React.Fragment>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Estimator Section */}
+                                <div className={styles['section-group']}>
+                                    <div className={styles['section-header']}>
+                                        <span className={styles['section-title']}>Estimator Checklist</span>
+                                        <button
+                                            className={styles['section-add-btn']}
+                                            onClick={() => addRow(workgroup.id, undefined, 'estimator')}
+                                            disabled={isAdding}
+                                        >
+                                            <Add20Regular /> Add Row
+                                        </button>
+                                    </div>
+                                    <div className={styles['section-content']}>
+                                        {estimatorRows.length === 0 ? (
+                                            <div className={styles['section-empty']}>No estimator items.</div>
+                                        ) : (
+                                            estimatorRows.map((row) => (
+                                                <React.Fragment key={row.id}>
+                                                    <ChecklistRowItem
+                                                        row={row}
+                                                        workgroupId={workgroup.id}
+                                                        isCompact={!expandTasks}
+                                                    />
+                                                    <div className={styles['insert-row-divider']}>
+                                                        <button
+                                                            className={styles['insert-row-btn']}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (!isAdding) void addRow(workgroup.id, row.id, 'estimator');
+                                                            }}
+                                                            title="Insert row here"
+                                                        >
+                                                            <span className={styles['insert-row-icon']}>+</span>
+                                                            <span className={styles['insert-row-label']}>Add item</span>
+                                                        </button>
+                                                    </div>
+                                                </React.Fragment>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         ) : (
-                            <div className={styles['workgroup-rows']}>
-                                {filteredRows
-                                    .sort((a, b) => a.order - b.order)
-                                    .flatMap((row, index, arr) => {
-                                        const items: React.ReactNode[] = [
-                                            <ChecklistRowItem
-                                                key={row.id}
-                                                row={row}
-                                                workgroupId={workgroup.id}
-                                                isCompact={!expandTasks}
-                                            />
-                                        ];
-
-                                        // Add insert divider after every row (including the last one)
-                                        items.push(
-                                            <div
-                                                key={`insert-${row.id}`}
-                                                className={styles['insert-row-divider']}
-                                            >
-                                                <button
-                                                    className={styles['insert-row-btn']}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (!isAdding) void addRow(workgroup.id, row.id);
-                                                    }}
-                                                    title="Insert row here"
-                                                >
-                                                    <span className={styles['insert-row-icon']}>+</span>
-                                                    <span className={styles['insert-row-label']}>Add new row here</span>
-                                                </button>
-                                            </div>
-                                        );
-
-                                        return items;
-                                    })}
+                            <div className={styles['workgroup-empty']}>
+                                <span>No items match the current filters.</span>
                             </div>
                         )}
                     </div>

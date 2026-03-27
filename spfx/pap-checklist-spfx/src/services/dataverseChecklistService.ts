@@ -2,7 +2,7 @@ import { dataverseClient, entities, col, navprops } from './dataverseService';
 import type { IChecklistService } from './interfaces';
 import { getImageService } from './serviceFactory';
 import { DataverseRevisionService } from './dataverseRevisionService';
-import type { Checklist, Workgroup, ChecklistRow, AnswerState, ChecklistStatus, Revision } from '../models';
+import type { Checklist, Workgroup, ChecklistRow, AnswerState, ChecklistStatus, Revision, RowSection } from '../models';
 
 // ─── DATAVERSE RESPONSE TYPES ──────────────────────────────
 
@@ -76,6 +76,9 @@ interface DataverseRow {
     pap_description_primary?: string;       // Item Name
     pap_description?: string;
     pap_answer: number;  // Choice field
+    pap_section?: string; // Single line of text
+    pap_suppliername?: string;
+    pap_supplieremail?: string;
     pap_notes?: string;
     pap_markedforreview: boolean;
     pap_notifyadmin: boolean;
@@ -105,13 +108,15 @@ function parseJsonField(val: string | undefined | null): any {
 const STATUS_MAP: Record<number, ChecklistStatus> = {
     1: 'draft',
     2: 'in-review',
-    3: 'final'
+    3: 'final',
+    4: 'in-revision'
 };
 
 const STATUS_VALUE_MAP: Record<ChecklistStatus, number> = {
     'draft': 1,
     'in-review': 2,
-    'final': 3
+    'final': 3,
+    'in-revision': 4
 };
 
 const ANSWER_MAP: Record<number, AnswerState> = {
@@ -124,7 +129,8 @@ const ANSWER_MAP: Record<number, AnswerState> = {
     7: 'OTS',
     8: 'TBC',
     9: 'OPT_EXTRA',
-    10: 'BUILDER_SPEC'
+    10: 'BUILDER_SPEC',
+    11: 'RFQ'
 };
 
 const ANSWER_VALUE_MAP: Record<AnswerState, number> = {
@@ -137,16 +143,20 @@ const ANSWER_VALUE_MAP: Record<AnswerState, number> = {
     'OTS': 7,
     'TBC': 8,
     'OPT_EXTRA': 9,
-    'BUILDER_SPEC': 10
+    'BUILDER_SPEC': 10,
+    'RFQ': 11
 };
 
 function mapRow(dv: DataverseRow): ChecklistRow {
     return {
         id: dv.pap_checklistrowid,
         workgroupId: dv._pap_workgroupid_value,
+        section: dv.pap_section as RowSection | undefined,
         name: dv.pap_description_primary || '', // Map name
         description: dv.pap_description || '',
         answer: ANSWER_MAP[dv.pap_answer] || 'BLANK',
+        supplierName: dv.pap_suppliername || undefined,
+        supplierEmail: dv.pap_supplieremail || undefined,
         notes: dv.pap_notes || '',
         markedForReview: dv.pap_markedforreview || false,
         notifyAdmin: dv.pap_notifyadmin || false,
@@ -283,6 +293,9 @@ export class DataverseChecklistService implements IChecklistService {
                 col('description_primary'),
                 col('description'),
                 col('answer'),
+                col('section'),
+                col('suppliername'),
+                col('supplieremail'),
                 col('notes'),
                 col('markedforreview'),
                 col('notifyadmin'),
@@ -571,6 +584,9 @@ export class DataverseChecklistService implements IChecklistService {
             [col('description_primary')]: rowData.name || 'New Item',
             [col('description')]: rowData.description || '',
             [col('answer')]: ANSWER_VALUE_MAP[rowData.answer || 'BLANK'],
+            [col('section')]: rowData.section || null,
+            [col('suppliername')]: rowData.supplierName || null,
+            [col('supplieremail')]: rowData.supplierEmail || null,
             [col('notes')]: rowData.notes || '',
             [col('markedforreview')]: rowData.markedForReview || false,
             [col('notifyadmin')]: rowData.notifyAdmin || false,
@@ -590,6 +606,9 @@ export class DataverseChecklistService implements IChecklistService {
             name: rowData.name || 'New Item',
             description: rowData.description || '',
             answer: rowData.answer || 'BLANK',
+            section: rowData.section,
+            supplierName: rowData.supplierName,
+            supplierEmail: rowData.supplierEmail,
             notes: rowData.notes || '',
             markedForReview: rowData.markedForReview || false,
             notifyAdmin: rowData.notifyAdmin || false,
@@ -606,6 +625,9 @@ export class DataverseChecklistService implements IChecklistService {
             [col('description_primary')]: row.name,
             [col('description')]: row.description,
             [col('answer')]: ANSWER_VALUE_MAP[row.answer],
+            [col('section')]: row.section || null,
+            [col('suppliername')]: row.supplierName || null,
+            [col('supplieremail')]: row.supplierEmail || null,
             [col('notes')]: row.notes,
             [col('markedforreview')]: row.markedForReview,
             [col('notifyadmin')]: row.notifyAdmin,

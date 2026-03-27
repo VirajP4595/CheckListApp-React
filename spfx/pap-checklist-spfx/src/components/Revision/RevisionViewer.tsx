@@ -71,6 +71,11 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
 
         if (visibleRows.length === 0) return null;
 
+        const sections = [
+            { id: 'client', label: 'Checklist Filler / Client', rows: visibleRows.filter((r: any) => r.section === 'client' || !r.section) },
+            { id: 'estimator', label: 'Estimator', rows: visibleRows.filter((r: any) => r.section === 'estimator') }
+        ];
+
         return (
             <div key={workgroup.id} className={styles['revision-workgroup']}>
                 <div className={styles['revision-workgroup-header']}>
@@ -78,70 +83,87 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
                     <span className={styles['revision-workgroup-name']}>{workgroup.name}</span>
                 </div>
 
-                {visibleRows.map((row: any) => (
-                    <div key={row.id} className={styles['revision-row']}>
-                        <div className={styles['revision-row-content']}>
-                            <div className={styles['revision-row-header']}>
-                                <span className={styles['revision-row-name']}>{row.name}</span>
-                                <span
-                                    className={styles['revision-status-pill']}
-                                    style={getAnswerStyle(row.answer)}
-                                >
-                                    {ANSWER_CONFIG[row.answer as AnswerState]?.label || row.answer}
-                                </span>
-                            </div>
-
-                            {/* Description (Rich Text or plain) */}
-                            {row.description && (
-                                <div className={styles['revision-row-description']}>
-                                    <RichTextEditor
-                                        content={row.description}
-                                        readOnly={true}
-                                        className={styles['compact-rte']}
-                                    />
-                                </div>
-                            )}
-
-                            {row.notes && (
-                                <div className={styles['revision-row-notes']}>
-                                    <span className={styles['revision-notes-label']}>Notes:</span>
-                                    <RichTextEditor
-                                        content={row.notes}
-                                        readOnly={true}
-                                        className={styles['compact-rte']}
-                                    />
-                                </div>
-                            )}
-
-                            {/* Images Grid */}
-                            {row.images && row.images.length > 0 && (
-                                <div className={styles['revision-images']}>
-                                    {row.images.map((img: any, idx: number) => (
-                                        <div
-                                            key={idx}
-                                            className={styles['revision-image-card']}
-                                            onClick={() => {
-                                                const needsLoad = img.id && !img.source.startsWith('data:') && !img.source.startsWith('blob:');
-                                                setPreviewImage({
-                                                    src: img.source,
-                                                    caption: img.caption,
-                                                    id: img.id,
-                                                    loading: !!needsLoad
-                                                });
-                                            }}
+                {sections.map(section => (
+                    <React.Fragment key={section.id}>
+                        {section.rows.length > 0 && (
+                            <div className={styles['revision-section-header']}>{section.label}</div>
+                        )}
+                        {section.rows.map((row: any) => (
+                            <div key={row.id} className={styles['revision-row']}>
+                                <div className={styles['revision-row-content']}>
+                                    <div className={styles['revision-row-header']}>
+                                        <span className={styles['revision-row-name']}>{row.name}</span>
+                                        <span
+                                            className={styles['revision-status-pill']}
+                                            style={getAnswerStyle(row.answer)}
                                         >
-                                            <img
-                                                src={img.source?.startsWith('data:') ? img.source : (img.thumbnailUrl || img.source)}
-                                                alt={img.caption}
-                                                className={styles['revision-image']}
+                                            {ANSWER_CONFIG[row.answer as AnswerState]?.label || row.answer}
+                                        </span>
+                                    </div>
+
+                                    {/* Description (Rich Text or plain) */}
+                                    {row.description && (
+                                        <div className={styles['revision-row-description']}>
+                                            <RichTextEditor
+                                                content={row.description}
+                                                readOnly={true}
+                                                className={styles['compact-rte']}
                                             />
-                                            {img.caption && <span className={styles['revision-image-caption']}>{img.caption}</span>}
                                         </div>
-                                    ))}
+                                    )}
+
+                                    {/* RFQ Supplier Details */}
+                                    {row.answer === 'RFQ' && (row.supplierName || row.supplierEmail) && (
+                                        <div className={styles['revision-row-rfq-info']}>
+                                            <span className={styles['revision-rfq-label']}>Supplier:</span>
+                                            <div style={{ color: '#004578' }}>
+                                                {[row.supplierName, row.supplierEmail].filter(Boolean).join(' | ')}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {row.notes && (
+                                        <div className={styles['revision-row-notes']}>
+                                            <span className={styles['revision-notes-label']}>Notes:</span>
+                                            <RichTextEditor
+                                                content={row.notes}
+                                                readOnly={true}
+                                                className={styles['compact-rte']}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Images Grid */}
+                                    {row.images && row.images.length > 0 && (
+                                        <div className={styles['revision-images']}>
+                                            {row.images.map((img: any, idx: number) => (
+                                                <div
+                                                    key={idx}
+                                                    className={styles['revision-image-card']}
+                                                    onClick={() => {
+                                                        const needsLoad = img.id && !img.source.startsWith('data:') && !img.source.startsWith('blob:');
+                                                        setPreviewImage({
+                                                            src: img.source,
+                                                            caption: img.caption,
+                                                            id: img.id,
+                                                            loading: !!needsLoad
+                                                        });
+                                                    }}
+                                                >
+                                                    <img
+                                                        src={img.source?.startsWith('data:') ? img.source : (img.thumbnailUrl || img.source)}
+                                                        alt={img.caption}
+                                                        className={styles['revision-image']}
+                                                    />
+                                                    {img.caption && <span className={styles['revision-image-caption']}>{img.caption}</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    </div>
+                            </div>
+                        ))}
+                    </React.Fragment>
                 ))}
             </div>
         );

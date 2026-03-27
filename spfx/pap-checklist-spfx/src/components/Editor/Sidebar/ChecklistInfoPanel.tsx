@@ -5,6 +5,7 @@ import { Checklist, ChecklistStatus } from '../../../models';
 
 import { usePdfExport } from '../../../hooks/usePdfExport';
 import { useBtcExport } from '../../../hooks/useBtcExport';
+import { useRfqExport } from '../../../hooks/useRfqExport';
 import styles from './ChecklistInfoPanel.module.scss';
 
 interface ChecklistInfoPanelProps {
@@ -16,14 +17,15 @@ interface ChecklistInfoPanelProps {
 const STATUS_OPTIONS: { value: ChecklistStatus; label: string }[] = [
     { value: 'draft', label: 'Draft' },
     { value: 'in-review', label: 'In Review' },
+    { value: 'in-revision', label: 'In Revision' },
     { value: 'final', label: 'Final' }
 ];
 const CORRESPONDENCE_OPTIONS = ['Builder Copy', 'Client Copy', 'File Copy', 'Other'];
-const ESTIMATE_TYPE_OPTIONS = ['FQE', 'Budget', 'Variation', 'Final Account'];
 
 export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklist, onUpdate, readOnly }) => {
     const { exportPdf, loadingProgress: pdfProgress, cancelExport: cancelPdf } = usePdfExport();
     const { exportBtc, loadingProgress: btcProgress, cancelExport: cancelBtc } = useBtcExport();
+    const { exportRfqCsv, emailRfq, loadingProgress: rfqProgress, cancelExport: cancelRfq } = useRfqExport();
 
     const handleExportPDF = async () => {
         await exportPdf(checklist);
@@ -31,6 +33,14 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
 
     const handleExportBTC = async () => {
         await exportBtc(checklist);
+    };
+
+    const handleEmailRFQ = async () => {
+        await emailRfq(checklist);
+    };
+
+    const handleExportRFQ = async () => {
+        await exportRfqCsv(checklist);
     };
 
     const handleStatusChange = (status: ChecklistStatus) => {
@@ -49,22 +59,8 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
         onUpdate({ clientCorrespondence: updated }, `${action} Client Correspondence: ${option}`);
     };
 
-    const handleEstimateTypeChange = (option: string) => {
-        if (readOnly) return;
-        const current = checklist.estimateType || [];
-        const isSelected = current.includes(option);
-        const updated = isSelected
-            ? current.filter(item => item !== option)
-            : [...current, option];
-        const action = isSelected ? 'Removed' : 'Added';
-        onUpdate({ estimateType: updated }, `${action} Estimate Type: ${option}`);
-    };
-
     const isCorrespondenceSelected = (option: string) =>
         checklist.clientCorrespondence?.includes(option) || false;
-
-    const isEstimateTypeSelected = (option: string) =>
-        checklist.estimateType?.includes(option) || false;
 
     const job = checklist.jobDetails;
 
@@ -203,44 +199,12 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
                 </div>
             </div>
 
-            {/* Estimate Type */}
-            <div className={styles['info-section']}>
-                <span className={styles['info-section-title']}>Estimate Type</span>
-                <div className={styles['chip-group']}>
-                    {ESTIMATE_TYPE_OPTIONS.map(option => {
-                        const selected = isEstimateTypeSelected(option);
-                        return (
-                            <div
-                                key={option}
-                                className={mergeClasses(
-                                    styles.chip,
-                                    selected && styles['chip--selected'],
-                                    readOnly && styles['chip--disabled']
-                                )}
-                                onClick={() => handleEstimateTypeChange(option)}
-                                role="checkbox"
-                                aria-checked={selected ? 'true' : 'false'}
-                                tabIndex={0}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        handleEstimateTypeChange(option);
-                                    }
-                                }}
-                            >
-                                {selected && <Checkmark12Filled className={styles['chip-icon']} />}
-                                {option}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
 
             {/* Actions */}
             <div className={styles['info-section']}>
                 <span className={styles['info-section-title']}>Actions</span>
                 <div className={styles['action-group']}>
-                    {!pdfProgress.open && !btcProgress.open ? (
+                    {!pdfProgress.open && !btcProgress.open && !rfqProgress.open ? (
                         <>
                             <Button
                                 className={styles['export-btn']}
@@ -253,27 +217,43 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
                             <Button
                                 className={styles['export-btn']}
                                 icon={<Mail24Regular />}
-                                onClick={() => exportBtc(checklist)}
+                                onClick={handleExportBTC}
                                 disabled={readOnly}
                             >
                                 Email BTC Summary
+                            </Button>
+                            <Button
+                                className={styles['export-btn']}
+                                icon={<Mail24Regular />}
+                                onClick={handleEmailRFQ}
+                                disabled={readOnly}
+                            >
+                                Email RFQ Summary
+                            </Button>
+                            <Button
+                                className={styles['export-btn']}
+                                icon={<ArrowDownload24Regular />}
+                                onClick={handleExportRFQ}
+                                disabled={readOnly}
+                            >
+                                Export RFQ (CSV)
                             </Button>
                         </>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Text size={200}>
-                                    {pdfProgress.open ? pdfProgress.status : btcProgress.status}
+                                    {pdfProgress.open ? pdfProgress.status : (btcProgress.open ? btcProgress.status : rfqProgress.status)}
                                 </Text>
                                 <Button
                                     size="small"
                                     appearance="subtle"
                                     icon={<Dismiss24Regular />}
-                                    onClick={pdfProgress.open ? cancelPdf : cancelBtc}
+                                    onClick={pdfProgress.open ? cancelPdf : (btcProgress.open ? cancelBtc : cancelRfq)}
                                     aria-label="Cancel"
                                 />
                             </div>
-                            <ProgressBar value={(pdfProgress.open ? pdfProgress.percent : btcProgress.percent) / 100} />
+                            <ProgressBar value={(pdfProgress.open ? pdfProgress.percent : (btcProgress.open ? btcProgress.percent : rfqProgress.percent)) / 100} />
                         </div>
                     )}
                 </div>

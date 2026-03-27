@@ -47,7 +47,7 @@ interface ChecklistState {
 
     // Actions - Row Operations
     updateRow: (rowId: string, updates: Partial<ChecklistRow>) => void;
-    addRow: (workgroupId: string, afterRowId?: string) => Promise<void>;
+    addRow: (workgroupId: string, afterRowId?: string, section?: import('../models').RowSection) => Promise<void>;
     deleteRow: (rowId: string) => Promise<void>;
     toggleAnswer: (rowId: string, answer: AnswerState) => void;
 
@@ -289,7 +289,7 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         });
     },
 
-    addRow: async (workgroupId: string, afterRowId?: string) => {
+    addRow: async (workgroupId: string, afterRowId?: string, section?: import('../models').RowSection) => {
         // Immediate server persistence
         const { activeChecklist } = get();
         if (!activeChecklist) return;
@@ -310,6 +310,7 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         try {
             const newRow = await getChecklistService().createRow(workgroupId, {
                 order: newOrder,
+                section,
                 name: defaultName,
                 description: '',
                 answer: 'BLANK'

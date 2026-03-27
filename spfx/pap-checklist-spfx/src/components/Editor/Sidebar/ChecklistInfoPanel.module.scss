@@ -103,6 +103,18 @@
   }
 }
 
+.chip--in-revision {
+  &.chip--selected {
+    background-color: rgba(91, 95, 199, 0.15);
+    border-color: #5b5fc7;
+    color: #5b5fc7;
+  }
+
+  .chip-icon {
+    color: #5b5fc7;
+  }
+}
+
 .chip--final {
   &.chip--selected {
     background-color: rgba($color-success, 0.15);

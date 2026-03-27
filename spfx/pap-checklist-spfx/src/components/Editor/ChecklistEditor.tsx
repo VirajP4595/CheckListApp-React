@@ -129,6 +129,8 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                 return styles['editor-status--final'];
             case 'in-review':
                 return styles['editor-status--in-review'];
+            case 'in-revision':
+                return styles['editor-status--in-revision'];
             default:
                 return styles['editor-status--draft'];
         }
@@ -332,7 +334,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                         {activeChecklist.workgroups
                             .filter(wg => !wg.revisionId)
                             .filter(wg => filters.workgroupIds.length === 0 || filters.workgroupIds.includes(wg.id))
-                            .sort((a, b) => a.order - b.order)
+                            .sort((a, b) => a.number - b.number)
                             .map(workgroup => (
                                 <WorkgroupSection
                                     key={workgroup.id}

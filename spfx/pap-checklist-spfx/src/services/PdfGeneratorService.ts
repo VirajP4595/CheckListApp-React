@@ -74,11 +74,12 @@ export class PdfGeneratorService {
             doc.setFont('helvetica', 'normal');
 
             const clientName = this.checklist.jobDetails?.clientName ? `${this.checklist.jobDetails.clientName} | ` : '';
+            const jobType = this.checklist.jobDetails?.jobType ? `${this.checklist.jobDetails.jobType} | ` : '';
             const statusLabel = (this.checklist.status || 'Draft').toUpperCase();
             const revLabel = `Rev ${this.checklist.currentRevisionNumber}`;
             const dateLabel = new Date().toLocaleDateString();
 
-            doc.text(`${clientName}${statusLabel} | ${revLabel} | ${dateLabel}`, margin.left, 24);
+            doc.text(`${clientName}${jobType}${statusLabel} | ${revLabel} | ${dateLabel}`, margin.left, 24);
 
             // Blue Separator Line
             const lineY = 28;
@@ -161,77 +162,120 @@ export class PdfGeneratorService {
 
             const workgroupImages: { data: string; ratio: number; caption?: string }[] = [];
 
-            for (const row of visibleRows) {
-                processedItems++;
-                // Check for progress
-                if (totalItemsCount > 0) {
-                    if (!onProgress(`Drawing Row ${processedItems}...`, 10 + (processedItems / totalItemsCount) * 85)) {
-                        throw new Error("Cancelled");
-                    }
-                }
+            // Group rows by section
+            const sections = [
+                { id: 'client', label: 'Checklist Filler / Client', rows: visibleRows.filter(r => r.section === 'client' || !r.section) },
+                { id: 'estimator', label: 'Estimator', rows: visibleRows.filter(r => r.section === 'estimator') }
+            ];
 
-                const col2W = contentWidth - 12 - 4;
-                let contentH = 0;
-                const title = row.name || this.stripHtml(row.description).substring(0, 50);
-                if (title) contentH += 6;
-                const descH = this.renderer.measureHeight(row.description || '', col2W);
-                if (descH > 0) contentH += descH + 2;
-                const notesH = row.notes ? this.renderer.measureHeight(row.notes, col2W) + 4 : 0;
-                contentH += notesH;
+            for (const section of sections) {
+                if (section.rows.length === 0) continue;
 
-                checkPageBreak(Math.min(contentH + 5, 40));
+                // Section Header
+                checkPageBreak(10);
+                doc.setFontSize(9);
+                doc.setTextColor(BRAND_COLORS.GRAY);
+                doc.setFont('helvetica', 'bold');
+                doc.text(section.label.toUpperCase(), margin.left, cursorY + 4);
+                doc.setDrawColor('#e1dfdd');
+                doc.setLineWidth(0.2);
+                doc.line(margin.left, cursorY + 6, margin.left + doc.getTextWidth(section.label), cursorY + 6);
+                cursorY += 10;
 
-                let drawY = cursorY + 4;
-                const fullW = contentWidth;
-                const answerConf = ANSWER_CONFIG[row.answer as AnswerState] || ANSWER_CONFIG['BLANK'];
-
-                if (title) {
-                    doc.setTextColor(BRAND_COLORS.BLACK);
-                    doc.setFontSize(11);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text(title, margin.left, drawY + 3);
-                    const titleW = doc.getTextWidth(title);
-                    const pillX = margin.left + titleW + 4;
-                    const pillW = doc.getTextWidth(answerConf.label) + 6;
-                    doc.setFillColor(answerConf.color);
-                    doc.roundedRect(pillX, drawY - 1, pillW, 5, 2, 2, 'F');
-                    doc.setTextColor(BRAND_COLORS.WHITE);
-                    doc.setFontSize(7);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text(answerConf.label, pillX + (pillW / 2), drawY + 2.5, { align: 'center' });
-                    drawY += 7;
-                }
-
-                if (row.description) {
-                    doc.setFontSize(9);
-                    doc.setTextColor('#323130');
-                    drawY = this.renderer.render(row.description, margin.left, drawY, fullW, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; }) + 2;
-                }
-
-                if (row.notes) {
-                    drawY += 1;
-                    const bH = this.renderer.measureHeight(row.notes, fullW) + 5;
-                    if (drawY + bH > pageHeight - margin.bottom) { doc.addPage(); drawY = margin.top + 2; }
-                    doc.setFillColor('#fff9e6'); doc.rect(margin.left, drawY, fullW, bH, 'F');
-                    doc.setFillColor('#fce100'); doc.rect(margin.left, drawY, 1.5, bH, 'F');
-                    doc.setFontSize(8); doc.setTextColor('#8a6d3b'); doc.setFont('helvetica', 'bold');
-                    doc.text("NOTES:", margin.left + 3, drawY + 3.5);
-                    doc.setFontSize(9); doc.setTextColor('#484644'); doc.setFont('helvetica', 'normal');
-                    this.renderer.render(row.notes, margin.left + 3, drawY + 5, fullW - 4, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; });
-                    drawY += bH + 2;
-                }
-
-                if (row.images && row.images.length > 0) {
-                    for (const img of row.images) {
-                        if (img.source) {
-                            workgroupImages.push({ data: img.source, ratio: 1.77, caption: row.name });
+                for (const row of section.rows) {
+                    processedItems++;
+                    // Check for progress
+                    if (totalItemsCount > 0) {
+                        if (!onProgress(`Drawing Row ${processedItems}...`, 10 + (processedItems / totalItemsCount) * 85)) {
+                            throw new Error("Cancelled");
                         }
                     }
+
+                    const col2W = contentWidth;
+                    let contentH = 0;
+                    const title = row.name || this.stripHtml(row.description).substring(0, 50);
+                    if (title) contentH += 6;
+                    const descH = this.renderer.measureHeight(row.description || '', col2W);
+                    if (descH > 0) contentH += descH + 2;
+                    const notesH = row.notes ? this.renderer.measureHeight(row.notes, col2W) + 4 : 0;
+                    contentH += notesH;
+
+                    // Estimate supplier info height
+                    let supplierH = 0;
+                    if (row.answer === 'RFQ' && (row.supplierName || row.supplierEmail)) {
+                        supplierH = 10;
+                    }
+                    contentH += supplierH;
+
+                    checkPageBreak(Math.min(contentH + 5, 40));
+
+                    let drawY = cursorY + 4;
+                    const fullW = contentWidth;
+                    const answerConf = ANSWER_CONFIG[row.answer as AnswerState] || ANSWER_CONFIG['BLANK'];
+
+                    if (title) {
+                        doc.setTextColor(BRAND_COLORS.BLACK);
+                        doc.setFontSize(11);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(title, margin.left, drawY + 3);
+                        const titleW = doc.getTextWidth(title);
+                        const pillX = margin.left + titleW + 4;
+                        const pillW = doc.getTextWidth(answerConf.label) + 6;
+                        doc.setFillColor(answerConf.color);
+                        doc.roundedRect(pillX, drawY - 1, pillW, 5, 2, 2, 'F');
+                        doc.setTextColor(BRAND_COLORS.WHITE);
+                        doc.setFontSize(7);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(answerConf.label, pillX + (pillW / 2), drawY + 2.5, { align: 'center' });
+                        drawY += 7;
+                    }
+
+                    if (row.description) {
+                        doc.setFontSize(9);
+                        doc.setTextColor('#323130');
+                        drawY = this.renderer.render(row.description, margin.left, drawY, fullW, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; }) + 2;
+                    }
+
+                    // RFQ Supplier Block
+                    if (row.answer === 'RFQ' && (row.supplierName || row.supplierEmail)) {
+                        drawY += 1;
+                        const sH = 8;
+                        if (drawY + sH > pageHeight - margin.bottom) { doc.addPage(); drawY = margin.top + 2; }
+                        doc.setFillColor('#ebf3fc'); doc.rect(margin.left, drawY, fullW, sH, 'F');
+                        doc.setFillColor('#0078d4'); doc.rect(margin.left, drawY, 1.5, sH, 'F');
+                        doc.setFontSize(8); doc.setTextColor('#0078d4'); doc.setFont('helvetica', 'bold');
+                        doc.text("SUPPLIER:", margin.left + 3, drawY + 3.5);
+                        doc.setFontSize(9); doc.setTextColor('#004578'); doc.setFont('helvetica', 'normal');
+                        const supplierText = [row.supplierName, row.supplierEmail].filter(Boolean).join(' | ');
+                        doc.text(supplierText, margin.left + 3, drawY + 6.5);
+                        drawY += sH + 2;
+                    }
+
+                    if (row.notes) {
+                        drawY += 1;
+                        const bH = this.renderer.measureHeight(row.notes, fullW) + 5;
+                        if (drawY + bH > pageHeight - margin.bottom) { doc.addPage(); drawY = margin.top + 2; }
+                        doc.setFillColor('#fff9e6'); doc.rect(margin.left, drawY, fullW, bH, 'F');
+                        doc.setFillColor('#fce100'); doc.rect(margin.left, drawY, 1.5, bH, 'F');
+                        doc.setFontSize(8); doc.setTextColor('#8a6d3b'); doc.setFont('helvetica', 'bold');
+                        doc.text("NOTES:", margin.left + 3, drawY + 3.5);
+                        doc.setFontSize(9); doc.setTextColor('#484644'); doc.setFont('helvetica', 'normal');
+                        this.renderer.render(row.notes, margin.left + 3, drawY + 5, fullW - 4, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; });
+                        drawY += bH + 2;
+                    }
+
+                    if (row.images && row.images.length > 0) {
+                        for (const img of row.images) {
+                            if (img.source) {
+                                workgroupImages.push({ data: img.source, ratio: 1.77, caption: row.name });
+                            }
+                        }
+                    }
+                    cursorY = drawY;
+                    doc.setDrawColor('#e1dfdd'); doc.setLineWidth(0.1);
+                    doc.line(margin.left, cursorY, pageWidth - margin.right, cursorY);
+                    cursorY += 1;
                 }
-                cursorY = drawY;
-                doc.setDrawColor('#e1dfdd'); doc.setLineWidth(0.1);
-                doc.line(margin.left, cursorY, pageWidth - margin.right, cursorY);
-                cursorY += 1;
             }
 
             // Render Workgroup Images
@@ -289,7 +333,9 @@ export class PdfGeneratorService {
             cursorY += 12;
 
             for (const rev of revisions) {
-                const revWorkgroups = this.checklist.workgroups.filter(wg => wg.revisionId === rev.id);
+                const revWorkgroups = this.checklist.workgroups
+                    .filter(wg => wg.revisionId === rev.id)
+                    .sort((a, b) => a.number - b.number);
                 if (revWorkgroups.length === 0 && !rev.notes) continue;
 
                 checkPageBreak(25);
@@ -343,7 +389,9 @@ export class PdfGeneratorService {
         }
 
         // --- SECTION: MAIN CHECKLIST ---
-        const mainWorkgroups = this.checklist.workgroups.filter(wg => !wg.revisionId);
+        const mainWorkgroups = this.checklist.workgroups
+            .filter(wg => !wg.revisionId)
+            .sort((a, b) => a.number - b.number);
         for (const wg of mainWorkgroups) {
             await renderWorkgroup(wg, totalItems);
         }
