@@ -490,40 +490,46 @@ export class DataverseChecklistService implements IChecklistService {
     async deleteChecklist(id: string, onProgress?: (status: string, percent: number) => void): Promise<void> {
         console.log(`[Dataverse] Permanently Deleting Checklist: ${id}`);
 
-        if (onProgress) onProgress('Locating workgroups...', 10);
+        try {
+            if (onProgress) onProgress('Locating workgroups...', 10);
 
-        // 1. Get all workgroups for this checklist
-        const workgroupsResponse = await dataverseClient.get<{ value: { pap_workgroupid: string }[] }>(
-            entities.workgroups,
-            `$filter=_pap_checklistid_value eq ${id}&$select=pap_workgroupid`
-        );
-        const workgroupIds = workgroupsResponse.value.map(wg => wg.pap_workgroupid);
-
-        if (onProgress) onProgress(`Found ${workgroupIds.length} workgroups. Processing rows...`, 20);
-
-        // 2. For each workgroup, get rows and delete
-        let deletedWgs = 0;
-
-        for (const wgId of workgroupIds) {
-            if (onProgress) onProgress(`Deleting workgroup ${deletedWgs + 1} of ${workgroupIds.length}...`, 20 + Math.floor((deletedWgs / Math.max(workgroupIds.length, 1)) * 70));
-
-            const rowsResponse = await dataverseClient.get<{ value: DataverseRow[] }>(
-                entities.checklistrows,
-                `$filter=_pap_workgroupid_value eq ${wgId}&$select=pap_checklistrowid`
+            // 1. Get all workgroups for this checklist
+            const workgroupsResponse = await dataverseClient.get<{ value: { pap_workgroupid: string }[] }>(
+                entities.workgroups,
+                `$filter=_pap_checklistid_value eq ${id}&$select=pap_workgroupid`
             );
-            const rowIds = rowsResponse.value.map(r => r.pap_checklistrowid);
+            const workgroupIds = workgroupsResponse.value.map(wg => wg.pap_workgroupid);
 
-            // Execute row deletions concurrently
-            await Promise.all(rowIds.map(rId => dataverseClient.delete(entities.checklistrows, rId)));
+            if (onProgress) onProgress(`Found ${workgroupIds.length} workgroups. Processing rows...`, 20);
 
-            await dataverseClient.delete(entities.workgroups, wgId);
-            deletedWgs++;
+            // 2. For each workgroup, get rows and delete
+            let deletedWgs = 0;
+
+            for (const wgId of workgroupIds) {
+                if (onProgress) onProgress(`Deleting workgroup ${deletedWgs + 1} of ${workgroupIds.length}...`, 20 + Math.floor((deletedWgs / Math.max(workgroupIds.length, 1)) * 70));
+
+                const rowsResponse = await dataverseClient.get<{ value: DataverseRow[] }>(
+                    entities.checklistrows,
+                    `$filter=_pap_workgroupid_value eq ${wgId}&$select=pap_checklistrowid`
+                );
+                const rowIds = rowsResponse.value.map(r => r.pap_checklistrowid);
+
+                // Execute row deletions concurrently
+                await Promise.all(rowIds.map(rId => dataverseClient.delete(entities.checklistrows, rId)));
+
+                await dataverseClient.delete(entities.workgroups, wgId);
+                deletedWgs++;
+            }
+
+            if (onProgress) onProgress('Deleting main checklist record...', 90);
+            // 3. Delete checklist
+            await dataverseClient.delete(entities.checklists, id);
+            if (onProgress) onProgress('Deletion complete', 100);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error(`[Dataverse] deleteChecklist failed: ${message}`);
+            throw new Error(`Deletion failed — some records may have been partially removed. Please contact your administrator.\n\nDetails: ${message}`);
         }
-
-        if (onProgress) onProgress('Deleting main checklist record...', 90);
-        // 3. Delete checklist
-        await dataverseClient.delete(entities.checklists, id);
-        if (onProgress) onProgress('Deletion complete', 100);
     }
 
     // ─── WORKGROUP ACTIONS ──────────────────────────────────────────────
