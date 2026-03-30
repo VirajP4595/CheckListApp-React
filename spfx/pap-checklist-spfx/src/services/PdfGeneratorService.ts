@@ -287,27 +287,29 @@ export class PdfGeneratorService {
 
                 const gap = 4;
                 const gridW = (contentWidth - gap) / 2;
-                const loadedImages = [];
-                for (const item of workgroupImages) {
-                    try {
-                        let d = item.data;
-                        if (d.startsWith('http') || d.startsWith('blob:')) {
-                            const r = await fetch(d).catch(() => null);
-                            if (r && r.ok) {
+                // Process all workgroup images in parallel — getImageProperties() on base64 data
+                // is synchronous image decoding, so parallel is safe and significantly faster.
+                const loadedImages = (await Promise.all(
+                    workgroupImages.map(async (item) => {
+                        try {
+                            let d = item.data;
+                            if (d.startsWith('http') || d.startsWith('blob:')) {
+                                const r = await fetch(d).catch(() => null);
+                                if (!r || !r.ok) return null;
                                 const b = await r.blob();
                                 d = await this.readBlobAsDataURL(b);
-                            } else continue;
+                            }
+                            let format = 'JPEG';
+                            if (d.startsWith('data:image/png')) format = 'PNG';
+                            else if (d.startsWith('data:image/webp')) format = 'WEBP';
+                            const props = await this.getImageProperties(d).catch(() => ({ ratio: 1.77 }));
+                            return { data: d, ratio: props.ratio, format };
+                        } catch (e) {
+                            console.error('Img Load Err', e);
+                            return null;
                         }
-                        
-                        // Detect format for jsPDF
-                        let format = 'JPEG';
-                        if (d.startsWith('data:image/png')) format = 'PNG';
-                        else if (d.startsWith('data:image/webp')) format = 'WEBP';
-
-                        const props = await this.getImageProperties(d).catch(() => ({ ratio: 1.77 }));
-                        loadedImages.push({ data: d, ratio: props.ratio, format });
-                    } catch (e) { console.error("Img Load Err", e); }
-                }
+                    })
+                )).filter(Boolean) as { data: string; ratio: number; format: string }[];
 
                 for (let i = 0; i < loadedImages.length; i += 2) {
                     const img1 = loadedImages[i]; const img2 = loadedImages[i + 1];

@@ -1,5 +1,7 @@
 # Implementation Plan - Phase 2: AI-Assisted Productivity
 
+**Status:** 🟡 PLANNED — Not yet started. AI backend architecture decision required before implementation (see User Review Required section below).
+
 ## Goal Description
 Implement an AI-assisted checklist auto-filling feature for the PAP Checklist SPFx project. Users will be able to upload client call transcripts, which will be processed by an AI model to suggest values for checklist fields. The UI will display these suggestions alongside confidence indicators, allowing estimators to manually review, approve, or reject them. This will reduce manual effort, speed up data entry, and improve consistency.
 
@@ -40,7 +42,7 @@ Implement an AI-assisted checklist auto-filling feature for the PAP Checklist SP
 - Provide a file upload input for transcripts (.txt, .docx, .vtt, etc.).
 - Display a summary of extracted suggestions and a "Apply All" button.
 
-#### [MODIFY] [components/Editor/RowEditor.tsx](file:///c:/Projects/PAP-CheckList-React/spfx/pap-checklist-spfx/src/components/Editor/RowEditor.tsx)
+#### [MODIFY] [components/Editor/ChecklistRowItem.tsx](file:///c:/Projects/PAP-CheckList-React/spfx/pap-checklist-spfx/src/components/Editor/ChecklistRowItem.tsx)
 - Add visual indicators (badges or highlights) when a row has a pending AI suggestion.
 - Display the suggested value, confidence score (e.g., color-coded Low/Med/High), and rationale.
 - Add "Accept" and "Reject" buttons inline for the suggestion.

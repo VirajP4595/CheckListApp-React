@@ -1,5 +1,23 @@
 # PAP Checklist SPFx Security and Performance Review
 
+**Last Reviewed:** 2026-03-27
+
+## Resolution Status Summary
+
+| Severity | Issue | Status |
+|----------|-------|--------|
+| Critical | Hard-coded signed Power Automate trigger URL | ⚠️ Open — accepted trade-off for SPFx; rotate signature if exposed |
+| High | XSS risk in `NotifyAdminDialog.tsx` HTML rendering | ⚠️ Open |
+| High | Unvalidated deep-link/query IDs in Dataverse requests | ⚠️ Open |
+| Medium | Privileged actions rely on UI role gating only | ⚠️ Open — server-side Dataverse security roles partially mitigate |
+| Medium | Duplicate save traffic / race conditions | ⚠️ Open |
+| Medium | Image association O(N×M) lookup | ✅ Fixed — pre-indexed via `listImageFolders()` |
+| Medium | Preview generation deep-clone overhead | ⚠️ Open |
+| Medium | Unbounded file/image intake | ⚠️ Open |
+| Low | Verbose production logging | ⚠️ Open |
+
+---
+
 ## Executive Summary
 This document summarizes a full static security and performance review of the SPFx codebase and provides a prioritized resolution plan. No repository code changes were made during the audit.
 

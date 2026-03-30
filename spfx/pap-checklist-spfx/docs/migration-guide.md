@@ -25,13 +25,20 @@ Before building, ensure the configuration points to the Production environment.
     ```typescript
     export const AppConfig = {
         dataverse: {
-            url: "https://[prod-org].crm.dynamics.com", // Production Dataverse URL
+            url: "https://[prod-org].crm.dynamics.com",
             apiPath: "/api/data/v9.2",
             publisherPrefix: "pap_"
         },
         sharepoint: {
-            absoluteUrl: "https://[tenant].sharepoint.com/sites/PAPChecklistProd", // Production Site
+            absoluteUrl: "https://[tenant].sharepoint.com/sites/PAPChecklistProd",
             documentLibrary: "PAPAttachments"
+        },
+        admin: {
+            superAdminGroup: "SP_Checklist_SuperAdmin",  // SharePoint group for super admins
+            btcAdminEmail: "admin@example.com"            // Email(s) for BTC notifications
+        },
+        powerAutomate: {
+            createChecklistFlowUrl: "https://[prod-flow-trigger-url]"  // Production flow HTTP trigger URL
         }
     };
     ```

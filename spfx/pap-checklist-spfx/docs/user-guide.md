@@ -1,146 +1,228 @@
 # PAP Checklist Application - User Guide
 
-Welcome to the PAP Checklist Application! This guide will help you create, manage, and export your construction estimator checklists with ease.
+Welcome to the PAP Checklist Application! This guide covers all features for creating, managing, and exporting your construction estimator checklists.
+
+---
 
 ## 1. Getting Started
 
 ### Accessing the App
-Open your web browser (Chrome or Edge recommended) and navigate to the application URL provided by your administrator. You will be automatically logged in with your Microsoft account.
+Open your web browser (Chrome or Edge recommended) and navigate to the SharePoint page where the app is installed. You will be automatically logged in with your Microsoft account.
 
 ### The Dashboard
-Once logged in, you will see the **Dashboard**. This is your home screen where you can view all your checklists.
-- **My Checklists**: A list of all checklists you have created.
-- **Status**: Each checklist shows a status like **Draft**, **In Review**, or **Final**.
-- **Search**: Use the search bar at the top to find specific checklists by Job Name or Number.
+Once logged in, you will see the **Dashboard** — your home screen showing all active checklists.
+
+Each checklist card shows:
+- **Job Name & Number**
+- **Job Type** (shown as a pill badge)
+- **Status:** Draft, In Review, In Revision, or Final
+- **Due Date** with urgency colouring (red if overdue, orange if due within 3 days)
+- **Estimator** and **Reviewer** names
+- **Last Modified** date
+
+### Filtering & Searching
+Use the filter bar at the top of the Dashboard to narrow down checklists:
+- **Search** by job name or number
+- **Filter by Status** (Draft, In Review, In Revision, Final)
+- **Filter by Client**
+- **Filter by Estimator** — select one or more lead estimators to see only their checklists
 
 ---
 
-## 2. Using the Checklist Editor
+## 2. Creating a Checklist
 
-To open a checklist, simply click on its card in the Dashboard.
+### Ad-hoc Checklist Creation
+To create a checklist outside of the automatic flow:
+1. Click the **"Create Ad-hoc Checklist"** button in the Dashboard header.
+2. Select the **Job Type** to filter available jobs.
+3. Search for and select the **Job** from the dropdown.
+4. Click **Create** — a Power Automate flow runs and the checklist will appear in the Dashboard within 1–2 minutes.
+
+> **Note:** Checklists are normally created automatically when a new Job is added to Dataverse. The ad-hoc option is for cases where automatic creation did not occur.
+
+---
+
+## 3. Using the Checklist Editor
+
+Click any checklist card to open the **Editor**.
 
 ### Document Layout
-The checklist is organized into **Workgroups** (e.g., "20 Preliminaries", "40 Demolition"). You can expand or collapse these sections by clicking on the header.
+
+The checklist is organised into **Workgroups** (e.g., "20 Preliminaries", "40 Demolition"). Click a workgroup header to expand or collapse it.
+
+Inside each workgroup, rows are grouped into two sub-sections:
+- **Client Checklist** — items filled by the client or checklist filler
+- **Estimator** — items filled by the estimator
 
 ### Answering Items
-Each row has a row of buttons to select the status of that item:
-- **YES**: The item is included in the estimate.
-- **NO**: The item is explicitly excluded.
-- **BLANK**: The item is intentionally left unanswered.
-- **PS** (Provisional Sum): A placeholder allowance.
-- **PC** (Prime Cost): A specific cost allowance.
-- **SUB**: To be supplied by a Subcontractor.
-- **OTS**: Owner to Supply.
 
-**Tip:** You can click the same button again to toggle it off (return to Blank).
+Each row has an answer selector with the following states:
 
-### Adding Notes
-Click inside the text area below any item to add **Notes**. You can type assumptions, clarifications, or specific details here. These notes will appear in the final PDF report.
+| State | Meaning |
+|-------|---------|
+| **YES** | Item is included in the estimate |
+| **NO** | Item is explicitly excluded from scope |
+| **BLANK** | Intentionally unanswered |
+| **PS** | Provisional Sum — a placeholder allowance |
+| **PC** | Prime Cost — a specific cost allowance |
+| **SUB** | Subquote / Subcontractor to supply |
+| **OTS** | Owner to Supply |
+| **TBC** | To Be Confirmed |
+| **Optional Extra** | Optional scope item |
+| **Builder Spec** | Builder specification or standard inclusion |
+| **RFQ** | Request for Quote — prompts for **Supplier Name** and **Supplier Email** |
+
+**Tip:** Click the active answer button again to toggle it off (returns to Blank).
+
+### Row Notes & Descriptions
+- **Notes field:** Click inside the notes area below any item to type assumptions, clarifications, or details. Notes appear in the PDF export.
+- **Description:** Click the description area for rich-text editing (bold, lists, etc.).
+
+### Row Flags
+
+Each row has two optional flag icons on the right side:
+
+- **BTC (Builder To Confirm)** — marks the item as needing builder confirmation. Flagged rows are included in the BTC export.
+- **Notify Admin** — sends a notification email to the Super Admin group flagging this row for attention. A dialog lets you add context before sending.
 
 ### Adding & Managing Rows
-- **Add Row**: Click the **"+"** button at the bottom of any workgroup to add a new item.
-- **Reorder**: Click and drag the "grip" icon (six dots) on the left of a row to move it up or down.
-- **Delete**: Click the trash icon to remove a row.
+
+- **Add Row to section:** Click the **"+ Add item"** button at the top of the Client Checklist or Estimator sub-section to append a new row to that section.
+- **Insert Row:** Hover between any two rows to reveal a thin **"+ Add item"** divider. Click it to insert a new row at that exact position.
+- **Reorder:** Click and drag the grip icon (⠿) on the left of a row to move it.
+- **Delete:** Click the trash icon on a row to remove it permanently.
 
 ---
 
-## 3. Working with Images
+## 4. Working with Images
 
-You can add photos to any checklist item to provide visual context.
-
-### How to Add an Image
-1.  **Drag and Drop**: Drag an image file from your computer directly onto the checklist row.
-2.  **Copy and Paste**: Copy an image (e.g., from a Snipping Tool) and paste it (`Ctrl+V`) while the cursor is in the row.
+### Adding Images
+1. **Drag and Drop:** Drag an image file from your computer onto a row.
+2. **Copy and Paste:** Copy an image (e.g., from Snipping Tool) and paste (`Ctrl+V`) while focused on the row.
 
 ### Image Options
-- **Caption**: Click below the image to add a caption.
-- **View Full Size**: Click the image to see a larger version.
-- **Remove**: Click the "X" on the image to delete it.
+- **Caption:** Click below the image to add a caption.
+- **View Full Size:** Click the image to see a larger version.
+- **Remove:** Click the **×** on the image to delete it.
 
-**Note:** Images are automatically saved to SharePoint.
+Images are automatically uploaded to SharePoint.
 
 ---
 
-## 4. Revisions & History
+## 5. The Sidebar
 
-Revisions act like "Snapshots" of your checklist at a specific point in time.
+Click the icons on the right sidebar to access:
+
+| Icon | Panel | Purpose |
+|------|-------|---------|
+| ℹ️ Info | **Checklist Info** | Status, job details, client correspondence, export actions |
+| 💬 Chat | **Comments** | Internal comment thread |
+| 📎 Files | **Files** | File attachments (PDFs, Excel, Word, etc.) |
+| ⚡ Activity | **Activity Log** | Change history timeline |
+| 🕐 History | **Revision History** | Saved revision snapshots |
+| ⭐ Branding | **Branding** | Upload client logo for PDF |
+
+---
+
+## 6. Checklist Status
+
+Set the status via the **Checklist Info** panel:
+
+| Status | Meaning |
+|--------|---------|
+| **Draft** | Work in progress |
+| **In Review** | Submitted for reviewer approval |
+| **In Revision** | Reviewer has sent it back for changes |
+| **Final** | Approved and locked |
+
+---
+
+## 7. Revisions & History
+
+Revisions are snapshots of the checklist at a point in time.
 
 ### Creating a Revision
-1.  Open the **Revision History** panel (Clock icon in the sidebar).
-2.  Click **"New Revision"**.
-3.  Enter a brief summary (e.g., "Initial Client Review").
-4.  Click **Create**.
+1. Open the **Revision History** tab (clock icon).
+2. Click **"New Revision"**.
+3. Enter a brief title (e.g., "Initial Client Review").
+4. Click **Create**.
 
-This saves a permanent copy of the checklist that you can refer back to later.
-
----
-
-## 5. Exporting to PDF
-
-When you are ready to share your work, you can generate a professional PDF report.
-
-1.  Open the **Info Panel** (Information icon) in the sidebar.
-2.  Click the **"Export to PDF"** button under the Actions section.
-2.  The system will process all images and formatting. You will see a progress bar.
-3.  Once complete, the PDF will automatically download to your computer.
-4.  A copy is also saved to the **Reviews** folder in SharePoint.
-
-### Custom Branding
-You can upload a custom client logo for the PDF report:
-1.  Open the **Branding** panel (Star icon).
-2.  Click **"Upload Logo"** and select a PNG or JPG file.
-3.  This logo will appear on the cover page of your exported PDF.
+The snapshot is permanently saved and viewable at any time.
 
 ---
 
-## 6. Activity Log
+## 8. Exporting
 
-The Activity Log tracks all changes made to a checklist, so you can see who did what and when.
+### Export to PDF
+1. Open the **Checklist Info** panel (ℹ️ icon).
+2. Click **"Export to PDF"**.
+3. A progress modal will track image downloads and layout.
+4. The PDF downloads automatically and a copy is saved to SharePoint.
 
-### Viewing Activity
-1.  Open the **Activity** tab (pulse icon) in the sidebar.
-2.  You will see a timeline of recent changes, grouped by day.
-3.  Each entry shows the **time**, **user**, and a description of the action (e.g., "Added rows to Preliminaries").
+The PDF includes: job details header, all workgroups with Client/Estimator section labels, answer states, notes, descriptions, supplier info for RFQ rows, and embedded images.
 
-The log automatically captures:
-- Row additions, updates, and deletions
-- Workgroup additions and deletions
-- Checklist metadata changes
-- Revision creation
+### Email BTC Summary
+Sends an email to the admin team listing all rows flagged as **Builder To Confirm**.
 
-**Note:** The activity log shows the last 30 days of history by default.
+1. Open the **Checklist Info** panel.
+2. Click **"Email BTC Summary"**.
+
+### Email RFQ Summary
+Sends a PDF summary of all rows answered as **RFQ**, including supplier name and email.
+
+1. Open the **Checklist Info** panel.
+2. Click **"Email RFQ Summary"**.
 
 ---
-    
-## 7. Managing Files & Attachments
 
-You can attach external documents (PDFs, Excel sheets, Word docs, etc.) to your checklist for reference.
+## 9. Activity Log
 
-### Accessing Files
-1.  Open the **Files** tab (Paperclip icon) in the sidebar.
-2.  You will see a list of all files currently attached to this checklist.
+The Activity Log tracks all changes, grouped by day.
+
+1. Open the **Activity** tab (⚡ icon).
+2. View a timeline showing the time, user, and description of each action.
+
+Captured events include: row additions/updates/deletions, workgroup changes, file uploads/deletions, metadata edits, revision creation, and comments.
+
+---
+
+## 10. Managing Files & Attachments
 
 ### Uploading a File
-1.  Click the **"Click to Upload File"** box.
-2.  Select a file from your computer.
-3.  The file will be uploaded to SharePoint and appear in the list.
+1. Open the **Files** tab (📎 icon).
+2. Click **"Click to Upload File"** and select a file.
+3. The file uploads to SharePoint and appears in the list.
 
 ### Downloading or Deleting
-- **Download**: Click the **Download** (arrow) icon or the file name to open it.
-- **Delete**: Click the **Trash** icon to remove the file.
+- **Download:** Click the file name or download icon.
+- **Delete:** Click the trash icon.
 
 ---
 
-## 8. Frequently Asked Questions
+## 11. Super Admin Actions
+
+Users in the **SP_Checklist_SuperAdmin** SharePoint group see additional controls:
+
+- **Delete Checklist:** Permanently deletes the checklist, all workgroups, and all rows from Dataverse. A progress modal tracks the cascade. This action is irreversible.
+
+---
+
+## 12. Frequently Asked Questions
 
 **Q: Do I need to click Save?**
-A: No! The application **auto-saves** your specific changes as you type. You will see a "Last saved..." message at the top right.
+A: No — the application auto-saves changes as you make them. An indicator in the top bar shows the save status.
 
 **Q: What if I accidentally delete a row?**
-A: Currently, deleted rows are permanent. However, if you created a Revision recently, you can view the old data there.
+A: Deleted rows are permanent. If you created a Revision recently, you can view the row data in the snapshot.
 
 **Q: My images aren't loading?**
-A: Ensure you have a stable internet connection. If an image is missing, it may have been deleted from the underlying SharePoint folder.
+A: Ensure you have a stable connection. If an image is missing, it may have been deleted from SharePoint.
 
 **Q: Can I work offline?**
-A: No, an active internet connection is required to sync data with the server.
+A: No — an active internet connection is required to sync with Dataverse and SharePoint.
+
+**Q: A checklist I created isn't showing up?**
+A: If created via the automatic flow, allow 1–2 minutes. If using Ad-hoc creation, check that the Power Automate flow ran successfully.
+
+**Q: I can't see the Delete button for a checklist?**
+A: Delete is only available to users in the `SP_Checklist_SuperAdmin` SharePoint group. Contact your administrator.

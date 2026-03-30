@@ -154,10 +154,17 @@ export const AppConfig = {
         publisherPrefix: "pap_"
     },
     sharepoint: {
-        absoluteUrl: "https://[tenant].sharepoint.com/sites/pap-checklist", // Ensure this matches your site
+        absoluteUrl: "https://[tenant].sharepoint.com/sites/[site]",
         documentLibrary: "PAPAttachments"
-    }
+    },
     // Auth is handled automatically by SPFx
+    admin: {
+        superAdminGroup: "SP_Checklist_SuperAdmin",  // SharePoint group name for super admins
+        btcAdminEmail: "admin@example.com"            // Email(s) for BTC export notifications
+    },
+    powerAutomate: {
+        createChecklistFlowUrl: "https://[your-flow-trigger-url]"  // Signed HTTP trigger URL for ad-hoc checklist creation
+    }
 };
 ```
 

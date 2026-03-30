@@ -412,21 +412,57 @@ export class DataverseChecklistService implements IChecklistService {
             const batchSize = allImages.length;
             console.log(`[Hydration] Starting hydration for ${batchSize} images...`);
             if (onProgress) onProgress(`Hydrating ${batchSize} images...`, 10);
-            
+
             const imageService = getImageService();
-            const CONCURRENCY_LIMIT = 5;
             let completed = 0;
 
-            // Process in chunks to avoid overwhelming the browser/network
-            for (let i = 0; i < allImages.length; i += CONCURRENCY_LIMIT) {
-                const chunk = allImages.slice(i, i + CONCURRENCY_LIMIT);
-                await Promise.all(chunk.map(async (item) => {
+            // Convert a Blob to a base64 data URL
+            const blobToBase64 = (blob: Blob): Promise<string> =>
+                new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                });
+
+            // Download one image. If source is a pre-signed Azure Blob URL (set by
+            // getAllImageMetadata), fetch it directly — this bypasses Graph/SharePoint
+            // throttling entirely (goes to Azure storage, no resource units consumed).
+            // Fall back to the authenticated Graph API call if the URL is a /_layouts
+            // URL or if the direct fetch fails (e.g. pre-signed URL expired).
+            const downloadOne = async (item: { img: any; id: string }): Promise<void> => {
+                const src: string = item.img.source || '';
+                if (src && src.startsWith('https://') && !src.includes('/_layouts/') && !src.includes('sharepoint.com')) {
                     try {
-                        const base64 = await imageService.downloadImageContent(item.id);
-                        if (base64) {
+                        const r = await fetch(src);
+                        if (r.ok) {
                             // eslint-disable-next-line require-atomic-updates
-                            item.img.source = base64;
+                            item.img.source = await blobToBase64(await r.blob());
+                            return;
                         }
+                        // Pre-signed URL may have expired — fall through to Graph API
+                        console.warn(`[Hydration] Pre-signed fetch failed (${r.status}) for ${item.id}, retrying via Graph`);
+                    } catch {
+                        // Network error — fall through to Graph API
+                    }
+                }
+                // Authenticated Graph API fallback (counts as 1 resource unit per call)
+                const base64 = await imageService.downloadImageContent(item.id);
+                // eslint-disable-next-line require-atomic-updates
+                if (base64) item.img.source = base64;
+            };
+
+            // Controlled concurrency: 15 simultaneous workers
+            // — Safe within SharePoint throttling limits (1,250 RU/min for smallest tenant)
+            // — For pre-signed URL path: no RU cost, so 15 just caps browser connection pool
+            // — For Graph API fallback: 100 images = 100 RU total, well within budget
+            const CONCURRENCY = 15;
+            const queue = [...allImages];
+
+            const runWorker = async (): Promise<void> => {
+                while (queue.length > 0) {
+                    const item = queue.shift()!;
+                    try {
+                        await downloadOne(item);
                     } catch (e) {
                         console.warn(`[Hydration] Failed to download image ${item.id}`, e);
                     } finally {
@@ -436,8 +472,12 @@ export class DataverseChecklistService implements IChecklistService {
                             onProgress(`Hydrated ${completed}/${batchSize} images...`, percent);
                         }
                     }
-                }));
-            }
+                }
+            };
+
+            await Promise.all(
+                Array.from({ length: Math.min(CONCURRENCY, allImages.length) }, runWorker)
+            );
         }
 
         if (onProgress) onProgress('Finalizing Report Data...', 100);

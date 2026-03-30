@@ -214,8 +214,11 @@ export class SharePointImageService implements IImageService {
             // We MUST expand driveItem to get the real Graph drive item ID (a GUID).
             // item.id is the SharePoint list item ID (numeric string like "61") and CANNOT
             // be used with /drives/{driveId}/items/{id}/content — that requires the GUID.
+            // We omit $select on driveItem so that @microsoft.graph.downloadUrl annotation
+            // is included in the response — this is a pre-signed Azure Blob URL that can be
+            // fetched directly without hitting Graph/SharePoint throttling quotas.
             const response = await client.api(`/sites/${siteId}/lists/${listId}/items`)
-                .expand('fields($select=Checklist_x0020_ID,Row_x0020_ID,Caption),driveItem($select=id)')
+                .expand('fields($select=Checklist_x0020_ID,Row_x0020_ID,Caption),driveItem')
                 .filter(`fields/Checklist_x0020_ID eq '${checklistId}'`)
                 .get();
 
@@ -226,11 +229,16 @@ export class SharePointImageService implements IImageService {
                 .map((item: any) => {
                     const fields = item.fields;
                     const driveItemId = item.driveItem.id; // This is the real GUID for Graph API calls
+                    // Prefer the pre-signed Azure Blob URL (@microsoft.graph.downloadUrl) —
+                    // fetching it bypasses Graph throttling entirely (goes direct to storage).
+                    // Fall back to the SharePoint download URL if the annotation is absent.
+                    const presignedUrl: string | undefined = item.driveItem?.['@microsoft.graph.downloadUrl'];
                     return {
                         id: driveItemId,
                         rowId: fields?.Row_x0020_ID || '',
                         caption: fields?.Caption || fields?.Title || '',
-                        source: `${AppConfig.sharepoint.absoluteUrl}/_layouts/15/download.aspx?UniqueId=${driveItemId}`,
+                        source: presignedUrl
+                            || `${AppConfig.sharepoint.absoluteUrl}/_layouts/15/download.aspx?UniqueId=${driveItemId}`,
                         order: 0
                     };
                 });

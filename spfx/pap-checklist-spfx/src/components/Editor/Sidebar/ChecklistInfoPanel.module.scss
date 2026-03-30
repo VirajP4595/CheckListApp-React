@@ -161,21 +161,16 @@
 .action-group {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: $spacing-2;
   margin-top: $spacing-4;
-  width: 40%;
-
-  &>button {
-    flex: 1;
-    margin: 0 !important;
-    min-width: 140px;
-  }
+  width: 100%;
 }
 
 .export-btn {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   @include button-secondary;
 }
 

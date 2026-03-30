@@ -38,9 +38,9 @@
 ### 2.3 Network Optimization
 *   **Action:** Implemented Smart Image Loading.
 *   **Logic:** `SharePointService` now performs a single directory listing (`listImageFolders`) to identify which rows have images. The Store uses this allowable list to block fetch requests for empty rows.
-*   **Benefit:** Eliminates 404 (Not Found) errors and reduces network request count by N-M (where N=rows, M=rows with images).
+*   **Benefit:** Eliminates 404 errors for all rows that have no images. Reduces unnecessary network requests from N (all rows) down to M (only rows with images).
 
-### 2.3 Dataverse Batching (Future/Foundation)
+### 2.4 Dataverse Batching (Future/Foundation)
 *   **Action:** (Note only) Ensure `dataverseService` is ready for batching.
 *   *Verification:* The current logic already fetches all rows in one query. We will defer complex batching (Project + Workgroups) as it provides diminishing returns compared to the rendering fixes.
 

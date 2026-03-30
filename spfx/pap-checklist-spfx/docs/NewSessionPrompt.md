@@ -18,13 +18,13 @@ Act as an expert React, TypeScript, and SharePoint Framework (SPFx) Frontend Eng
 4. **Styling Engine**: Modular SCSS (`.module.scss`). A dedicated, shared design system lives in `src/styles/` containing global tokens (`_variables.scss`) and utilities (`_mixins.scss`).
 
 # Application Architecture
-- `models/`: Centralized interfaces and types (e.g., `Checklist`, `ChecklistRowItem`, `STATUS_CONFIG`).
-- `store/`: Zustand definitions handling global application state and CRUD actions.
+- `models/`: Centralized interfaces and types (e.g., `Checklist`, `ChecklistRow`, `STATUS_CONFIG`).
+- `stores/`: Zustand definitions handling global application state and CRUD actions.
 - `services/`: API abstractions.
 - `components/`: 
   - `Dashboard/`: The landing portal with a filter bar, header actions (like "Create Ad-hoc Checklist"), and a grid of interactive `ChecklistCard` components.
   - `Editor/`: The main checklist editing UI (`ChecklistEditor.tsx`).
-    - `Sidebar/`: Contains job details and checklist metadata components (`JobMetadataHeader.tsx`, `ChecklistInfoDialog.tsx`), displayed inline on mobile and as a sticky sidebar on desktop.
+    - `Sidebar/`: Contains job details and checklist metadata components (`JobMetadataHeader.tsx`, `ChecklistInfoPanel.tsx`, `ChecklistInfoDialog.tsx`), displayed inline on mobile and as a sticky sidebar on desktop.
     - `WorkgroupSection.tsx`: Groups checklist tasks into expandable categories (e.g., "Preliminaries").
     - `ChecklistRowItem.tsx`: The individual task rows containing status dropdowns, answer inputs, description textareas, and secondary action icons.
 
@@ -42,7 +42,7 @@ We enforce a **Premium Aesthetic** throughout the application. When writing or m
 
 # Your Instructions
 1. Navigate directly to the Working Application Folder (`C:\Projects\PAP-CheckList-React\spfx\pap-checklist-spfx`) to execute commands.
-2. Review the Docs folder (`C:\Projects\PAP-CheckList-React\docs`) if you need deep historical or business context.
+2. Review the Docs folder (`C:\Projects\PAP-CheckList-React\spfx\pap-checklist-spfx\docs`) if you need deep historical or business context.
 3. Always base your UI off the existing SCSS variables and mixins from `src/styles/`.
 4. Do not introduce inline styles unless necessary; use SCSS Modules.
 5. Preserve the exact layout mechanics established (e.g., Flexbox, Grid) and the premium minimalist styling.

@@ -87,6 +87,31 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
     const handleViewPreview = async () => {
         if (!activeChecklist) return;
 
+        // Only skip hydration if every row that has images in SharePoint has already been
+        // fetched into the store. We use availableImageFolders (rows known to have images)
+        // and loadedRowImages (rows whose images have been fetched) as the source of truth.
+        // Checking storeImages directly would give a false positive on empty arrays —
+        // rows that haven't been expanded yet have r.images = [] even if images exist.
+        const { availableImageFolders, loadedRowImages } = useChecklistStore.getState();
+        const alreadyLoaded = availableImageFolders.length === 0
+            || availableImageFolders.every(rowId => !!loadedRowImages[rowId]);
+
+        if (alreadyLoaded) {
+            const previewRev: Revision = {
+                id: 'preview',
+                checklistId: activeChecklist.id,
+                number: 0,
+                title: 'Current Preview',
+                notes: '',
+                createdAt: new Date(),
+                createdBy: activeChecklist.createdBy,
+                snapshot: activeChecklist
+            };
+            setViewingRevision(previewRev);
+            return;
+        }
+
+        // Some rows haven't been expanded yet — run full hydration for those images
         setLoadingProgress({ open: true, title: 'Preparing Preview', status: 'Fetching images...', percent: 0, cancelled: false });
         isCancelledRef.current = false;
 
@@ -109,7 +134,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                 createdBy: hydratedChecklist.createdBy,
                 snapshot: hydratedChecklist
             };
-            
+
             setLoadingProgress(prev => ({ ...prev, open: false }));
             setViewingRevision(previewRev);
         } catch (error) {
