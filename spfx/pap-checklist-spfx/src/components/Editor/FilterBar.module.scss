@@ -71,7 +71,7 @@
     display: flex;
     align-items: center;
     gap: $spacing-2;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     flex: 1;
 
     @include mobile {
@@ -82,8 +82,8 @@
 }
 
 .filter-dropdown {
-    width: 230px; // Standardized width
-    min-width: 230px;
+    width: 150px;
+    min-width: 130px;
 
     // Apply standard filled style to the dropdown trigger
     @include dropdown-filled;
@@ -153,21 +153,30 @@
 }
 
 // ============================================
-// Active Filters & Clear
+// Right Section (checkbox + clear) — stable, always present
 // ============================================
 
-.filter-active {
+.filter-right {
     display: flex;
     align-items: center;
     gap: $spacing-2;
     margin-left: auto;
+    flex-shrink: 0;
+    min-width: 250px; // always reserve space for checkbox + Clear so dropdowns never reflow
 
     @include mobile {
         width: 100%;
+        min-width: unset;
         margin-left: 0;
         margin-top: $spacing-2;
         justify-content: flex-end;
     }
+}
+
+.filter-rows-data-checkbox {
+    white-space: nowrap;
+    font-size: $font-size-sm;
+    @include checkbox-filled;
 }
 
 .filter-count {

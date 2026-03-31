@@ -127,6 +127,16 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                     return false;
                 }
             }
+            if (filters?.showRowsWithData) {
+                const hasData =
+                    row.answer !== 'BLANK' ||
+                    (row.notes && row.notes.trim().length > 0) ||
+                    row.markedForReview ||
+                    row.notifyAdmin ||
+                    row.builderToConfirm ||
+                    (row.images && row.images.length > 0);
+                if (!hasData) return false;
+            }
             return true;
         });
     }, [workgroup.rows, filters, activeChecklist?.jobDetails?.meetingOccurred]);
@@ -145,7 +155,8 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
         (filters.markedForReview !== null && filters.markedForReview !== undefined) ||
         (filters.internalOnly !== null && filters.internalOnly !== undefined) ||
         (filters.notifyAdmin !== null && filters.notifyAdmin !== undefined) ||
-        (filters.builderToConfirm !== null && filters.builderToConfirm !== undefined)
+        (filters.builderToConfirm !== null && filters.builderToConfirm !== undefined) ||
+        !!filters.showRowsWithData
     );
 
     // Hide workgroup if filters are applied but no items match

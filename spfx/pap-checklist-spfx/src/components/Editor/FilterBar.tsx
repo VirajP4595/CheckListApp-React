@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Dropdown,
     Option,
@@ -22,6 +22,7 @@ export interface FilterState {
     builderToConfirm: boolean | null;
     internalOnly: boolean | null;
     workgroupIds: string[];
+    showRowsWithData: boolean;
 }
 
 interface FilterBarProps {
@@ -137,6 +138,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     expandTasks = true,
     onExpandTasksChange,
 }) => {
+    // Local state for instant checkbox visual feedback — defers heavy workgroup re-renders to next task
+    const [localShowRowsWithData, setLocalShowRowsWithData] = useState(filters.showRowsWithData);
+    useEffect(() => { setLocalShowRowsWithData(filters.showRowsWithData); }, [filters.showRowsWithData]);
+
     const handleAnswerStateChange = (states: AnswerState[]) => {
         onFiltersChange({ ...filters, answerStates: states });
     };
@@ -173,11 +178,16 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         });
     };
 
-    const clearFilters = () => {
-        onFiltersChange({ answerStates: [], markedForReview: null, notifyAdmin: null, builderToConfirm: null, internalOnly: null, workgroupIds: [] });
+    const handleShowRowsWithDataChange = (checked: boolean) => {
+        setLocalShowRowsWithData(checked); // instant visual response
+        setTimeout(() => { onFiltersChange({ ...filters, showRowsWithData: checked }); }, 0);
     };
 
-    const hasActiveFilters = filters.answerStates.length > 0 || filters.markedForReview !== null || filters.notifyAdmin !== null || filters.builderToConfirm !== null || filters.internalOnly !== null || filters.workgroupIds.length > 0;
+    const clearFilters = () => {
+        onFiltersChange({ answerStates: [], markedForReview: null, notifyAdmin: null, builderToConfirm: null, internalOnly: null, workgroupIds: [], showRowsWithData: false });
+    };
+
+    const hasActiveFilters = filters.answerStates.length > 0 || filters.markedForReview !== null || filters.notifyAdmin !== null || filters.builderToConfirm !== null || filters.internalOnly !== null || filters.workgroupIds.length > 0 || filters.showRowsWithData;
 
     return (
         <div className={styles['filter-bar']}>
@@ -338,8 +348,15 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 </Menu>
             </div>
 
-            {hasActiveFilters && (
-                <div className={styles['filter-active']}>
+            <div className={styles['filter-right']}>
+                <div className={styles['filter-divider']} />
+                <Checkbox
+                    className={styles['filter-rows-data-checkbox']}
+                    label="Show Rows With Data"
+                    checked={localShowRowsWithData}
+                    onChange={(_, data) => handleShowRowsWithDataChange(!!data.checked)}
+                />
+                {hasActiveFilters && (
                     <Button
                         className={styles['filter-clear-btn']}
                         appearance="subtle"
@@ -349,8 +366,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                     >
                         Clear
                     </Button>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };

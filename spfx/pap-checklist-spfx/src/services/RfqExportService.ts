@@ -45,8 +45,8 @@ export class RfqExportService {
      * Sends the RFQ summary via direct Graph API email with PDF attachment.
      */
     public async sendRfqEmail(checklist: Checklist, pdfBlob: Blob): Promise<void> {
-        const { getGraphEmailService } = await import('./serviceFactory');
-        const { AppConfig } = await import('../config/environment');
+        const { getGraphEmailService } = await import(/* webpackChunkName: 'rfq-email' */ './serviceFactory');
+        const { AppConfig } = await import(/* webpackChunkName: 'rfq-email' */ '../config/environment');
 
         const rfqChecklist = this.filterRfqChecklist(checklist);
         const hasItems = rfqChecklist.workgroups.some(wg => wg.rows.length > 0);

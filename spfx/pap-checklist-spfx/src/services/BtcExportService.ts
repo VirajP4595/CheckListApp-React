@@ -54,8 +54,8 @@ export class BtcExportService {
      * Sends the BTC summary via direct Graph API email with PDF attachment.
      */
     public async sendBtcEmail(checklist: Checklist, pdfBlob: Blob): Promise<void> {
-        const { getGraphEmailService } = await import('./serviceFactory');
-        const { AppConfig } = await import('../config/environment');
+        const { getGraphEmailService } = await import(/* webpackChunkName: 'btc-email' */ './serviceFactory');
+        const { AppConfig } = await import(/* webpackChunkName: 'btc-email' */ '../config/environment');
 
         const btcChecklist = this.filterBtcChecklist(checklist);
 

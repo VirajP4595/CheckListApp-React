@@ -56,7 +56,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
     const [loadingProgress, setLoadingProgress] = useState<{ open: boolean; title: string; status: string; percent: number; cancelled: boolean }>({ open: false, title: 'Loading...', status: '', percent: 0, cancelled: false });
     const [viewingRevision, setViewingRevision] = useState<Revision | null>(null);
     const [deleteProgress, setDeleteProgress] = useState<{ open: boolean; status: string; percent: number }>({ open: false, status: '', percent: 0 });
-    const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, notifyAdmin: null, builderToConfirm: null, workgroupIds: [] });
+    const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, notifyAdmin: null, builderToConfirm: null, workgroupIds: [], showRowsWithData: false });
     const [expandWorkgroups, setExpandWorkgroups] = useState(false);  // Collapsed by default
     const [expandTasks, setExpandTasks] = useState(false);  // Collapsed by default
 

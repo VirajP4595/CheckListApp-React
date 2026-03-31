@@ -211,7 +211,7 @@ export class PdfGeneratorService {
 
                     let drawY = cursorY + 4;
                     const fullW = contentWidth;
-                    const answerConf = ANSWER_CONFIG[row.answer as AnswerState] || ANSWER_CONFIG['BLANK'];
+                    const answerConf = ANSWER_CONFIG[row.answer as AnswerState] || ANSWER_CONFIG.BLANK;
 
                     if (title) {
                         doc.setTextColor(BRAND_COLORS.BLACK);
