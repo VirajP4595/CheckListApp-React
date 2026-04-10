@@ -38,9 +38,11 @@ interface RichTextEditorProps {
     onChange?: (html: string) => void;
     onBlur?: () => void;
     onFocus?: () => void;
+    onEditorReady?: (editor: import('@tiptap/react').Editor) => void;
     placeholder?: string;
     readOnly?: boolean;
     className?: string; // Allow custom styles
+    toolbarExtra?: React.ReactNode; // Extra content rendered on the right of the toolbar
 }
 
 // ... (existing constants)
@@ -58,10 +60,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     onChange,
     onBlur,
     onFocus,
+    onEditorReady,
     readOnly = false,
     placeholder,
     className,
+    toolbarExtra,
 }) => {
+    const isFocused = React.useRef(false);
     const editorExtensions = React.useMemo(() => [
         StarterKit.configure({
             heading: false,
@@ -86,14 +91,23 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         editable: !readOnly,
         extensions: editorExtensions,
         content,
+        editorProps: {
+            attributes: {
+                spellcheck: 'true',
+                autocorrect: 'on',
+                autocapitalize: 'on',
+            },
+        },
         // ... (existing handlers)
         onUpdate: ({ editor }) => {
             onChange?.(editor.getHTML());
         },
         onBlur: () => {
+            isFocused.current = false;
             if (onBlur) onBlur();
         },
         onFocus: () => {
+            isFocused.current = true;
             if (onFocus) onFocus();
         },
     });
@@ -107,10 +121,25 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         editor.setEditable(!readOnly);
     }, [editor, readOnly]);
 
+    // Notify consumer when editor is ready
+    useEffect(() => {
+        if (editor && onEditorReady) {
+            onEditorReady(editor);
+        }
+    }, [editor, onEditorReady]);
+
+    // Sync external content changes into the editor only when the editor is not focused.
+    // This prevents Tiptap v3's internal content-prop sync from resetting cursor mid-edit.
+    useEffect(() => {
+        if (!editor || isFocused.current) return;
+        // setContent does not emit updates by default, and passing 'false' violates the SetContentOptions type
+        editor.commands.setContent(content);
+    }, [content, editor]);
+
     return (
         <div className={`${styles['editor-container']} ${readOnly ? styles['editor-container--readonly'] : ''} ${className || ''}`}>
             {!readOnly && (
-                <div className={styles['editor-toolbar']}>
+                <div className={`${styles['editor-toolbar']} ${toolbarExtra ? styles['editor-toolbar--has-extra'] : ''}`}>
                     {/* ... (existing Bold, Italic, Underline buttons) */}
                     <Tooltip content="Bold (Ctrl+B)" relationship="label">
                         <Button
@@ -214,6 +243,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                             onClick={() => editor.chain().focus().toggleTaskList().run()}
                         />
                     </Tooltip>
+                    {toolbarExtra && (
+                        <div className={styles['toolbar-extra']}>{toolbarExtra}</div>
+                    )}
                 </div>
             )}
 

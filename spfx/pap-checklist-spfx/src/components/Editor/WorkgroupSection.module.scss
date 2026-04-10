@@ -57,9 +57,9 @@
 }
 
 .workgroup-expand-btn {
-    color: $color-gray-400 !important;
-    min-width: 24px !important;
-    height: 24px !important;
+    color: $color-gray-700 !important;
+    min-width: 32px !important;
+    height: 32px !important;
     padding: 0 !important;
     border-radius: $border-radius-sm !important;
     @include button-ghost;
@@ -229,6 +229,36 @@ $badge-radius: $border-radius-lg;
     }
 }
 
+// Chat button with badge
+.workgroup-chat-btn {
+    position: relative;
+    overflow: visible !important;
+}
+
+.chat-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-badge {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: $border-radius-full;
+    background-color: $color-primary;
+    color: $color-white;
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+    line-height: 16px;
+    text-align: center;
+    pointer-events: none;
+}
+
 .workgroup-action-btn--delete {
     color: $color-gray-400 !important;
     padding: $spacing-1 !important;
@@ -283,20 +313,37 @@ $badge-radius: $border-radius-lg;
 }
 
 .section-add-btn {
-    font-size: $font-size-xs;
-    height: 24px;
-    padding: 0 $spacing-2;
-    color: $color-primary;
-    border: 1px solid transparent;
-    @include button-ghost;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    height: 22px;
+    padding: 1px 10px;
+    color: $color-gray-400;
+    border: 1px dashed $color-gray-200;
+    background: transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all $transition-base;
+    opacity: 0.6;
 
     &:hover {
-        background-color: rgba($color-primary, 0.05);
-        border-color: rgba($color-primary, 0.2);
+        opacity: 1;
+        color: $color-primary;
+        border-color: $color-primary;
+        background: rgba($color-primary, 0.04);
     }
 
     svg {
-        font-size: 16px;
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        background: $color-primary;
+        color: $color-white;
+        border-radius: 50%;
+        padding: 1px;
     }
 }
 
@@ -317,67 +364,6 @@ $badge-radius: $border-radius-lg;
     border-radius: $border-radius-md;
 }
 
-// ============================================
-// Insert Row Divider (between rows)
-// ============================================
-
-.insert-row-divider {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    margin: 2px 0;
-    z-index: 1;
-}
-
-.insert-row-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    width: auto;
-    border: 1px dashed $color-gray-200 !important;
-    background: transparent !important;
-    padding: 1px 10px !important;
-    min-height: 0 !important;
-    height: 20px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    opacity: 0.5;
-
-    &:hover {
-        opacity: 1;
-        border-color: $color-primary !important;
-        background: rgba($color-primary, 0.04) !important;
-    }
-}
-
-.insert-row-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: $color-primary;
-    color: $color-white;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
-.insert-row-label {
-    font-size: 10px;
-    color: $color-gray-400;
-    font-weight: 500;
-    white-space: nowrap;
-
-    .insert-row-btn:hover & {
-        color: $color-primary;
-    }
-}
 
 .workgroup-empty {
     text-align: center;

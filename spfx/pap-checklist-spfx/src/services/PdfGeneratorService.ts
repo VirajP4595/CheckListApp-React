@@ -126,6 +126,38 @@ export class PdfGeneratorService {
         // Initialize Page 1
         drawHeader();
 
+        // ─── Common Notes Section (before workgroups) ───
+        if (this.checklist.commonNotes && this.checklist.commonNotes.length > 0) {
+            checkPageBreak(15);
+            cursorY += 2;
+            doc.setFillColor('#f3f2f1');
+            doc.rect(margin.left, cursorY, contentWidth, 8, 'F');
+            doc.setFontSize(10);
+            doc.setTextColor(BRAND_COLORS.BLUE);
+            doc.setFont('helvetica', 'bold');
+            doc.text('COMMON NOTES', margin.left + 2, cursorY + 5.5);
+            cursorY += 10;
+
+            for (const section of this.checklist.commonNotes) {
+                if (!section.content || section.content === '<p></p>') continue;
+                checkPageBreak(12);
+                doc.setFontSize(9);
+                doc.setTextColor('#333333');
+                doc.setFont('helvetica', 'bold');
+                doc.text(section.title, margin.left + 2, cursorY + 4);
+                cursorY += 6;
+
+                doc.setFont('helvetica', 'normal');
+                const rendered = this.renderer.render(
+                    section.content, margin.left + 2, cursorY,
+                    contentWidth - 4, pageHeight - margin.bottom,
+                    () => { doc.addPage(); return margin.top; }
+                );
+                cursorY = rendered + 4;
+            }
+            cursorY += 2;
+        }
+
         // 2. Loop & Draw (Manual Engine)
         let totalItems = 0;
         this.checklist.workgroups.forEach(wg => { totalItems += wg.rows.length; });

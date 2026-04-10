@@ -62,6 +62,17 @@
     margin: 0 $spacing-1;
 }
 
+.toolbar-extra {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.editor-toolbar--has-extra {
+    flex-wrap: nowrap;
+}
+
 // ============================================
 // Editor Content
 // ============================================

@@ -47,9 +47,9 @@
 }
 
 .row-expand-btn {
-    color: $color-gray-400 !important;
-    min-width: 24px !important;
-    height: 24px !important;
+    color: $color-gray-700 !important;
+    min-width: 28px !important;
+    height: 28px !important;
     padding: 0 !important;
     border-radius: $border-radius-sm !important;
     @include button-ghost;
@@ -290,16 +290,18 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
 // Extra (Images/Notes)
 // ============================================
 
+// Full-width expanded area: sits below the flex row, spanning full card width
+.row-expanded-area {
+    margin-top: $spacing-2;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+}
+
 .row-notes {
-    margin-top: $spacing-1;
     width: 100%;
-    max-width: 100%;
-    overflow: hidden; // Prevent Tiptap from expanding
-    // border-top: 1px solid $color-border; // No border between desc and notes usually in stack? Reference didn't show notes. Keeping clean.
 }
 
 .row-images {
-    margin-top: $spacing-1;
     width: 100%;
-    max-width: 100%;
 }

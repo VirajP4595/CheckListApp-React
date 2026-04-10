@@ -12,6 +12,14 @@
     height: 100%;
 }
 
+.activity-header {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 $spacing-2 $spacing-2;
+    border-bottom: 1px solid $color-border;
+    margin-bottom: $spacing-2;
+}
+
 // ============================================
 // Activity Log List
 // ============================================

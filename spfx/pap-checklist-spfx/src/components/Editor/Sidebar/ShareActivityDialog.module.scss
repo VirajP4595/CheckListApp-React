@@ -1,0 +1,49 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.share-trigger-btn {
+    font-size: $font-size-xs !important;
+    height: 28px !important;
+    color: $color-gray-500 !important;
+    transition: all $transition-base;
+
+    &:hover {
+        color: $color-primary !important;
+    }
+}
+
+.share-dialog {
+    max-width: 440px;
+}
+
+.share-content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+}
+
+.share-description {
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    margin: 0;
+}
+
+.share-email-input {
+    width: 100%;
+    @include input-filled;
+    min-height: 36px;
+}
+
+.share-status-success {
+    font-size: $font-size-sm;
+    color: $color-success;
+    margin: 0;
+    font-weight: $font-weight-medium;
+}
+
+.share-status-error {
+    font-size: $font-size-sm;
+    color: $color-error;
+    margin: 0;
+    font-weight: $font-weight-medium;
+}

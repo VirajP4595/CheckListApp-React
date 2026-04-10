@@ -2,7 +2,8 @@ import { dataverseClient, entities, col, navprops } from './dataverseService';
 import type { IChecklistService } from './interfaces';
 import { getImageService } from './serviceFactory';
 import { DataverseRevisionService } from './dataverseRevisionService';
-import type { Checklist, Workgroup, ChecklistRow, AnswerState, ChecklistStatus, Revision, RowSection } from '../models';
+import type { Checklist, Workgroup, ChecklistRow, AnswerState, ChecklistStatus, Revision, RowSection, CommonNoteSection, ChecklistComment } from '../models';
+import { generateId } from '../models';
 
 // ─── DATAVERSE RESPONSE TYPES ──────────────────────────────
 
@@ -30,8 +31,10 @@ interface DataverseChecklist {
         vin_jobnumber?: string;
         _vin_estimator_value?: string;
         "_vin_estimator_value@OData.Community.Display.V1.FormattedValue"?: string;
+        vin_estimator?: { fullname: string }; // Nested expand
         _ownerid_value?: string;
         "_ownerid_value@OData.Community.Display.V1.FormattedValue"?: string;
+        ownerid?: { fullname: string }; // Nested expand
         vin_duedate?: string;
         vin_jobtype?: number;
         "vin_jobtype@OData.Community.Display.V1.FormattedValue"?: string;
@@ -130,7 +133,8 @@ const ANSWER_MAP: Record<number, AnswerState> = {
     8: 'TBC',
     9: 'OPT_EXTRA',
     10: 'BUILDER_SPEC',
-    11: 'RFQ'
+    11: 'RFQ',
+    12: 'SPECS_PLANS'
 };
 
 const ANSWER_VALUE_MAP: Record<AnswerState, number> = {
@@ -144,8 +148,33 @@ const ANSWER_VALUE_MAP: Record<AnswerState, number> = {
     'TBC': 8,
     'OPT_EXTRA': 9,
     'BUILDER_SPEC': 10,
-    'RFQ': 11
+    'RFQ': 11,
+    'SPECS_PLANS': 12
 };
+
+/** Parse pap_commonnotes: JSON array or legacy plain-text/HTML with migration */
+function parseCommonNotes(raw: string | null | undefined): CommonNoteSection[] {
+    if (!raw || !raw.trim()) return [];
+    try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed as CommonNoteSection[];
+    } catch { /* not JSON — legacy plain-text/HTML */ }
+    // Migrate legacy single-value to array
+    return [{ id: generateId(), title: 'Common Notes', content: raw, order: 0 }];
+}
+
+/** Parse pap_chatdata on workgroup: JSON array of ChecklistComment[] */
+function parseWorkgroupChat(raw: string | null | undefined): ChecklistComment[] {
+    if (!raw || !raw.trim()) return [];
+    try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.map((c: Record<string, unknown>) => ({
+            ...c,
+            createdAt: new Date(c.createdAt as string),
+        })) as ChecklistComment[];
+    } catch { /* invalid JSON */ }
+    return [];
+}
 
 function mapRow(dv: DataverseRow): ChecklistRow {
     return {
@@ -178,6 +207,7 @@ function mapWorkgroup(dv: DataverseWorkgroup): Workgroup {
         name: dv.pap_name,
         rows: rows.map(mapRow).sort((a, b) => a.order - b.order),
         summaryNotes: dv.pap_summarynotes,
+        comments: parseWorkgroupChat(dv.pap_chatdata as string),
         order: dv.pap_order
     };
 }
@@ -196,8 +226,8 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
         jobName: dv.pap_jobid.vin_name,
         jobNumber: dv.pap_jobid.vin_jobnumber || '',
         clientName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '',
-        leadEstimator: dv.pap_jobid["_vin_estimator_value@OData.Community.Display.V1.FormattedValue"] || '',
-        reviewer: dv.pap_jobid["_ownerid_value@OData.Community.Display.V1.FormattedValue"] || '',
+        leadEstimator: dv.pap_jobid["_vin_estimator_value@OData.Community.Display.V1.FormattedValue"] || (dv.pap_jobid.vin_estimator as any)?.fullname || '',
+        reviewer: dv.pap_jobid["_ownerid_value@OData.Community.Display.V1.FormattedValue"] || (dv.pap_jobid.ownerid as any)?.fullname || '',
         dueDate: dv.pap_jobid.vin_duedate ? new Date(dv.pap_jobid.vin_duedate) : undefined,
         jobType: dv.pap_jobid["vin_jobtype@OData.Community.Display.V1.FormattedValue"] || '',
         meetingOccurred: dv.pap_jobid.vin_jobstartmtg ?? true, // Default to true if null/omitted
@@ -223,7 +253,7 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
         revisions: [],  // Loaded separately
         clientCorrespondence: parseJsonField(dv.pap_clientcorrespondence),
         estimateType: parseJsonField(dv.pap_estimatetype),
-        commonNotes: dv.pap_commonnotes || '',
+        commonNotes: parseCommonNotes(dv.pap_commonnotes as string),
         // Try standard property, then fallback for case sensitivity
         comments: (() => {
             const raw = dv.pap_chatdata || (dv.pap_ChatData as unknown as string);
@@ -273,10 +303,20 @@ export class DataverseChecklistService implements IChecklistService {
             expand
         );
 
-        // Load workgroups separately using $filter
+        // Load workgroups separately using $filter (include pap_chatdata for workgroup chat)
+        const selectWorkgroups = [
+            col('workgroupid'),
+            `_${col('checklistid')}_value`,
+            `_${col('revisionid')}_value`,
+            col('number'),
+            col('name'),
+            col('summarynotes'),
+            col('chatdata'),
+            col('order')
+        ].join(',');
         const workgroupsResponse = await dataverseClient.get<{ value: DataverseWorkgroup[] }>(
             entities.workgroups,
-            `$filter=_pap_checklistid_value eq '${id}'&$orderby=${col('order')} asc`
+            `$select=${selectWorkgroups}&$filter=_pap_checklistid_value eq '${id}'&$orderby=${col('order')} asc`
         );
 
         // Load all rows for all workgroups in one query
@@ -349,6 +389,7 @@ export class DataverseChecklistService implements IChecklistService {
                     return row;
                 }).sort((a, b) => a.order - b.order),
                 summaryNotes: wg.pap_summarynotes,
+                comments: parseWorkgroupChat(wg.pap_chatdata as string),
                 order: wg.pap_order
             };
         }).sort((a, b) => a.number - b.number);
@@ -363,14 +404,14 @@ export class DataverseChecklistService implements IChecklistService {
             revisions,
             clientCorrespondence: dv.pap_clientcorrespondence ? JSON.parse(dv.pap_clientcorrespondence) : [],
             estimateType: dv.pap_estimatetype ? JSON.parse(dv.pap_estimatetype) : [],
-            commonNotes: dv.pap_commonnotes || '',
+            commonNotes: parseCommonNotes(dv.pap_commonnotes as string),
             clientLogoUrl: dv.pap_clientlogourl,
             jobDetails: dv.pap_jobid ? {
                 jobName: dv.pap_jobid.vin_name,
                 jobNumber: dv.pap_jobid.vin_jobnumber || '',
                 clientName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '',
-                leadEstimator: dv.pap_jobid["_vin_estimator_value@OData.Community.Display.V1.FormattedValue"] || '',
-                reviewer: dv.pap_jobid["_ownerid_value@OData.Community.Display.V1.FormattedValue"] || '',
+                leadEstimator: dv.pap_jobid["_vin_estimator_value@OData.Community.Display.V1.FormattedValue"] || (dv.pap_jobid.vin_estimator as any)?.fullname || '',
+                reviewer: dv.pap_jobid["_ownerid_value@OData.Community.Display.V1.FormattedValue"] || (dv.pap_jobid.ownerid as any)?.fullname || '',
                 dueDate: dv.pap_jobid.vin_duedate ? new Date(dv.pap_jobid.vin_duedate) : undefined,
                 jobType: dv.pap_jobid["vin_jobtype@OData.Community.Display.V1.FormattedValue"] || '',
                 meetingOccurred: dv.pap_jobid.vin_jobstartmtg ?? true,
@@ -517,7 +558,7 @@ export class DataverseChecklistService implements IChecklistService {
             [col('status')]: STATUS_VALUE_MAP[checklist.status],
             [col('clientcorrespondence')]: JSON.stringify(checklist.clientCorrespondence),
             [col('estimatetype')]: JSON.stringify(checklist.estimateType),
-            [col('commonnotes')]: checklist.commonNotes,
+            [col('commonnotes')]: JSON.stringify(checklist.commonNotes || []),
             [col('clientlogourl')]: checklist.clientLogoUrl,
             [col('chatdata')]: JSON.stringify(checklist.comments || []),
             [col('filedata')]: JSON.stringify(checklist.files || []),
@@ -610,7 +651,8 @@ export class DataverseChecklistService implements IChecklistService {
             [col('name')]: workgroup.name,
             [col('number')]: String(workgroup.number),
             [col('order')]: workgroup.order,
-            [col('summarynotes')]: workgroup.summaryNotes || ''
+            [col('summarynotes')]: workgroup.summaryNotes || '',
+            [col('chatdata')]: JSON.stringify(workgroup.comments || [])
         });
         return workgroup;
     }

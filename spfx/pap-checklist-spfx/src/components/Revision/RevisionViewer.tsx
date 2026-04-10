@@ -233,14 +233,19 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
                     )}
 
                     {/* Common Notes (from Snapshot) */}
-                    {snapshot?.commonNotes && snapshot.commonNotes.trim() && (
+                    {snapshot?.commonNotes && snapshot.commonNotes.length > 0 && (
                         <div className={styles['revision-common-notes']}>
                             <h3 className={styles['revision-common-notes-title']}>Common Notes</h3>
-                            <RichTextEditor
-                                content={snapshot.commonNotes}
-                                readOnly={true}
-                                className={styles['compact-rte']}
-                            />
+                            {snapshot.commonNotes.map((section) => (
+                                <div key={section.id} style={{ marginBottom: '8px' }}>
+                                    <h4 style={{ fontSize: '13px', fontWeight: 600, margin: '4px 0' }}>{section.title}</h4>
+                                    <RichTextEditor
+                                        content={section.content}
+                                        readOnly={true}
+                                        className={styles['compact-rte']}
+                                    />
+                                </div>
+                            ))}
                         </div>
                     )}
 

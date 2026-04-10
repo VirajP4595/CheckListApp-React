@@ -301,12 +301,6 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
 
 
-                    <CommonNotes
-                        checklist={activeChecklist}
-                        onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
-                        onSave={saveChecklist}
-                    />
-
                     <FilterBar
                         filters={filters}
                         onFiltersChange={setFilters}
@@ -315,6 +309,12 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                         onExpandWorkgroupsChange={setExpandWorkgroups}
                         expandTasks={expandTasks}
                         onExpandTasksChange={setExpandTasks}
+                    />
+
+                    <CommonNotes
+                        checklist={activeChecklist}
+                        onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
+                        onSave={saveChecklist}
                     />
 
                     {/* ─── Revision Sections (descending order, filtered) ─── */}
@@ -398,7 +398,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                 headerText="Activity Log"
                 closeButtonAriaLabel="Close"
             >
-                <ActivityLogPanel checklistId={checklistId} />
+                <ActivityLogPanel checklistId={checklistId} checklistTitle={activeChecklist.title} />
             </Panel>
 
             {/* PDF / Preview Progress Modal */}

@@ -2,15 +2,17 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Button, Input, Tooltip, Spinner, Dialog, DialogTrigger, DialogSurface, DialogBody, DialogTitle, DialogContent, DialogActions } from '@fluentui/react-components';
 import {
     Add20Regular,
-    ChevronDown20Regular,
-    ChevronRight20Regular,
+    ChevronDown24Filled,
+    ChevronRight24Filled,
     Edit20Regular,
     Delete20Regular,
-    Checkmark20Regular
+    Checkmark20Regular,
+    Chat20Regular
 } from '@fluentui/react-icons';
 import type { Workgroup } from '../../models';
 import { useChecklistStore } from '../../stores';
 import { ChecklistRowItem } from './ChecklistRowItem';
+import { WorkgroupChatDialog } from './WorkgroupChatDialog';
 import type { FilterState } from './FilterBar';
 import styles from './WorkgroupSection.module.scss';
 
@@ -40,6 +42,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
     const [isEditing, setIsEditing] = useState(false);
     const [tempName, setTempName] = useState(workgroup.name);
     const [tempNumber, setTempNumber] = useState(workgroup.number);
+    const [showChat, setShowChat] = useState(false);
 
     useEffect(() => {
         setLocalCollapsed(isCollapsed || false);
@@ -173,7 +176,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                         className={styles['workgroup-expand-btn']}
                         appearance="subtle"
                         size="small"
-                        icon={collapsed ? <ChevronRight20Regular /> : <ChevronDown20Regular />}
+                        icon={collapsed ? <ChevronRight24Filled /> : <ChevronDown24Filled />}
                         onClick={handleToggleExpand}
                     />
 
@@ -246,6 +249,24 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                     )}
 
                     <div className={styles['workgroup-actions']}>
+                        <Tooltip content="Workgroup chat" relationship="label">
+                            <Button
+                                className={`${styles['workgroup-action-btn']} ${styles['workgroup-chat-btn']}`}
+                                appearance="subtle"
+                                size="small"
+                                icon={
+                                    <span className={styles['chat-icon-wrapper']}>
+                                        <Chat20Regular />
+                                        {(workgroup.comments?.length ?? 0) > 0 && (
+                                            <span className={styles['chat-badge']}>
+                                                {workgroup.comments!.length}
+                                            </span>
+                                        )}
+                                    </span>
+                                }
+                                onClick={(e) => { e.stopPropagation(); setShowChat(true); }}
+                            />
+                        </Tooltip>
                         {isEditing ? (
                             <Button
                                 className={styles['workgroup-action-btn']}
@@ -328,26 +349,12 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                                             <div className={styles['section-empty']}>No client items.</div>
                                         ) : (
                                             clientRows.map((row) => (
-                                                <React.Fragment key={row.id}>
-                                                    <ChecklistRowItem
-                                                        row={row}
-                                                        workgroupId={workgroup.id}
-                                                        isCompact={!expandTasks}
-                                                    />
-                                                    <div className={styles['insert-row-divider']}>
-                                                        <button
-                                                            className={styles['insert-row-btn']}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (!isAdding) void addRow(workgroup.id, row.id, 'client');
-                                                            }}
-                                                            title="Insert row here"
-                                                        >
-                                                            <span className={styles['insert-row-icon']}>+</span>
-                                                            <span className={styles['insert-row-label']}>Add item</span>
-                                                        </button>
-                                                    </div>
-                                                </React.Fragment>
+                                                <ChecklistRowItem
+                                                    key={row.id}
+                                                    row={row}
+                                                    workgroupId={workgroup.id}
+                                                    isCompact={!expandTasks}
+                                                />
                                             ))
                                         )}
                                     </div>
@@ -370,26 +377,12 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                                             <div className={styles['section-empty']}>No estimator items.</div>
                                         ) : (
                                             estimatorRows.map((row) => (
-                                                <React.Fragment key={row.id}>
-                                                    <ChecklistRowItem
-                                                        row={row}
-                                                        workgroupId={workgroup.id}
-                                                        isCompact={!expandTasks}
-                                                    />
-                                                    <div className={styles['insert-row-divider']}>
-                                                        <button
-                                                            className={styles['insert-row-btn']}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (!isAdding) void addRow(workgroup.id, row.id, 'estimator');
-                                                            }}
-                                                            title="Insert row here"
-                                                        >
-                                                            <span className={styles['insert-row-icon']}>+</span>
-                                                            <span className={styles['insert-row-label']}>Add item</span>
-                                                        </button>
-                                                    </div>
-                                                </React.Fragment>
+                                                <ChecklistRowItem
+                                                    key={row.id}
+                                                    row={row}
+                                                    workgroupId={workgroup.id}
+                                                    isCompact={!expandTasks}
+                                                />
                                             ))
                                         )}
                                     </div>
@@ -403,6 +396,13 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                     </div>
                 )
             }
+            {showChat && (
+                <WorkgroupChatDialog
+                    workgroup={workgroup}
+                    open={showChat}
+                    onClose={() => setShowChat(false)}
+                />
+            )}
         </section >
     );
 });

@@ -4,6 +4,7 @@ import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
 export class SharePointGroupService {
     private context: WebPartContext | null = null;
     private cache: Map<string, { result: boolean; expiresAt: number }> = new Map();
+    private siteUsersCache: { result: string[]; expiresAt: number } | null = null;
 
     public initialize(context: WebPartContext): void {
         this.context = context;
@@ -86,6 +87,49 @@ export class SharePointGroupService {
 
         } catch (error) {
             console.error(`[SharePointGroupService] Error fetching members for ${groupName}:`, error);
+            return [];
+        }
+    }
+
+    public async getSiteUserNames(): Promise<string[]> {
+        if (!this.context) {
+            console.error('[SharePointGroupService] Not initialized.');
+            return [];
+        }
+
+        // Check cache
+        if (this.siteUsersCache && Date.now() < this.siteUsersCache.expiresAt) {
+            return this.siteUsersCache.result;
+        }
+
+        try {
+            const url = `${this.context.pageContext.web.absoluteUrl}/_api/web/siteusers?$filter=PrincipalType eq 1&$select=Title`;
+            const response: SPHttpClientResponse = await this.context.spHttpClient.get(
+                url,
+                SPHttpClient.configurations.v1
+            );
+
+            if (!response.ok) {
+                console.warn(`[SharePointGroupService] Could not fetch site users. Status: ${response.statusText}`);
+                return [];
+            }
+
+            const data = await response.json();
+            // Handle both OData verbosity levels just in case
+            const users: { Title?: string }[] = data.value || (data.d && data.d.results) || [];
+
+            const names = users
+                .map(u => u.Title)
+                .filter((title): title is string => !!title && title.trim() !== '');
+
+            // Cache for 5 minutes to avoid repeated API calls
+            this.siteUsersCache = { result: names, expiresAt: Date.now() + 5 * 60 * 1000 };
+
+            console.log(`[SharePointGroupService] Fetched ${names.length} site user names.`);
+            return names;
+
+        } catch (error) {
+            console.error('[SharePointGroupService] Error fetching site user names:', error);
             return [];
         }
     }

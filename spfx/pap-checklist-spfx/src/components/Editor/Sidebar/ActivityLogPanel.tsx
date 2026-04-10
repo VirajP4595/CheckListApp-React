@@ -13,6 +13,7 @@ import {
 import { getActivityLogService } from '../../../services';
 import type { DailyActivityLog, ActivityEntry } from '../../../services/activityLogService';
 import { ACTION_LABELS } from '../../../services/activityLogService';
+import { ShareActivityDialog } from './ShareActivityDialog';
 import stylesImport from './ActivityLogPanel.module.scss';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,6 +21,7 @@ const styles: any = stylesImport;
 
 interface ActivityLogPanelProps {
     checklistId: string;
+    checklistTitle?: string;
 }
 
 interface GroupedEntry extends ActivityEntry {
@@ -177,7 +179,7 @@ const DayGroup: React.FC<{ log: DailyActivityLog }> = ({ log }) => {
 
 // ─── Main Component ─────────────────────────────────────────
 
-const ActivityLogPanel: React.FC<ActivityLogPanelProps> = ({ checklistId }) => {
+const ActivityLogPanel: React.FC<ActivityLogPanelProps> = ({ checklistId, checklistTitle }) => {
     const [logs, setLogs] = React.useState<DailyActivityLog[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
 
@@ -217,6 +219,9 @@ const ActivityLogPanel: React.FC<ActivityLogPanelProps> = ({ checklistId }) => {
 
     return (
         <div className={styles['activity-container']}>
+            <div className={styles['activity-header']}>
+                <ShareActivityDialog logs={logs} checklistTitle={checklistTitle || 'Checklist'} />
+            </div>
             <div className={styles['activity-list']}>
                 {logs.map(day => (
                     <DayGroup key={day.id} log={day} />

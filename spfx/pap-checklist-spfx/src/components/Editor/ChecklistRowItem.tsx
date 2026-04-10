@@ -6,8 +6,8 @@ import {
     Flag20Filled,
     LockClosed20Regular,
     LockClosed20Filled,
-    ChevronRight20Regular,
-    ChevronDown20Regular,
+    ChevronRight24Filled,
+    ChevronDown24Filled,
     Alert20Regular,
     Alert20Filled,
     PersonArrowRight20Regular,
@@ -17,6 +17,7 @@ import type { ChecklistRow } from '../../models';
 import { useChecklistStore } from '../../stores';
 import { AnswerSelector } from './AnswerSelector';
 import { RichTextEditor } from './RichTextEditor';
+import { VoiceInputButton } from './VoiceInputButton';
 import { InlineImageArea } from './InlineImageArea';
 import { NotifyAdminDialog } from './NotifyAdminDialog';
 import styles from './ChecklistRowItem.module.scss';
@@ -43,6 +44,7 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
 
     const originalNameRef = useRef(row.name);
     const originalNotesRef = useRef(row.notes);
+    const notesEditorRef = useRef<any>(null);
 
     const [expanded, setExpanded] = React.useState(!isCompact);
     const [showNotifyDialog, setShowNotifyDialog] = React.useState(false);
@@ -114,7 +116,7 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                     <Button
                         className={styles['row-expand-btn']}
                         appearance="subtle"
-                        icon={expanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
+                        icon={expanded ? <ChevronDown24Filled /> : <ChevronRight24Filled />}
                         onClick={handleToggleExpand}
                         aria-label={expanded ? "Collapse item" : "Expand item"}
                     />
@@ -176,27 +178,6 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                         </div>
                     )}
 
-                    {expanded && (
-                        <>
-                            <div className={styles['row-notes']}>
-                                <RichTextEditor
-                                    content={row.notes}
-                                    onChange={(html: string) => updateRow(row.id, { notes: html })}
-                                    onFocus={() => { originalNotesRef.current = row.notes; }}
-                                    onBlur={() => { if (row.notes !== originalNotesRef.current) void saveRow(row.id); }}
-                                    placeholder="Add notes with formatting and checklists..."
-                                />
-                            </div>
-                            <div className={styles['row-images']}>
-                                <InlineImageArea
-                                    rowId={row.id}
-                                    images={row.images}
-                                    onAddImage={handleImageAdd}
-                                    onRemoveImage={handleImageRemove}
-                                />
-                            </div>
-                        </>
-                    )}
                 </div>
 
                 {/* Column 3: Actions */}
@@ -282,6 +263,39 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                     )}
                 </div>
             </div>
+
+            {/* Full-width notes and images below the flex row */}
+            {expanded && (
+                <div className={styles['row-expanded-area']}>
+                    <div className={styles['row-notes']}>
+                        <RichTextEditor
+                            content={row.notes}
+                            onChange={(html: string) => updateRow(row.id, { notes: html })}
+                            onFocus={() => { originalNotesRef.current = row.notes; }}
+                            onBlur={() => { if (row.notes !== originalNotesRef.current) void saveRow(row.id); }}
+                            onEditorReady={(e) => { notesEditorRef.current = e; }}
+                            placeholder="Add notes with formatting and checklists..."
+                            toolbarExtra={
+                                <VoiceInputButton
+                                    onTranscript={(text) => {
+                                        if (notesEditorRef.current) {
+                                            notesEditorRef.current.chain().focus().insertContent(text + ' ').run();
+                                        }
+                                    }}
+                                />
+                            }
+                        />
+                    </div>
+                    <div className={styles['row-images']}>
+                        <InlineImageArea
+                            rowId={row.id}
+                            images={row.images}
+                            onAddImage={handleImageAdd}
+                            onRemoveImage={handleImageRemove}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 });

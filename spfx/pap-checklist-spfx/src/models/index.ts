@@ -1,7 +1,7 @@
 // ─── ANSWER STATE ────────────────────────────────────────
-export type AnswerState = 'YES' | 'NO' | 'BLANK' | 'PS' | 'PC' | 'SUB' | 'OTS' | 'TBC' | 'OPT_EXTRA' | 'BUILDER_SPEC' | 'RFQ';
+export type AnswerState = 'YES' | 'NO' | 'BLANK' | 'PS' | 'PC' | 'SUB' | 'OTS' | 'TBC' | 'OPT_EXTRA' | 'BUILDER_SPEC' | 'RFQ' | 'SPECS_PLANS';
 
-export const ANSWER_STATES: AnswerState[] = ['YES', 'NO', 'BLANK', 'PS', 'PC', 'SUB', 'OTS', 'TBC', 'OPT_EXTRA', 'BUILDER_SPEC', 'RFQ'];
+export const ANSWER_STATES: AnswerState[] = ['YES', 'NO', 'BLANK', 'PS', 'PC', 'SUB', 'OTS', 'TBC', 'OPT_EXTRA', 'BUILDER_SPEC', 'RFQ', 'SPECS_PLANS'];
 
 export const ANSWER_CONFIG: Record<AnswerState, { label: string; color: string; description: string }> = {
     YES: { label: 'Yes', color: '#107c10', description: 'Included' },
@@ -9,12 +9,13 @@ export const ANSWER_CONFIG: Record<AnswerState, { label: string; color: string; 
     BLANK: { label: 'Nothing Selected', color: '#8a8886', description: 'Intentionally unanswered' },
     PS: { label: 'PS', color: '#ff8c00', description: 'Provisional Sum' },
     PC: { label: 'PC', color: '#0078d4', description: 'Prime Cost' },
-    SUB: { label: 'Subquote / Subcontractor Quote', color: '#8764b8', description: 'Subcontractor' },
+    SUB: { label: 'Subcontractor Quote', color: '#8764b8', description: 'Subcontractor' },
     OTS: { label: 'OTS', color: '#038387', description: 'Owner to Supply' },
     TBC: { label: 'TBC', color: '#a4262c', description: 'To Be Confirmed' },
     OPT_EXTRA: { label: 'Optional Extra', color: '#ca5010', description: 'Optional extra item' },
-    BUILDER_SPEC: { label: 'Builder Spec / Standard', color: '#498205', description: 'Builder specification or standard' },
+    BUILDER_SPEC: { label: 'Builder Spec Item', color: '#498205', description: 'Builder specification item' },
     RFQ: { label: 'RFQ', color: '#986f0b', description: 'Request for Quote' },
+    SPECS_PLANS: { label: 'As Per Specs/Plans', color: '#00695c', description: 'As per specifications/plans' },
 };
 
 // ─── ROW SECTION ─────────────────────────────────────────
@@ -36,6 +37,14 @@ export const STATUS_CONFIG: Record<ChecklistStatus, { label: string; color: stri
     'in-revision': { label: 'In Revision', color: '#5b5fc7' },
     'final': { label: 'Final', color: '#107c10' },
 };
+
+// ─── COMMON NOTE SECTION ─────────────────────────────────
+export interface CommonNoteSection {
+    id: string;
+    title: string;
+    content: string;
+    order: number;
+}
 
 // ─── INLINE IMAGE ────────────────────────────────────────
 export interface ChecklistImage {
@@ -76,6 +85,7 @@ export interface Workgroup {
     name: string;
     rows: ChecklistRow[];
     summaryNotes?: string;
+    comments?: ChecklistComment[];
     order: number;
 }
 
@@ -122,7 +132,7 @@ export interface Checklist {
     // Collaboration Fields ───
     clientCorrespondence: string[];
     estimateType: string[];
-    commonNotes: string;
+    commonNotes: CommonNoteSection[];
     clientLogoUrl?: string;
     comments: ChecklistComment[];
     files: ChecklistFile[];
@@ -200,7 +210,7 @@ export function createEmptyChecklist(title: string, jobReference: string, create
         revisions: [],
         clientCorrespondence: [],
         estimateType: [],
-        commonNotes: '',
+        commonNotes: [],
         comments: [],
         files: [],
         createdBy,
