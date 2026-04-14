@@ -3,7 +3,7 @@ export const AppConfig = {
         //url: "https://org35f22684.crm.dynamics.com",//SPForDev
         //url: "https://priceaplandev.crm6.dynamics.com",//PAPDev
         //PROD
-        url: "priceaplan.crm6.dynamics.com",//PAPProd
+        url: "https://priceaplan.crm6.dynamics.com",//PAPProd
         apiPath: "/api/data/v9.2",
         publisherPrefix: "pap_"
     },

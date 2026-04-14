@@ -48,9 +48,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
     const retryCount = React.useRef(0);
     const MAX_RETRIES = 2;
 
+    const hasFetchedOnMount = React.useRef(false);
+
     useEffect(() => {
         // [Refined] Always refresh when Dashboard mounts to ensure latest values on return from Editor
-        if (!error && !isLoading) {
+        if (!hasFetchedOnMount.current) {
+            hasFetchedOnMount.current = true;
             void loadChecklists();
         }
 
@@ -63,38 +66,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
             }, 2000);
             return () => clearTimeout(timer);
         }
-    }, [error, isLoading, loadChecklists]);
-
-    if (error && retryCount.current >= MAX_RETRIES) {
-        return (
-            <div className={styles.dashboard}>
-                <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-                    <MessageBar intent="error">
-                        <MessageBarBody>
-                            <MessageBarTitle>Unable to Load Checklists</MessageBarTitle>
-                            <div style={{ margin: '8px 0' }}>
-                                {error}
-                            </div>
-                            <div>
-                                We are having trouble connecting to the server. This is often caused by a session timeout.
-                            </div>
-                        </MessageBarBody>
-                        <MessageBarActions containerAction={<button aria-label="Dismiss" />}>
-                            <Button className={styles['btn-error-secondary']} onClick={() => {
-                                retryCount.current = 0;
-                                void loadChecklists();
-                            }}>
-                                Try Again
-                            </Button>
-                            <Button className={styles['btn-error-primary']} appearance="primary" onClick={() => window.location.reload()}>
-                                Refresh Page
-                            </Button>
-                        </MessageBarActions>
-                    </MessageBar>
-                </div>
-            </div>
-        );
-    }
+    }, [error, loadChecklists]);
 
     // Computed Checklists
     const filteredChecklists = React.useMemo(() => {
@@ -148,6 +120,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenChecklist, siteUrl }
 
         return result;
     }, [checklists, filters]);
+
+    if (error && retryCount.current >= MAX_RETRIES) {
+        return (
+            <div className={styles.dashboard}>
+                <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
+                    <div style={{ 
+                        backgroundColor: '#fdf3f4', 
+                        border: '1px solid #d13438', 
+                        borderRadius: '4px', 
+                        padding: '16px',
+                        color: '#a4262c',
+                        fontFamily: 'Segoe UI, sans-serif'
+                    }}>
+                        <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#a4262c' }}>Unable to Load Checklists</h3>
+                        <div style={{ margin: '8px 0', fontWeight: 'bold' }}>
+                            {error}
+                        </div>
+                        <div style={{ marginBottom: '16px', color: '#323130' }}>
+                            We are having trouble connecting to the server. This is often caused by a session timeout.
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <Button appearance="secondary" onClick={() => {
+                                retryCount.current = 0;
+                                void loadChecklists();
+                            }}>
+                                Try Again
+                            </Button>
+                            <Button appearance="primary" onClick={() => window.location.reload()}>
+                                Refresh Page
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (isLoading && checklists.length === 0) {
         return (
