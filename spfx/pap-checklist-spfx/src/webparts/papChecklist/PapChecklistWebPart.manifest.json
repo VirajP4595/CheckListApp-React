@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
-  "id": "fdbc25c8-19b5-43b3-a326-196781397e27",
-  "alias": "PapChecklistWebPart",
+  "id": "f42633ba-09f3-4119-afda-2d6d069f615d",
+  "alias": "PapChecklistProdWebPart",
   "componentType": "WebPart",
 
   // The "*" signifies that the version should be taken from the package.json
@@ -18,11 +18,11 @@
   "preconfiguredEntries": [{
     "groupId": "5c03119e-3074-46fd-976b-c60198311f70", // Advanced
     "group": { "default": "Advanced" },
-    "title": { "default": "PapChecklist" },
+    "title": { "default": "PapChecklistProd" },
     "description": { "default": "Checklist App" },
     "officeFabricIconFontName": "Page",
     "properties": {
-      "description": "PapChecklist"
+      "description": "PapChecklistProd"
     }
   }]
 }
