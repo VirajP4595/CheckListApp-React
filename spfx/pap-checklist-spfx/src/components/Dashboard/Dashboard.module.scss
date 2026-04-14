@@ -231,37 +231,29 @@
 }
 
 .checklist-card-header {
-    padding: $spacing-3 $spacing-4; // Reduced vertical padding
+    padding: $spacing-2 $spacing-3; // Tighter padding
     border-bottom: 1px solid $color-gray-200;
     background-color: rgba($color-primary, 0.03);
     display: flex;
     flex-direction: column;
-    gap: $spacing-1; // Reduced gap
+    gap: 2px;
 }
 
-.checklist-card-job-ref-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
 
-.checklist-card-job-ref {
-    font-family: $font-family-mono;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
-    color: $color-primary;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
 
 .job-type-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: $border-radius-full;
     font-size: 11px;
-    font-weight: 500;
-    background: $color-gray-200;
-    color: $color-gray-700;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, $color-gray-700, $color-gray-900);
+    color: $color-white;
+    box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .checklist-card-title {
@@ -273,19 +265,37 @@
     line-height: $line-height-tight;
 }
 
+.checklist-card-client-name {
+    font-family: $font-family-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-primary;
+    margin: $spacing-1 0 0 0;
+    line-height: $line-height-tight;
+    @include truncate;
+}
+
+.checklist-card-job-name {
+    font-size: $font-size-sm;
+    color: $color-gray-600;
+    line-height: $line-height-normal;
+    @include truncate;
+}
+
 .checklist-card-body {
-    padding: $spacing-3 $spacing-4; // Reduced vertical padding
+    padding: $spacing-2 $spacing-3; // Tighter padding
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: $spacing-2; // Reduced gap
+    gap: $spacing-1;
 }
 
-.checklist-card-meta {
+.checklist-card-badges-row {
     display: flex;
     flex-wrap: wrap;
-    gap: $spacing-2;
     align-items: center;
+    gap: $spacing-2;
+    margin-top: $spacing-1;
 }
 
 .checklist-card-status {
@@ -361,7 +371,7 @@
 }
 
 .checklist-card-footer {
-    padding: $spacing-3 $spacing-4;
+    padding: $spacing-2 $spacing-3; // Tighter padding
     border-top: 1px solid $color-gray-100;
     background-color: $color-gray-50;
     display: flex;

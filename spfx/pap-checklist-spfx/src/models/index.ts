@@ -19,14 +19,15 @@ export const ANSWER_CONFIG: Record<AnswerState, { label: string; color: string; 
 };
 
 // ─── ROW SECTION ─────────────────────────────────────────
-export type RowSection = 'client' | 'estimator';
+export type RowSection = 'client' | 'estimator' | 'reviewer';
 
 export const SECTION_CONFIG: Record<RowSection, { label: string; color: string }> = {
     'client': { label: 'Checklist Filler / Client', color: '#0078d4' },
     'estimator': { label: 'Estimator', color: '#8764b8' },
+    'reviewer': { label: 'Reviewer', color: '#c239b3' },
 };
 
-export const ROW_SECTIONS: RowSection[] = ['client', 'estimator'];
+export const ROW_SECTIONS: RowSection[] = ['client', 'estimator', 'reviewer'];
 
 // ─── CHECKLIST STATUS ────────────────────────────────────
 export type ChecklistStatus = 'draft' | 'in-review' | 'in-revision' | 'final';

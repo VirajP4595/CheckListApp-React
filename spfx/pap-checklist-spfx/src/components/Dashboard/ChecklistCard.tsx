@@ -65,17 +65,18 @@ export const ChecklistCard: React.FC<ChecklistCardProps> = ({ checklist, onClick
             aria-label={`Open ${checklist.title}`}
         >
             <div className={styles['checklist-card-header']}>
-                <div className={styles['checklist-card-job-ref-row']}>
-                    <span className={styles['checklist-card-job-ref']}>{checklist.jobReference}</span>
+                {checklist.jobDetails?.clientName && (
+                    <h3 className={styles['checklist-card-client-name']}>{checklist.jobDetails.clientName}</h3>
+                )}
+                <span className={styles['checklist-card-job-name']}>
+                    {checklist.jobDetails?.jobNumber ? `${checklist.jobDetails.jobNumber} - ` : ''}
+                    {checklist.jobDetails?.jobName}
+                </span>
+
+                <div className={styles['checklist-card-badges-row']}>
                     {checklist.jobDetails?.jobType && (
                         <span className={styles['job-type-badge']}>{checklist.jobDetails.jobType}</span>
                     )}
-                </div>
-                <h3 className={styles['checklist-card-title']}>{checklist.title}</h3>
-            </div>
-
-            <div className={styles['checklist-card-body']}>
-                <div className={styles['checklist-card-meta']}>
                     <span className={`${styles['checklist-card-status']} ${getStatusClass()}`}>
                         {statusConfig.label}
                     </span>
@@ -83,48 +84,37 @@ export const ChecklistCard: React.FC<ChecklistCardProps> = ({ checklist, onClick
                         REV {checklist.currentRevisionNumber}
                     </span>
                 </div>
-
-                <div className={styles['checklist-card-details']}>
-                    {checklist.jobDetails && (
-                        <>
-                            <div className={styles['checklist-card-detail-item']}>
-                                <span className={styles['detail-label']}>Client:</span>
-                                <span className={styles['detail-value']}>{checklist.jobDetails.clientName}</span>
-                            </div>
-                            <div className={styles['checklist-card-detail-item']}>
-                                <span className={styles['detail-label']}>Job:</span>
-                                <span className={styles['detail-value']}>
-                                    {checklist.jobDetails.jobNumber ? `${checklist.jobDetails.jobNumber} - ` : ''}
-                                    {checklist.jobDetails.jobName}
-                                </span>
-                            </div>
-                        </>
-                    )}
-                    {checklist.estimateType?.length > 0 && (
-                        <div className={styles['checklist-card-detail-item']}>
-                            <span className={styles['detail-label']}>Type:</span>
-                            <span className={styles['detail-value']}>{checklist.estimateType.join(', ')}</span>
-                        </div>
-                    )}
-                    {checklist.clientCorrespondence?.length > 0 && (
-                        <div className={styles['checklist-card-detail-item']}>
-                            <span className={styles['detail-label']}>Correspondence:</span>
-                            <span className={styles['detail-value']}>{checklist.clientCorrespondence.join(', ')}</span>
-                        </div>
-                    )}
-                </div>
             </div>
 
+            {(checklist.estimateType?.length > 0 || checklist.clientCorrespondence?.length > 0) && (
+                <div className={styles['checklist-card-body']}>
+                    <div className={styles['checklist-card-details']}>
+                        {checklist.estimateType?.length > 0 && (
+                            <div className={styles['checklist-card-detail-item']}>
+                                <span className={styles['detail-label']}>Type:</span>
+                                <span className={styles['detail-value']}>{checklist.estimateType.join(', ')}</span>
+                            </div>
+                        )}
+                        {checklist.clientCorrespondence?.length > 0 && (
+                            <div className={styles['checklist-card-detail-item']}>
+                                <span className={styles['detail-label']}>Correspondence:</span>
+                                <span className={styles['detail-value']}>{checklist.clientCorrespondence.join(', ')}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div className={styles['checklist-card-footer']}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                     <span className={styles['checklist-card-date']}>
                         Updated {formatDate(checklist.updatedAt)}
                     </span>
                     {(checklist.jobDetails?.leadEstimator || checklist.jobDetails?.reviewer) && (
                         <span className={styles['checklist-card-estimator']}>
-                            {checklist.jobDetails?.leadEstimator ? `Estimator: ${checklist.jobDetails.leadEstimator}` : ''}
+                            {checklist.jobDetails?.leadEstimator ? `Est: ${checklist.jobDetails.leadEstimator}` : ''}
                             {checklist.jobDetails?.leadEstimator && checklist.jobDetails?.reviewer ? ' | ' : ''}
-                            {checklist.jobDetails?.reviewer ? `Reviewer: ${checklist.jobDetails.reviewer}` : ''}
+                            {checklist.jobDetails?.reviewer ? `Rev: ${checklist.jobDetails.reviewer}` : ''}
                         </span>
                     )}
                 </div>

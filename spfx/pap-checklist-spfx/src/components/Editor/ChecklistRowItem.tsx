@@ -147,7 +147,7 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                                     if (row.name !== originalNameRef.current) void saveRow(row.id);
                                 }
                             }}
-                            placeholder="Item name"
+                            placeholder="Enter Item name"
                         />
                     </div>
 

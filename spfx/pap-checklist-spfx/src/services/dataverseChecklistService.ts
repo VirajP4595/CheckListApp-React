@@ -669,7 +669,7 @@ export class DataverseChecklistService implements IChecklistService {
 
         // Defaults
         const newRow: any = {
-            [col('description_primary')]: rowData.name || 'New Item',
+            [col('description_primary')]: rowData.name ?? '',
             [col('description')]: rowData.description || '',
             [col('answer')]: ANSWER_VALUE_MAP[rowData.answer || 'BLANK'],
             [col('section')]: rowData.section || null,
@@ -691,7 +691,7 @@ export class DataverseChecklistService implements IChecklistService {
         return {
             id: result.pap_checklistrowid,
             workgroupId: workgroupId,
-            name: rowData.name || 'New Item',
+            name: rowData.name ?? '',
             description: rowData.description || '',
             answer: rowData.answer || 'BLANK',
             section: rowData.section,

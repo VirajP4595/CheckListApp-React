@@ -297,23 +297,21 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
         const wg = activeChecklist.workgroups.find(w => w.id === workgroupId);
         if (!wg) return;
 
-        // Calculate Order and Name
+        // Calculate Order
         const rows = wg.rows;
         const newOrder = afterRowId
             ? (rows.find(r => r.id === afterRowId)?.order ?? rows.length) + 1
             : rows.length;
-
-        const nextItemNumber = rows.length + 1;
-        const defaultName = `${wg.name} Item ${nextItemNumber}`;
 
         set(state => ({ processingItems: [...state.processingItems, workgroupId], isSaving: true }));
         try {
             const newRow = await getChecklistService().createRow(workgroupId, {
                 order: newOrder,
                 section,
-                name: defaultName,
+                name: '',
                 description: '',
-                answer: 'BLANK'
+                answer: 'BLANK',
+                internalOnly: section === 'reviewer' ? true : false
             });
 
             set(state => {
