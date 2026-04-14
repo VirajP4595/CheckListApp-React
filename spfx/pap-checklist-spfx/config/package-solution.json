@@ -3,7 +3,7 @@
   "solution": {
     "name": "pap-checklist-prod",
     "id": "1d3457d1-0cfc-45ed-a264-25fe9f24768e",
-    "version": "1.0.0.0",
+    "version": "1.1.0.0",
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
     "isDomainIsolated": false,
