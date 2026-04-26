@@ -1,11 +1,12 @@
-import React from 'react';
-import { mergeClasses, Button, ProgressBar, Text } from '@fluentui/react-components';
+import React, { useState } from 'react';
+import { mergeClasses, Button, ProgressBar, Text, Dialog, DialogSurface, DialogBody, DialogTitle, DialogContent, DialogActions, DialogTrigger } from '@fluentui/react-components';
 import { Checkmark12Filled, ArrowDownload24Regular, Dismiss24Regular, Briefcase24Regular, Mail24Regular } from '@fluentui/react-icons';
 import { Checklist, ChecklistStatus } from '../../../models';
 
 import { usePdfExport } from '../../../hooks/usePdfExport';
 import { useBtcExport } from '../../../hooks/useBtcExport';
 import { useRfqExport } from '../../../hooks/useRfqExport';
+import type { SupplierGroup, SendRfqSummary } from '../../../services/RfqExportService';
 import styles from './ChecklistInfoPanel.module.scss';
 
 interface ChecklistInfoPanelProps {
@@ -25,7 +26,20 @@ const CORRESPONDENCE_OPTIONS = ['Builder Copy', 'Client Copy', 'File Copy', 'Oth
 export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklist, onUpdate, readOnly }) => {
     const { exportPdf, loadingProgress: pdfProgress, cancelExport: cancelPdf } = usePdfExport();
     const { exportBtc, loadingProgress: btcProgress, cancelExport: cancelBtc } = useBtcExport();
-    const { exportRfqCsv, emailRfq, loadingProgress: rfqProgress, cancelExport: cancelRfq } = useRfqExport();
+    const { exportRfqCsv, previewRfqSend, sendRfqToSuppliers, loadingProgress: rfqProgress, cancelExport: cancelRfq } = useRfqExport();
+
+    const [rfqPreview, setRfqPreview] = useState<null | {
+        checklist: Checklist;
+        groups: SupplierGroup[];
+        skippedRowsNoEmail: number;
+        totalRfqRows: number;
+    }>(null);
+    const [rfqPreviewLoading, setRfqPreviewLoading] = useState(false);
+    const [rfqResult, setRfqResult] = useState<SendRfqSummary | null>(null);
+    const [fallbackPrompt, setFallbackPrompt] = useState<{
+        sharedMailbox: string;
+        resolve: (consent: boolean) => void;
+    } | null>(null);
 
     const handleExportPDF = async () => {
         await exportPdf(checklist);
@@ -35,8 +49,42 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
         await exportBtc(checklist);
     };
 
-    const handleEmailRFQ = async () => {
-        await emailRfq(checklist);
+    const handleOpenRfqSendDialog = async () => {
+        setRfqPreviewLoading(true);
+        setRfqResult(null);
+        try {
+            const { hydratedChecklist, groups, skippedRowsNoEmail, totalRfqRows } = await previewRfqSend(checklist);
+            setRfqPreview({ checklist: hydratedChecklist, groups, skippedRowsNoEmail, totalRfqRows });
+        } catch (err) {
+            console.error('RFQ preview failed', err);
+            alert((err as Error)?.message || 'Unable to prepare RFQ send.');
+        } finally {
+            setRfqPreviewLoading(false);
+        }
+    };
+
+    const askFallbackConsent = (sharedMailbox: string): Promise<boolean> => {
+        return new Promise<boolean>(resolve => {
+            setFallbackPrompt({ sharedMailbox, resolve });
+        });
+    };
+
+    const resolveFallback = (consent: boolean) => {
+        fallbackPrompt?.resolve(consent);
+        setFallbackPrompt(null);
+    };
+
+    const handleConfirmRfqSend = async () => {
+        if (!rfqPreview) return;
+        try {
+            const summary = await sendRfqToSuppliers(rfqPreview.checklist, askFallbackConsent);
+            setRfqResult(summary);
+        } catch { /* error already shown via progress */ }
+    };
+
+    const closeRfqDialog = () => {
+        setRfqPreview(null);
+        setRfqResult(null);
     };
 
     const handleExportRFQ = async () => {
@@ -225,10 +273,10 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
                             <Button
                                 className={styles['export-btn']}
                                 icon={<Mail24Regular />}
-                                onClick={handleEmailRFQ}
-                                disabled={readOnly}
+                                onClick={handleOpenRfqSendDialog}
+                                disabled={readOnly || rfqPreviewLoading}
                             >
-                                Email RFQ Summary
+                                {rfqPreviewLoading ? 'Preparing…' : 'Send RFQ to Suppliers'}
                             </Button>
                             <Button
                                 className={styles['export-btn']}
@@ -258,6 +306,123 @@ export const ChecklistInfoPanel: React.FC<ChecklistInfoPanelProps> = ({ checklis
                     )}
                 </div>
             </div>
+
+            <Dialog open={!!rfqPreview} onOpenChange={(_, d) => !d.open && closeRfqDialog()}>
+                <DialogSurface>
+                    <DialogBody>
+                        <DialogTitle>Send RFQ to Suppliers</DialogTitle>
+                        <DialogContent>
+                            {!rfqResult && rfqPreview && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                    <Text>
+                                        Ready to send <strong>{rfqPreview.groups.length}</strong> email{rfqPreview.groups.length === 1 ? '' : 's'} to <strong>{rfqPreview.groups.length}</strong> unique supplier{rfqPreview.groups.length === 1 ? '' : 's'}.
+                                    </Text>
+                                    {rfqPreview.skippedRowsNoEmail > 0 && (
+                                        <Text style={{ color: '#b75d00' }}>
+                                            ⚠ {rfqPreview.skippedRowsNoEmail} RFQ row{rfqPreview.skippedRowsNoEmail === 1 ? '' : 's'} will be skipped because supplier email is missing or invalid.
+                                        </Text>
+                                    )}
+                                    {rfqPreview.groups.length > 0 && (
+                                        <div>
+                                            <Text weight="semibold" size={200}>Recipients:</Text>
+                                            <ul style={{ margin: '4px 0 0 18px', padding: 0, fontSize: 13 }}>
+                                                {rfqPreview.groups.map(g => (
+                                                    <li key={g.email}>
+                                                        {g.name ? <strong>{g.name}</strong> : <em>(no name)</em>} — {g.email} · {g.rows.length} item{g.rows.length === 1 ? '' : 's'}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    <Text size={200} style={{ color: '#555' }}>
+                                        Each supplier will receive their own PDF with only the items assigned to them. Emails are sent from the shared mailbox.
+                                    </Text>
+                                </div>
+                            )}
+                            {rfqResult && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <Text>
+                                        ✅ Sent {rfqResult.sent.length} email{rfqResult.sent.length === 1 ? '' : 's'}.
+                                    </Text>
+                                    {rfqResult.sentFromUserMailbox && (
+                                        <Text size={200} style={{ color: '#b75d00' }}>
+                                            ⚠ The shared mailbox refused the send. With your consent, emails were sent from your own mailbox — replies will come to you.
+                                        </Text>
+                                    )}
+                                    {rfqResult.fallbackDeclined && (
+                                        <Text size={200} style={{ color: '#b00020' }}>
+                                            ✋ Send was cancelled because the shared mailbox is not available and you chose not to use your own mailbox.
+                                        </Text>
+                                    )}
+                                    {rfqResult.failed.length > 0 && (
+                                        <>
+                                            <Text style={{ color: '#b00020' }}>
+                                                ❌ {rfqResult.failed.length} failed:
+                                            </Text>
+                                            <ul style={{ margin: '0 0 0 18px', padding: 0, fontSize: 13 }}>
+                                                {rfqResult.failed.map(f => (
+                                                    <li key={f.email}>{f.email} — {f.error}</li>
+                                                ))}
+                                            </ul>
+                                        </>
+                                    )}
+                                    {rfqResult.skippedRowsNoEmail > 0 && (
+                                        <Text size={200} style={{ color: '#b75d00' }}>
+                                            Skipped {rfqResult.skippedRowsNoEmail} row{rfqResult.skippedRowsNoEmail === 1 ? '' : 's'} without a valid supplier email.
+                                        </Text>
+                                    )}
+                                </div>
+                            )}
+                        </DialogContent>
+                        <DialogActions>
+                            {!rfqResult ? (
+                                <>
+                                    <DialogTrigger disableButtonEnhancement>
+                                        <Button appearance="secondary">Cancel</Button>
+                                    </DialogTrigger>
+                                    <Button
+                                        appearance="primary"
+                                        onClick={handleConfirmRfqSend}
+                                        disabled={!rfqPreview || rfqPreview.groups.length === 0}
+                                    >
+                                        Send {rfqPreview?.groups.length ?? 0} email{(rfqPreview?.groups.length ?? 0) === 1 ? '' : 's'}
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button appearance="primary" onClick={closeRfqDialog}>Close</Button>
+                            )}
+                        </DialogActions>
+                    </DialogBody>
+                </DialogSurface>
+            </Dialog>
+
+            {/* Permission fallback consent */}
+            <Dialog open={!!fallbackPrompt} modalType="alert">
+                <DialogSurface>
+                    <DialogBody>
+                        <DialogTitle>Send from your own mailbox?</DialogTitle>
+                        <DialogContent>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <Text>
+                                    You don&rsquo;t have permission to send on behalf of the shared mailbox
+                                    {fallbackPrompt ? <> <strong>{fallbackPrompt.sharedMailbox}</strong></> : null}.
+                                </Text>
+                                <Text>
+                                    Would you like to send the remaining RFQ emails from <strong>your own mailbox</strong> instead? Replies will come back to you, not the shared inbox.
+                                </Text>
+                            </div>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button appearance="secondary" onClick={() => resolveFallback(false)}>
+                                No, cancel send
+                            </Button>
+                            <Button appearance="primary" onClick={() => resolveFallback(true)}>
+                                Yes, send from my mailbox
+                            </Button>
+                        </DialogActions>
+                    </DialogBody>
+                </DialogSurface>
+            </Dialog>
         </div>
     );
 };

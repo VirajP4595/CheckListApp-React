@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Checklist } from '../models';
-import { getChecklistService, getImageService } from '../services';
-import { RfqExportService } from '../services/RfqExportService';
+import { getChecklistService } from '../services';
+import { RfqExportService, SendRfqSummary } from '../services/RfqExportService';
 
 export interface LoadingProgress {
     open: boolean;
@@ -94,74 +94,62 @@ export const useRfqExport = () => {
     };
 
     /**
-     * New Email Summary (PDF) Export
+     * Preview the supplier grouping before sending. Used by the UI to show a
+     * summary modal ("N emails to M suppliers, P rows skipped").
      */
-    const emailRfq = async (activeChecklist: Checklist) => {
-        if (!activeChecklist) return;
+    const previewRfqSend = async (activeChecklist: Checklist) => {
+        const service = new RfqExportService();
+        const hydratedChecklist = await getChecklistService().getHydratedChecklist(activeChecklist.id, () => true);
+        const { groups, skippedRowsNoEmail, totalRfqRows } = service.groupBySupplier(hydratedChecklist);
+        return { hydratedChecklist, groups, skippedRowsNoEmail, totalRfqRows };
+    };
 
+    /**
+     * Sends one email per unique supplier from the shared mailbox,
+     * each with a supplier-scoped PDF attached. Returns a summary.
+     */
+    const sendRfqToSuppliers = async (
+        hydratedChecklist: Checklist,
+        onPermissionFallback?: (sharedMailbox: string) => Promise<boolean>
+    ): Promise<SendRfqSummary> => {
+        if (!hydratedChecklist) throw new Error('No checklist');
         isCancelledRef.current = false;
-        setLoadingProgress({ open: true, title: 'Emailing RFQ Summary', status: 'Preparing...', percent: 0, cancelled: false });
+        setLoadingProgress({ open: true, title: 'Sending RFQ to Suppliers', status: 'Preparing...', percent: 0, cancelled: false });
 
         try {
             const service = new RfqExportService();
 
-            // 1. Hydrate
-            const hydratedChecklist = await getChecklistService().getHydratedChecklist(activeChecklist.id, (status, percent) => {
-                if (isCancelledRef.current) return false;
-                const mappedPercent = 5 + (percent * 0.1);
-                setLoadingProgress(prev => ({ ...prev, status, percent: mappedPercent }));
-                return true;
-            });
+            const summary = await service.sendRfqEmailsPerSupplier(
+                hydratedChecklist,
+                (status, percent) => {
+                    setLoadingProgress(prev => ({ ...prev, status, percent }));
+                },
+                onPermissionFallback
+            );
 
-            if (isCancelledRef.current) throw new Error("Cancelled");
+            const sentCount = summary.sent.length;
+            const failedCount = summary.failed.length;
+            const done = failedCount === 0
+                ? `Sent ${sentCount} supplier email${sentCount === 1 ? '' : 's'}.`
+                : `Sent ${sentCount}, ${failedCount} failed.`;
 
-            // 2. Check items
-            const rfqChecklist = service.filterRfqChecklist(hydratedChecklist);
-            const hasItems = rfqChecklist.workgroups.some(wg => wg.rows.length > 0);
+            setLoadingProgress(prev => ({ ...prev, status: done, percent: 100 }));
+            setTimeout(() => setLoadingProgress({ open: false, title: '', status: '', percent: 0, cancelled: false }), 2500);
 
-            if (!hasItems) {
-                throw new Error("No RFQ items found.");
-            }
-
-            setLoadingProgress(prev => ({ ...prev, status: 'Fetching branding...', percent: 15 }));
-
-            // 3. Fetch Logo
-            let logoBlob: Blob | null = null;
-            try {
-                logoBlob = await getImageService().downloadClientLogoContent(hydratedChecklist.id);
-            } catch { /* ignore */ }
-
-            if (isCancelledRef.current) throw new Error("Cancelled");
-
-            // 4. Generate PDF
-            const pdfBlob = await service.generateRfqPdf(hydratedChecklist, logoBlob, (status, percent) => {
-                if (isCancelledRef.current) return false;
-                setLoadingProgress(prev => ({ ...prev, status, percent: 15 + (percent * 0.8) }));
-                return true;
-            });
-
-            if (isCancelledRef.current) throw new Error("Cancelled");
-            setLoadingProgress(prev => ({ ...prev, status: 'Sending email...', percent: 95 }));
-
-            // 5. Send Email
-            await service.sendRfqEmail(hydratedChecklist, pdfBlob);
-
-            if (isCancelledRef.current) throw new Error("Cancelled");
-            setLoadingProgress(prev => ({ ...prev, status: 'Email sent successfully!', percent: 100 }));
-
-            setTimeout(() => setLoadingProgress({ open: false, title: '', status: '', percent: 0, cancelled: false }), 2000);
-
+            return summary;
         } catch (error: any) {
-            console.error("RFQ Email Error", error);
-            const msg = error.message === "Cancelled" ? "Email cancelled" : (error.message || "Unknown error occurred");
+            console.error('RFQ Email Error', error);
+            const msg = error?.message || 'Unknown error occurred';
             setLoadingProgress(prev => ({ ...prev, status: 'Error: ' + msg, percent: 100 }));
             setTimeout(() => setLoadingProgress({ open: false, title: '', status: '', percent: 0, cancelled: false }), 4000);
+            throw error;
         }
     };
 
     return {
         exportRfqCsv,
-        emailRfq,
+        previewRfqSend,
+        sendRfqToSuppliers,
         loadingProgress,
         cancelExport
     };

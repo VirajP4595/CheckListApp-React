@@ -43,11 +43,12 @@ export class BtcExportService {
     public async generateBtcPdf(
         checklist: Checklist,
         brandingLogoBlob: Blob | null,
-        onProgress: (status: string, percent: number) => boolean
+        onProgress: (status: string, percent: number) => boolean,
+        papLogoBlob?: Blob | null
     ): Promise<Blob> {
         const btcChecklist = this.filterBtcChecklist(checklist);
         const pdfService = new PdfGeneratorService(btcChecklist);
-        return pdfService.generate(brandingLogoBlob, onProgress);
+        return pdfService.generate(brandingLogoBlob, onProgress, papLogoBlob);
     }
 
     /**

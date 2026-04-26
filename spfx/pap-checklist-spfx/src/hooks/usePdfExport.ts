@@ -67,6 +67,19 @@ export const usePdfExport = () => {
                 }
             }
 
+            // STEP 3b: Fetch PAP Company Logo from SiteAssets
+            let papLogoBlob: Blob | null = null;
+            try {
+                const { AppConfig } = await import('../config/environment');
+                const papLogoUrl = `${AppConfig.sharepoint.absoluteUrl}/SiteAssets/PAPLogo/2024_PAP%20logo%20vert_transparent%20bkgrd_HR.png`;
+                const response = await fetch(papLogoUrl);
+                if (response.ok) {
+                    papLogoBlob = await response.blob();
+                }
+            } catch (e) {
+                console.warn('Could not fetch PAP logo for PDF', e);
+            }
+
             const pdfBlob = await generator.generate(logoBlob, (status, percent) => {
                 if (isCancelledRef.current) return false; // Abort
 
@@ -74,7 +87,7 @@ export const usePdfExport = () => {
                 const adjustedPercent = 20 + (percent * 0.75);
                 setLoadingProgress(prev => ({ ...prev, status, percent: adjustedPercent }));
                 return true;
-            });
+            }, papLogoBlob);
 
             // Upload
             setLoadingProgress(prev => ({ ...prev, status: 'Uploading...', percent: 95 }));

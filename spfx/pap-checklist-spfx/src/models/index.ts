@@ -4,10 +4,10 @@ export type AnswerState = 'YES' | 'NO' | 'BLANK' | 'PS' | 'PC' | 'SUB' | 'OTS' |
 export const ANSWER_STATES: AnswerState[] = ['YES', 'NO', 'BLANK', 'PS', 'PC', 'SUB', 'OTS', 'TBC', 'OPT_EXTRA', 'BUILDER_SPEC', 'RFQ', 'SPECS_PLANS'];
 
 export const ANSWER_CONFIG: Record<AnswerState, { label: string; color: string; description: string }> = {
-    YES: { label: 'Yes', color: '#107c10', description: 'Included' },
+    YES: { label: 'Yes', color: '#60923f', description: 'Included' },
     NO: { label: 'Noted as Excluded', color: '#d13438', description: 'Noted as excluded from scope' },
     BLANK: { label: 'Nothing Selected', color: '#8a8886', description: 'Intentionally unanswered' },
-    PS: { label: 'PS', color: '#ff8c00', description: 'Provisional Sum' },
+    PS: { label: 'PS', color: '#004985', description: 'Provisional Sum' },
     PC: { label: 'PC', color: '#0078d4', description: 'Prime Cost' },
     SUB: { label: 'Subcontractor Quote', color: '#8764b8', description: 'Subcontractor' },
     OTS: { label: 'OTS', color: '#038387', description: 'Owner to Supply' },
@@ -57,6 +57,16 @@ export interface ChecklistImage {
     order: number;
 }
 
+// ─── RFQ LINE ITEM (table rendered inside RFQ rows) ──────
+export interface RfqLineItem {
+    id: string;
+    itemNo: string;        // "1", "2", "3a"... free text, auto-indexed on create
+    description: string;   // Plain text description
+    qty: string;           // Free text to preserve decimals e.g. "15.29"
+    unit: string;          // "m2", "item", etc.
+    imageId?: string;      // References a ChecklistImage.id on the same row
+}
+
 // ─── CHECKLIST ROW ───────────────────────────────────────
 export interface ChecklistRow {
     id: string;
@@ -67,6 +77,8 @@ export interface ChecklistRow {
     answer: AnswerState;
     supplierName?: string;  // Only relevant when answer = 'RFQ'
     supplierEmail?: string; // Only relevant when answer = 'RFQ'
+    specifiedBy?: string;   // Only relevant when answer = 'RFQ' — who specified the product
+    rfqLineItems?: RfqLineItem[]; // Only relevant when answer = 'RFQ'
     notes: string;
     markedForReview: boolean;
     notifyAdmin: boolean;

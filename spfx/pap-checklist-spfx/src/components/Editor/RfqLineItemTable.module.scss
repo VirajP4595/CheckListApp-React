@@ -1,0 +1,242 @@
+@use '../../styles/variables' as *;
+@use '../../styles/_mixins' as *;
+
+.rfq-table-wrapper {
+    width: 100%;
+    margin-top: $spacing-3;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-md;
+    background: $color-white;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.rfq-table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-2 $spacing-3;
+    background: rgba($color-primary, 0.06);
+    border-bottom: 1px solid $color-border;
+}
+
+.rfq-table-title {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.rfq-table-empty {
+    padding: $spacing-4 $spacing-3;
+    text-align: center;
+    color: $color-gray-600;
+    font-size: $font-size-sm;
+    font-style: italic;
+}
+
+.rfq-table {
+    display: flex;
+    flex-direction: column;
+}
+
+// 6-column grid: Item No | Description | Image | Qty | Unit | Actions
+$grid-cols: 64px minmax(0, 1fr) 120px 80px 80px 96px;
+
+.rfq-row {
+    display: grid;
+    grid-template-columns: $grid-cols;
+    gap: $spacing-3;
+    padding: $spacing-2 $spacing-3;
+    align-items: center;
+    border-bottom: 1px solid rgba($color-border, 0.6);
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &:nth-child(even):not(.rfq-row--head) {
+        background: rgba($color-primary, 0.015);
+    }
+
+    &--head {
+        background: #0a6dbc;
+        color: $color-white;
+        font-weight: $font-weight-bold;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding-top: 10px;
+        padding-bottom: 10px;
+
+        // Header cells get their own alignment matching body cells
+        .c-itemno,
+        .c-qty,
+        .c-unit {
+            text-align: center;
+        }
+
+        .c-image {
+            text-align: center;
+        }
+    }
+}
+
+.c-itemno,
+.c-desc,
+.c-image,
+.c-qty,
+.c-unit,
+.c-actions {
+    min-width: 0;
+}
+
+// Portal-style filled input applied to every cell input/textarea
+.cell-input {
+    @include input-filled;
+
+    & {
+        background-color: $color-white !important;
+        font-size: $font-size-sm;
+        min-height: 36px;
+        width: 100%;
+    }
+
+    &:focus,
+    &:focus-within {
+        background-color: $color-white !important;
+    }
+
+    :global(.fui-Input__input),
+    :global(.fui-Textarea__textarea) {
+        width: 100%;
+        font-size: $font-size-sm;
+    }
+}
+
+.cell-input--center :global(.fui-Input__input) {
+    text-align: center;
+}
+
+.cell-input--textarea {
+    & {
+        min-height: 36px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+    }
+
+    :global(.fui-Textarea__textarea) {
+        padding: 6px $spacing-3 !important;
+        line-height: 1.4;
+    }
+}
+
+.c-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.c-actions {
+    display: flex;
+    gap: 2px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+// Image-cell controls
+.img-bound {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+}
+
+.img-thumb {
+    width: 110px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: $border-radius-sm;
+    border: 1px solid $color-border;
+}
+
+.img-remove {
+    position: absolute !important;
+    top: 2px;
+    right: 2px;
+    min-width: auto !important;
+    padding: 2px !important;
+    background: rgba(0, 0, 0, 0.55) !important;
+    color: #fff !important;
+    border-radius: 50% !important;
+}
+
+.img-pick-btn {
+    width: 110px;
+    height: 70px;
+    border: 1.5px dashed $color-border !important;
+    background: rgba($color-primary, 0.03) !important;
+    color: $color-primary !important;
+    border-radius: $border-radius-sm !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+
+    &:hover:not(:disabled) {
+        background: rgba($color-primary, 0.08) !important;
+        border-color: $color-primary !important;
+    }
+
+    &:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+}
+
+// Image picker dialog grid
+.img-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-2;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.img-picker-tile {
+    width: 140px;
+    height: 100px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: $border-radius-sm;
+    background: $color-white;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.15s;
+
+    &:hover {
+        border-color: $color-primary;
+    }
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+@media (max-width: 960px) {
+    .rfq-row {
+        grid-template-columns: 56px minmax(0, 1fr) 100px 70px 70px 88px;
+        gap: $spacing-2;
+    }
+
+    .img-thumb,
+    .img-pick-btn {
+        width: 90px;
+        height: 60px;
+    }
+}

@@ -63,6 +63,19 @@ export const useBtcExport = () => {
                 logoBlob = await getImageService().downloadClientLogoContent(hydratedChecklist.id);
             } catch { /* ignore missing logo */ }
 
+            // 3b. Fetch PAP Company Logo from SiteAssets
+            let papLogoBlob: Blob | null = null;
+            try {
+                const { AppConfig } = await import('../config/environment');
+                const papLogoUrl = `${AppConfig.sharepoint.absoluteUrl}/SiteAssets/PAPLogo/2024_PAP%20logo%20vert_transparent%20bkgrd_HR.png`;
+                const response = await fetch(papLogoUrl);
+                if (response.ok) {
+                    papLogoBlob = await response.blob();
+                }
+            } catch (e) {
+                console.warn('Could not fetch PAP logo for PDF', e);
+            }
+
             if (isCancelledRef.current) throw new Error("Cancelled");
 
             // 4. Generate PDF
@@ -70,7 +83,7 @@ export const useBtcExport = () => {
                 if (isCancelledRef.current) return false;
                 setLoadingProgress(prev => ({ ...prev, status, percent: 15 + (percent * 0.8) }));
                 return true;
-            });
+            }, papLogoBlob);
 
             if (isCancelledRef.current) throw new Error("Cancelled");
             setLoadingProgress(prev => ({ ...prev, status: 'Sending email...', percent: 95 }));

@@ -15,7 +15,10 @@ export const AppConfig = {
     // Auth config removed - handled by SPFx Context
     admin: {
         superAdminGroup: "SP_Checklist_SuperAdmin",
-        btcAdminEmail: "IT_Team@priceaplan.com.au;adrienne@priceaplan.com.au"
+        btcAdminEmail: "IT_Team@priceaplan.com.au;adrienne@priceaplan.com.au",
+        // Shared mailbox used as the "From" address for RFQ supplier emails.
+        // Signed-in estimators must have Send-As or Send-On-Behalf permission on this mailbox.
+        rfqSenderMailbox: "estimates@priceaplan.com.au"
     },
     powerAutomate: {
         //DEV

@@ -7,7 +7,12 @@ export const BRAND_COLORS = {
     LIME: '#c8da2d',  // Accents
     WHITE: '#ffffff',
     BLACK: '#000000',
-    GRAY: '#808080'
+    GRAY: '#808080',
+    // PDF-specific PAP Brand Colors
+    HEADER_BG: '#265479',    // Workgroup header background (navy)
+    NOTES_BORDER: '#a7b646', // Notes left border (PAP lime-green)
+    NOTES_BG: '#f5f7e8',    // Notes background (light green tint)
+    NOTES_LABEL: '#5a6322',  // Notes label text (dark olive)
 };
 
 interface TextNode {

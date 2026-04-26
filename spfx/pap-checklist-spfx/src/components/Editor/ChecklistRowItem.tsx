@@ -20,6 +20,7 @@ import { RichTextEditor } from './RichTextEditor';
 import { VoiceInputButton } from './VoiceInputButton';
 import { InlineImageArea } from './InlineImageArea';
 import { NotifyAdminDialog } from './NotifyAdminDialog';
+import { RfqLineItemTable } from './RfqLineItemTable';
 import styles from './ChecklistRowItem.module.scss';
 
 interface ChecklistRowItemProps {
@@ -175,6 +176,16 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                                     type="email"
                                 />
                             </div>
+                            <div className={styles['rfq-field']}>
+                                <span className={styles['rfq-field-label']}>Specified By</span>
+                                <Input
+                                    className={styles['rfq-input']}
+                                    value={row.specifiedBy || ''}
+                                    onChange={(_, data) => updateRow(row.id, { specifiedBy: data.value })}
+                                    onBlur={() => void saveRow(row.id)}
+                                    placeholder="e.g. Architect, Client, Builder..."
+                                />
+                            </div>
                         </div>
                     )}
 
@@ -294,6 +305,14 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                             onRemoveImage={handleImageRemove}
                         />
                     </div>
+                    {row.answer === 'RFQ' && (
+                        <RfqLineItemTable
+                            value={row.rfqLineItems || []}
+                            images={row.images}
+                            onChange={(next) => updateRow(row.id, { rfqLineItems: next })}
+                            onBlurSave={() => { void saveRow(row.id); }}
+                        />
+                    )}
                 </div>
             )}
         </div>

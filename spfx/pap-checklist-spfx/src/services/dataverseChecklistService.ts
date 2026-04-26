@@ -82,6 +82,8 @@ interface DataverseRow {
     pap_section?: string; // Single line of text
     pap_suppliername?: string;
     pap_supplieremail?: string;
+    pap_specifiedby?: string;
+    pap_rfqlineitems?: string; // JSON-serialized RfqLineItem[]
     pap_notes?: string;
     pap_markedforreview: boolean;
     pap_notifyadmin: boolean;
@@ -176,6 +178,22 @@ function parseWorkgroupChat(raw: string | null | undefined): ChecklistComment[] 
     return [];
 }
 
+function parseRfqLineItems(raw: string | undefined | null): import('../models').RfqLineItem[] | undefined {
+    if (!raw) return undefined;
+    try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed as import('../models').RfqLineItem[];
+        // Handle accidental double-encoding
+        if (typeof parsed === 'string') {
+            const inner = JSON.parse(parsed);
+            if (Array.isArray(inner)) return inner as import('../models').RfqLineItem[];
+        }
+    } catch (e) {
+        console.warn('[DataverseService] RfqLineItems JSON parse error:', raw);
+    }
+    return undefined;
+}
+
 function mapRow(dv: DataverseRow): ChecklistRow {
     return {
         id: dv.pap_checklistrowid,
@@ -186,6 +204,8 @@ function mapRow(dv: DataverseRow): ChecklistRow {
         answer: ANSWER_MAP[dv.pap_answer] || 'BLANK',
         supplierName: dv.pap_suppliername || undefined,
         supplierEmail: dv.pap_supplieremail || undefined,
+        specifiedBy: dv.pap_specifiedby || undefined,
+        rfqLineItems: parseRfqLineItems(dv.pap_rfqlineitems),
         notes: dv.pap_notes || '',
         markedForReview: dv.pap_markedforreview || false,
         notifyAdmin: dv.pap_notifyadmin || false,
@@ -336,6 +356,8 @@ export class DataverseChecklistService implements IChecklistService {
                 col('section'),
                 col('suppliername'),
                 col('supplieremail'),
+                col('specifiedby'),
+                col('rfqlineitems'),
                 col('notes'),
                 col('markedforreview'),
                 col('notifyadmin'),
@@ -675,6 +697,8 @@ export class DataverseChecklistService implements IChecklistService {
             [col('section')]: rowData.section || null,
             [col('suppliername')]: rowData.supplierName || null,
             [col('supplieremail')]: rowData.supplierEmail || null,
+            [col('specifiedby')]: rowData.specifiedBy || null,
+            [col('rfqlineitems')]: rowData.rfqLineItems && rowData.rfqLineItems.length > 0 ? JSON.stringify(rowData.rfqLineItems) : null,
             [col('notes')]: rowData.notes || '',
             [col('markedforreview')]: rowData.markedForReview || false,
             [col('notifyadmin')]: rowData.notifyAdmin || false,
@@ -697,6 +721,8 @@ export class DataverseChecklistService implements IChecklistService {
             section: rowData.section,
             supplierName: rowData.supplierName,
             supplierEmail: rowData.supplierEmail,
+            specifiedBy: rowData.specifiedBy,
+            rfqLineItems: rowData.rfqLineItems,
             notes: rowData.notes || '',
             markedForReview: rowData.markedForReview || false,
             notifyAdmin: rowData.notifyAdmin || false,
@@ -716,6 +742,8 @@ export class DataverseChecklistService implements IChecklistService {
             [col('section')]: row.section || null,
             [col('suppliername')]: row.supplierName || null,
             [col('supplieremail')]: row.supplierEmail || null,
+            [col('specifiedby')]: row.specifiedBy || null,
+            [col('rfqlineitems')]: row.rfqLineItems && row.rfqLineItems.length > 0 ? JSON.stringify(row.rfqLineItems) : null,
             [col('notes')]: row.notes,
             [col('markedforreview')]: row.markedForReview,
             [col('notifyadmin')]: row.notifyAdmin,

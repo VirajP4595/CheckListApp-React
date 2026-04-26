@@ -20,7 +20,8 @@ export class PdfGeneratorService {
      */
     public async generate(
         brandingLogoBlob: Blob | null,
-        onProgress: (status: string, percent: number) => boolean
+        onProgress: (status: string, percent: number) => boolean,
+        papLogoBlob?: Blob | null
     ): Promise<Blob> {
 
 
@@ -47,6 +48,17 @@ export class PdfGeneratorService {
             } catch (e) { console.warn("Logo dimensions unknown", e); }
         }
 
+        // PAP Company Logo (Top Left)
+        let papLogoDataUrl: string | undefined = undefined;
+        let papLogoRatio = 1;
+        if (papLogoBlob) {
+            try {
+                papLogoDataUrl = await this.readBlobAsDataURL(papLogoBlob);
+                const props = await this.getImageProperties(papLogoDataUrl);
+                papLogoRatio = props.ratio;
+            } catch (e) { console.warn("PAP Logo dimensions unknown", e); }
+        }
+
         // --- Layout Helpers ---
         let cursorY = margin.top;
 
@@ -55,18 +67,30 @@ export class PdfGeneratorService {
             doc.setFillColor(BRAND_COLORS.WHITE);
             doc.rect(0, 0, pageWidth, 30, 'F'); // White background for header
 
-            // 1. Job Name (Top Left) - Replaces GUID
+            // PAP Logo (Top Left)
+            let textStartX = margin.left;
+            if (papLogoDataUrl) {
+                const papMaxH = 21;
+                const papLogoH = papMaxH;
+                const papLogoW = papLogoH * papLogoRatio;
+                const papLogoX = margin.left;
+                const papLogoY = 5; // 5mm from top
+                doc.addImage(papLogoDataUrl, 'PNG', papLogoX, papLogoY, papLogoW, papLogoH);
+                textStartX = margin.left + papLogoW + 3; // Shift text right of PAP logo
+            }
+
+            // 1. Job Name
             doc.setFontSize(10);
             doc.setTextColor(BRAND_COLORS.GRAY);
             doc.setFont('helvetica', 'bold');
             const jobName = this.checklist.jobDetails?.jobName || '';
-            doc.text(jobName.toUpperCase(), margin.left, 10);
+            doc.text(jobName.toUpperCase(), textStartX, 10);
 
             // 2. Checklist Title
             doc.setFontSize(18);
             doc.setTextColor(BRAND_COLORS.BLACK);
             doc.setFont('helvetica', 'bold');
-            doc.text(this.checklist.title, margin.left, 18);
+            doc.text(this.checklist.title, textStartX, 18);
 
             // 3. Metadata Line (Client | Status | Rev | Date)
             doc.setFontSize(9);
@@ -79,7 +103,7 @@ export class PdfGeneratorService {
             const revLabel = `Rev ${this.checklist.currentRevisionNumber}`;
             const dateLabel = new Date().toLocaleDateString();
 
-            doc.text(`${clientName}${jobType}${statusLabel} | ${revLabel} | ${dateLabel}`, margin.left, 24);
+            doc.text(`${clientName}${jobType}${statusLabel} | ${revLabel} | ${dateLabel}`, textStartX, 24);
 
             // Blue Separator Line
             const lineY = 28;
@@ -87,18 +111,13 @@ export class PdfGeneratorService {
             doc.setLineWidth(0.5);
             doc.line(margin.left, lineY, pageWidth - margin.right, lineY);
 
-            // Logo (Right Aligned, Maximize Height)
+            // Client/Branding Logo (Right Aligned, Maximize Height)
             if (logoDataUrl) {
-                // Available height from Top(5) to Line(28) -> 23mm
-                // Leave 2mm padding -> 21mm max height
                 const maxH = 21;
                 const logoH = maxH;
                 const logoW = logoH * logoRatio;
-
-                // Position: Right aligned, Bottom aligned to line (minus padding)
                 const logoX = pageWidth - margin.right - logoW;
-                const logoY = lineY - logoH - 1; // 1mm above line
-
+                const logoY = lineY - logoH - 1;
                 doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoW, logoH);
             }
         };
@@ -110,6 +129,10 @@ export class PdfGeneratorService {
             doc.text(`Page ${page} of ${totalPages}`, pageWidth / 2, footerY, { align: 'center' });
             if (this.checklist.jobDetails?.jobName) {
                 doc.text(this.checklist.jobDetails.jobName, margin.left, footerY);
+            }
+            // Builder business name (right-aligned)
+            if (this.checklist.jobDetails?.builderName) {
+                doc.text(this.checklist.jobDetails.builderName, pageWidth - margin.right, footerY, { align: 'right' });
             }
         };
 
@@ -130,10 +153,10 @@ export class PdfGeneratorService {
         if (this.checklist.commonNotes && this.checklist.commonNotes.length > 0) {
             checkPageBreak(15);
             cursorY += 2;
-            doc.setFillColor('#f3f2f1');
+            doc.setFillColor(BRAND_COLORS.HEADER_BG);
             doc.rect(margin.left, cursorY, contentWidth, 8, 'F');
             doc.setFontSize(10);
-            doc.setTextColor(BRAND_COLORS.BLUE);
+            doc.setTextColor(BRAND_COLORS.WHITE);
             doc.setFont('helvetica', 'bold');
             doc.text('COMMON NOTES', margin.left + 2, cursorY + 5.5);
             cursorY += 10;
@@ -184,10 +207,10 @@ export class PdfGeneratorService {
             // -- Workgroup Header --
             checkPageBreak(15);
             cursorY += 2;
-            doc.setFillColor('#f3f2f1'); 
+            doc.setFillColor(BRAND_COLORS.HEADER_BG); 
             doc.rect(margin.left, cursorY, contentWidth, 10, 'F');
             doc.setFontSize(11);
-            doc.setTextColor(BRAND_COLORS.BLUE);
+            doc.setTextColor(BRAND_COLORS.WHITE);
             doc.setFont('helvetica', 'bold');
             doc.text(`${wg.number}  ${wg.name}`, margin.left + 2, cursorY + 7);
             cursorY += 12;
@@ -287,9 +310,9 @@ export class PdfGeneratorService {
                         drawY += 1;
                         const bH = this.renderer.measureHeight(row.notes, fullW) + 5;
                         if (drawY + bH > pageHeight - margin.bottom) { doc.addPage(); drawY = margin.top + 2; }
-                        doc.setFillColor('#fff9e6'); doc.rect(margin.left, drawY, fullW, bH, 'F');
-                        doc.setFillColor('#fce100'); doc.rect(margin.left, drawY, 1.5, bH, 'F');
-                        doc.setFontSize(8); doc.setTextColor('#8a6d3b'); doc.setFont('helvetica', 'bold');
+                        doc.setFillColor(BRAND_COLORS.NOTES_BG); doc.rect(margin.left, drawY, fullW, bH, 'F');
+                        doc.setFillColor(BRAND_COLORS.NOTES_BORDER); doc.rect(margin.left, drawY, 1.5, bH, 'F');
+                        doc.setFontSize(8); doc.setTextColor(BRAND_COLORS.NOTES_LABEL); doc.setFont('helvetica', 'bold');
                         doc.text("NOTES:", margin.left + 3, drawY + 3.5);
                         doc.setFontSize(9); doc.setTextColor('#484644'); doc.setFont('helvetica', 'normal');
                         this.renderer.render(row.notes, margin.left + 3, drawY + 5, fullW - 4, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; });
