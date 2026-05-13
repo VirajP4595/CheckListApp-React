@@ -233,10 +233,6 @@ function mapWorkgroup(dv: DataverseWorkgroup): Workgroup {
 }
 
 function mapChecklist(dv: DataverseChecklist): Checklist {
-    // DEBUG: Inspect raw data for chat issues
-    // console.log('[DataverseService] Mapping Checklist:', dv.pap_checklistid);
-    // console.log('[DataverseService] Raw Chat Data:', dv.pap_chatdata);
-    // console.log('[DataverseService] All Keys:', Object.keys(dv));
 
     // Access child workgroups using the navigation property name from navprops
     const workgroups = (dv[navprops.checklist_workgroups] as DataverseWorkgroup[] | undefined) || [];
@@ -438,7 +434,14 @@ export class DataverseChecklistService implements IChecklistService {
                 jobType: dv.pap_jobid["vin_jobtype@OData.Community.Display.V1.FormattedValue"] || '',
                 meetingOccurred: dv.pap_jobid.vin_jobstartmtg ?? true,
                 checklistChoice: dv.pap_jobid["vin_checklistchoice@OData.Community.Display.V1.FormattedValue"] || dv.pap_jobid.vin_checklistchoice,
-                appointmentDate: dv.pap_jobid.vin_checklistappointment ? new Date(dv.pap_jobid.vin_checklistappointment) : null
+                appointmentDate: dv.pap_jobid.vin_checklistappointment ? new Date(dv.pap_jobid.vin_checklistappointment) : null,
+                builderName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '',
+                siteAddress: dv.pap_jobid.vin_buildarea || '',
+                qbeFlagged: dv.pap_jobid.vin_qbeflagged ?? false,
+                qbeLow: dv.pap_jobid.vin_qbelow ?? null,
+                qbeHigh: dv.pap_jobid.vin_qbehigh ?? null,
+                engineering: null,
+                threeDModel: dv.pap_jobid.vin_dmodelsuited ?? null,
             } : undefined,
             comments: (() => {
                 const raw = dv.pap_chatdata || (dv.pap_ChatData as unknown as string);
