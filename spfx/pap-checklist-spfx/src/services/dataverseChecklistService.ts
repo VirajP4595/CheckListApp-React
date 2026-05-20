@@ -22,6 +22,13 @@ interface DataverseChecklist {
     pap_filedata?: string;
     pap_carpentrylabourimageurl?: string;
     pap_carpentrylabourdescription?: string;
+    // General Info Section fields
+    pap_hardsubmissiondeadline?: boolean;
+    pap_hardsubmissiondate?: string | null;
+    pap_buildersuppliedquotes?: boolean;
+    pap_contracttype?: number | null;      // 1=Standard, 2=Cost Plus (Choice)
+    pap_buildstages?: boolean;
+    pap_buildstagesnotes?: string;
     _pap_jobid_value?: string;
     // Navigation property for Job lookup
     pap_jobid?: {
@@ -42,12 +49,15 @@ interface DataverseChecklist {
         vin_checklistchoice?: number | null;
         "vin_checklistchoice@OData.Community.Display.V1.FormattedValue"?: string;
         vin_checklistappointment?: string | null;
-        // Job Metadata Header fields (TEMP column names — pending client confirmation)
-        vin_buildarea?: string;          // TEMP: site address
-        vin_qbeflagged?: boolean;        // QBE flagged yes/no
+        // Job Metadata Header fields
+        vin_buildarea?: boolean;         // Boolean flag (NOT the site address — vin_name is the address)
+        vin_qbeflagged?: boolean;        // QBE flagged for review (different from QB Complete)
+        vin_qbecomplete?: boolean;       // QB Complete = Yes/No (the field shown in FQE card)
         vin_qbelow?: number | null;      // QBE low estimate
         vin_qbehigh?: number | null;     // QBE high estimate
-        vin_dmodelsuited?: boolean | null; // TEMP: 3D model
+        vin_dmodelsuited?: boolean | null; // 3D model suited
+        vin_googlemapslink?: string;     // Google Maps URL stored on job record
+        vin_revisionnumber?: number | null; // FQE revision number for sync detection
     };
     createdby?: {
         fullname: string;
@@ -162,7 +172,7 @@ function parseCommonNotes(raw: string | null | undefined): CommonNoteSection[] {
         if (Array.isArray(parsed)) return parsed as CommonNoteSection[];
     } catch { /* not JSON — legacy plain-text/HTML */ }
     // Migrate legacy single-value to array
-    return [{ id: generateId(), title: 'Common Notes', content: raw, order: 0 }];
+    return [{ id: generateId(), title: 'General Notes', content: raw, order: 0 }];
 }
 
 /** Parse pap_chatdata on workgroup: JSON array of ChecklistComment[] */
@@ -249,14 +259,16 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
         meetingOccurred: dv.pap_jobid.vin_jobstartmtg ?? true, // Default to true if null/omitted
         checklistChoice: dv.pap_jobid["vin_checklistchoice@OData.Community.Display.V1.FormattedValue"] || dv.pap_jobid.vin_checklistchoice,
         appointmentDate: dv.pap_jobid.vin_checklistappointment ? new Date(dv.pap_jobid.vin_checklistappointment) : null,
-        // Job Metadata Header fields (TEMP column names — pending client confirmation)
-        builderName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '', // TEMP: using client name
-        siteAddress: dv.pap_jobid.vin_buildarea || '',  // TEMP: TBC
-        qbeFlagged: dv.pap_jobid.vin_qbeflagged ?? false,
+        // Job Metadata Header fields
+        builderName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '',
+        siteAddress: dv.pap_jobid.vin_name || '',   // vin_name IS the job address
+        qbeFlagged: dv.pap_jobid.vin_qbecomplete ?? false,   // QB Complete (vin_qbeflagged is a separate "flagged for review" concept)
         qbeLow: dv.pap_jobid.vin_qbelow ?? null,
         qbeHigh: dv.pap_jobid.vin_qbehigh ?? null,
-        engineering: null,   // TEMP: column unknown — TBC with client
-        threeDModel: dv.pap_jobid.vin_dmodelsuited ?? null,  // TEMP: TBC
+        engineering: null,
+        threeDModel: dv.pap_jobid.vin_dmodelsuited ?? null,
+        googleMapsLink: dv.pap_jobid.vin_googlemapslink || '',
+        fqeRevisionNumber: dv.pap_jobid.vin_revisionnumber ?? null,
     } : undefined;
     return {
         id: dv.pap_checklistid,
@@ -280,6 +292,12 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
         files: parseJsonField(dv.pap_filedata),
         carpentryLabourImageUrl: dv.pap_carpentrylabourimageurl,
         carpentryLabourDescription: dv.pap_carpentrylabourdescription,
+        hardDeadline: dv.pap_hardsubmissiondeadline ?? false,
+        hardDeadlineDate: dv.pap_hardsubmissiondate ? new Date(dv.pap_hardsubmissiondate) : null,
+        builderSuppliedQuotes: dv.pap_buildersuppliedquotes ?? false,
+        contractType: dv.pap_contracttype === 1 ? 'standard' : dv.pap_contracttype === 2 ? 'cost-plus' : null,
+        buildStages: dv.pap_buildstages ?? false,
+        buildStagesNotes: dv.pap_buildstagesnotes || '',
         jobDetails: jobDetails,
         createdBy: dv.createdby?.fullname || '',
         createdAt: new Date(dv.createdon),
@@ -304,13 +322,19 @@ export class DataverseChecklistService implements IChecklistService {
             col('filedata'),
             col('carpentrylabourimageurl'),
             col('carpentrylabourdescription'),
+            col('hardsubmissiondeadline'),
+            col('hardsubmissiondate'),
+            col('buildersuppliedquotes'),
+            col('contracttype'),
+            col('buildstages'),
+            col('buildstagesnotes'),
             `_${col('jobid')}_value`,
             'createdon',
             'modifiedon'
         ].join(',');
 
         // Expand Job to get details
-        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg,vin_checklistchoice,vin_checklistappointment,vin_buildarea,vin_qbeflagged,vin_qbelow,vin_qbehigh,vin_dmodelsuited),createdby($select=fullname)`;
+        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg,vin_checklistchoice,vin_checklistappointment,vin_qbecomplete,vin_qbeflagged,vin_qbelow,vin_qbehigh,vin_dmodelsuited,vin_googlemapslink,vin_revisionnumber),createdby($select=fullname)`;
 
         const dv = await dataverseClient.getById<DataverseChecklist>(
             entities.checklists,
@@ -436,18 +460,26 @@ export class DataverseChecklistService implements IChecklistService {
                 checklistChoice: dv.pap_jobid["vin_checklistchoice@OData.Community.Display.V1.FormattedValue"] || dv.pap_jobid.vin_checklistchoice,
                 appointmentDate: dv.pap_jobid.vin_checklistappointment ? new Date(dv.pap_jobid.vin_checklistappointment) : null,
                 builderName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '',
-                siteAddress: dv.pap_jobid.vin_buildarea || '',
-                qbeFlagged: dv.pap_jobid.vin_qbeflagged ?? false,
+                siteAddress: dv.pap_jobid.vin_name || '',   // vin_name IS the job address
+                qbeFlagged: dv.pap_jobid.vin_qbecomplete ?? false,   // QB Complete (not vin_qbeflagged which is a different concept)
                 qbeLow: dv.pap_jobid.vin_qbelow ?? null,
                 qbeHigh: dv.pap_jobid.vin_qbehigh ?? null,
                 engineering: null,
                 threeDModel: dv.pap_jobid.vin_dmodelsuited ?? null,
+                googleMapsLink: dv.pap_jobid.vin_googlemapslink || '',
+                fqeRevisionNumber: dv.pap_jobid.vin_revisionnumber ?? null,
             } : undefined,
             comments: (() => {
                 const raw = dv.pap_chatdata || (dv.pap_ChatData as unknown as string);
                 return parseJsonField(raw);
             })(),
             files: parseJsonField(dv.pap_filedata),
+            hardDeadline: dv.pap_hardsubmissiondeadline ?? false,
+            hardDeadlineDate: dv.pap_hardsubmissiondate ? new Date(dv.pap_hardsubmissiondate as string) : null,
+            builderSuppliedQuotes: dv.pap_buildersuppliedquotes ?? false,
+            contractType: dv.pap_contracttype === 1 ? 'standard' : dv.pap_contracttype === 2 ? 'cost-plus' : null,
+            buildStages: dv.pap_buildstages ?? false,
+            buildStagesNotes: dv.pap_buildstagesnotes as string || '',
             createdBy: '',
             createdAt: new Date(dv.createdon),
             updatedAt: new Date(dv.modifiedon)
@@ -560,13 +592,19 @@ export class DataverseChecklistService implements IChecklistService {
             col('estimatetype'), // Added as likely needed for card details
             col('chatdata'),
             col('filedata'),
+            col('hardsubmissiondeadline'),
+            col('hardsubmissiondate'),
+            col('buildersuppliedquotes'),
+            col('contracttype'),
+            col('buildstages'),
+            col('buildstagesnotes'),
             'createdon',
             'modifiedon',
             `_${col('jobid')}_value`
         ].join(',');
 
         // Expand Job to get details
-        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg,vin_checklistchoice,vin_checklistappointment),createdby($select=fullname)`;
+        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg,vin_checklistchoice,vin_checklistappointment,vin_qbecomplete,vin_googlemapslink,vin_revisionnumber),createdby($select=fullname)`;
 
         const response = await dataverseClient.get<{ value: DataverseChecklist[] }>(
             entities.checklists,
@@ -588,7 +626,14 @@ export class DataverseChecklistService implements IChecklistService {
             [col('chatdata')]: JSON.stringify(checklist.comments || []),
             [col('filedata')]: JSON.stringify(checklist.files || []),
             [col('carpentrylabourimageurl')]: checklist.carpentryLabourImageUrl || null,
-            [col('carpentrylabourdescription')]: checklist.carpentryLabourDescription || null
+            [col('carpentrylabourdescription')]: checklist.carpentryLabourDescription || null,
+            // General Info Section
+            [col('hardsubmissiondeadline')]: checklist.hardDeadline ?? false,
+            [col('hardsubmissiondate')]: checklist.hardDeadlineDate ? checklist.hardDeadlineDate.toISOString() : null,
+            [col('buildersuppliedquotes')]: checklist.builderSuppliedQuotes ?? false,
+            [col('contracttype')]: checklist.contractType === 'standard' ? 1 : checklist.contractType === 'cost-plus' ? 2 : null,
+            [col('buildstages')]: checklist.buildStages ?? false,
+            [col('buildstagesnotes')]: checklist.buildStagesNotes || null
         });
         return checklist;
     }

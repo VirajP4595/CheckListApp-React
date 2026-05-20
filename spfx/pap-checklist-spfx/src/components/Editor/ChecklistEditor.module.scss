@@ -217,6 +217,35 @@
 }
 
 // ============================================
+// FQE Revision Sync Banner
+// ============================================
+
+.fqe-revision-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-3;
+    padding: $spacing-3 $spacing-4;
+    background: #fff8e1;
+    border-bottom: 2px solid #f59e0b;
+    flex-wrap: wrap;
+
+    .fqe-revision-banner-text {
+        font-size: 13px;
+        font-weight: 500;
+        color: #92400e;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .fqe-revision-banner-actions {
+        display: flex;
+        align-items: center;
+        gap: $spacing-2;
+    }
+}
+
+// ============================================
 // Editor Layout
 // ============================================
 

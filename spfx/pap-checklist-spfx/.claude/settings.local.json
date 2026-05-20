@@ -3,7 +3,12 @@
     "allow": [
       "Skill(code-review:code-review)",
       "Bash(xargs grep:*)",
-      "Bash(grep -rn \"EOD\\\\|email.*alert\\\\|estimator.*activity\" /c/Projects/PAP-CheckList-React/spfx/pap-checklist-spfx/src --include=*.ts --include=*.tsx)"
+      "Bash(grep -rn \"EOD\\\\|email.*alert\\\\|estimator.*activity\" /c/Projects/PAP-CheckList-React/spfx/pap-checklist-spfx/src --include=*.ts --include=*.tsx)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(node -e \"const icons = require\\('./node_modules/@fluentui/react-icons'\\); const hl = Object.keys\\(icons\\).filter\\(k => k.toLowerCase\\(\\).includes\\('highlight'\\)\\); console.log\\(hl.slice\\(0,20\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(node -e \"const icons = require\\('@fluentui/react-icons'\\); const hl = Object.keys\\(icons\\).filter\\(k => /highlight|marker|pen|pencil/i.test\\(k\\) && k.includes\\('20'\\)\\); console.log\\(hl.join\\('\\\\n'\\)\\)\")",
+      "Bash(grep -E \"ERROR|error TS|FAILED|Done!$\")"
     ]
   }
 }

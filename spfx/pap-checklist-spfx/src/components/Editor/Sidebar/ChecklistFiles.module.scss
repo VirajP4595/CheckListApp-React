@@ -79,6 +79,12 @@
     border-color: $color-gray-200;
 }
 
+.files-upload--dragging {
+    background-color: rgba($color-primary, 0.06);
+    border-color: $color-primary;
+    border-style: solid;
+}
+
 // ...
 
 .files-item {

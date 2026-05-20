@@ -38,7 +38,8 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
         updateChecklist,
         addWorkgroup,
         processingItems,
-        deleteChecklist
+        deleteChecklist,
+        createRevision
     } = useChecklistStore();
 
     const { isSuperAdmin } = useUserStore();
@@ -59,6 +60,8 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
     const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, notifyAdmin: null, builderToConfirm: null, workgroupIds: [], showRowsWithData: false });
     const [expandWorkgroups, setExpandWorkgroups] = useState(false);  // Collapsed by default
     const [expandTasks, setExpandTasks] = useState(false);  // Collapsed by default
+    const [fqeBannerDismissed, setFqeBannerDismissed] = useState(false);
+    const [fqeBannerCreating, setFqeBannerCreating] = useState(false);
 
     const isCancelledRef = useRef(false);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -83,6 +86,11 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
             }
         };
     }, []);
+
+    // FQE revision sync: reset banner whenever a new checklist is loaded
+    useEffect(() => {
+        setFqeBannerDismissed(false);
+    }, [checklistId]);
 
     const handleViewPreview = async () => {
         if (!activeChecklist) return;
@@ -158,6 +166,24 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                 return styles['editor-status--in-revision'];
             default:
                 return styles['editor-status--draft'];
+        }
+    };
+
+    // ── FQE Revision sync banner ──────────────────────────────────────────────
+    const fqeRevisionNumber = activeChecklist?.jobDetails?.fqeRevisionNumber ?? null;
+    const showFqeBanner =
+        !fqeBannerDismissed &&
+        fqeRevisionNumber !== null &&
+        fqeRevisionNumber > (activeChecklist?.currentRevisionNumber ?? 0);
+
+    const handleFqeCreateRevision = async () => {
+        if (!fqeRevisionNumber) return;
+        setFqeBannerCreating(true);
+        try {
+            await createRevision(`FQE Revision ${fqeRevisionNumber}`, '');
+        } finally {
+            setFqeBannerCreating(false);
+            setFqeBannerDismissed(true);
         }
     };
 
@@ -294,10 +320,40 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                 </div>
             </header >
 
+            {/* FQE Revision Sync Banner */}
+            {showFqeBanner && (
+                <div className={styles['fqe-revision-banner']}>
+                    <span className={styles['fqe-revision-banner-text']}>
+                        FQE Revision {fqeRevisionNumber} detected — create a matching checklist revision?
+                    </span>
+                    <div className={styles['fqe-revision-banner-actions']}>
+                        <Button
+                            appearance="primary"
+                            size="small"
+                            onClick={() => void handleFqeCreateRevision()}
+                            disabled={fqeBannerCreating}
+                        >
+                            {fqeBannerCreating ? <Spinner size="extra-tiny" /> : 'Create Revision'}
+                        </Button>
+                        <Button
+                            appearance="subtle"
+                            size="small"
+                            onClick={() => setFqeBannerDismissed(true)}
+                        >
+                            Dismiss
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Main Layout */}
             < div className={styles['editor-layout']} >
                 <main className={styles['editor-main']}>
-                    <JobMetadataHeader checklist={activeChecklist} />
+                    <JobMetadataHeader
+                        checklist={activeChecklist}
+                        onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
+                        onSave={saveChecklist}
+                    />
 
 
 

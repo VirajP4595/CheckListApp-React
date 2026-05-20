@@ -53,7 +53,9 @@ export class PdfGeneratorService {
         let papLogoRatio = 1;
         if (papLogoBlob) {
             try {
-                papLogoDataUrl = await this.readBlobAsDataURL(papLogoBlob);
+                const rawPapLogoDataUrl = await this.readBlobAsDataURL(papLogoBlob);
+                // Upscale to 2× JPEG for crisp PDF rendering
+                papLogoDataUrl = await this.upscaleToPng(rawPapLogoDataUrl);
                 const props = await this.getImageProperties(papLogoDataUrl);
                 papLogoRatio = props.ratio;
             } catch (e) { console.warn("PAP Logo dimensions unknown", e); }
@@ -158,7 +160,7 @@ export class PdfGeneratorService {
             doc.setFontSize(10);
             doc.setTextColor(BRAND_COLORS.WHITE);
             doc.setFont('helvetica', 'bold');
-            doc.text('COMMON NOTES', margin.left + 2, cursorY + 5.5);
+            doc.text('GENERAL NOTES', margin.left + 2, cursorY + 5.5);
             cursorY += 10;
 
             for (const section of this.checklist.commonNotes) {
@@ -190,13 +192,7 @@ export class PdfGeneratorService {
             // Pre-calculate visible rows for this workgroup
             const visibleRows = wg.rows.filter((row: ChecklistRow) => {
                 const isBtcExport = this.checklist.title.startsWith('[BTC');
-                
-                // If it's a BTC checklist, ONLY show BTC rows (including internal ones if they are BTC)
-                if (isBtcExport) {
-                    return row.builderToConfirm;
-                }
-
-                // Normal export rules:
+                if (isBtcExport) return row.builderToConfirm;
                 if (row.internalOnly) return false;
                 if (row.answer === 'BLANK' && !row.builderToConfirm) return false;
                 return true;
@@ -207,7 +203,7 @@ export class PdfGeneratorService {
             // -- Workgroup Header --
             checkPageBreak(15);
             cursorY += 2;
-            doc.setFillColor(BRAND_COLORS.HEADER_BG); 
+            doc.setFillColor(BRAND_COLORS.HEADER_BG);
             doc.rect(margin.left, cursorY, contentWidth, 10, 'F');
             doc.setFontSize(11);
             doc.setTextColor(BRAND_COLORS.WHITE);
@@ -215,80 +211,59 @@ export class PdfGeneratorService {
             doc.text(`${wg.number}  ${wg.name}`, margin.left + 2, cursorY + 7);
             cursorY += 12;
 
-            const workgroupImages: { data: string; ratio: number; caption?: string }[] = [];
-
-            // Group rows by section
+            // Group rows by section for accent color — but no section header labels
             const sections = [
-                { id: 'client', label: 'Checklist Filler / Client', rows: visibleRows.filter(r => r.section === 'client' || !r.section) },
-                { id: 'estimator', label: 'Estimator', rows: visibleRows.filter(r => r.section === 'estimator') }
+                { id: 'client', accentColor: '#3b82f6', notesColor: '#555555', rows: visibleRows.filter(r => r.section === 'client' || !r.section) },
+                { id: 'estimator', accentColor: '#f97316', notesColor: '#b35c00', rows: visibleRows.filter(r => r.section === 'estimator') }
             ];
 
             for (const section of sections) {
                 if (section.rows.length === 0) continue;
 
-                // Section Header
-                checkPageBreak(10);
-                doc.setFontSize(9);
-                doc.setTextColor(BRAND_COLORS.GRAY);
-                doc.setFont('helvetica', 'bold');
-                doc.text(section.label.toUpperCase(), margin.left, cursorY + 4);
-                doc.setDrawColor('#e1dfdd');
-                doc.setLineWidth(0.2);
-                doc.line(margin.left, cursorY + 6, margin.left + doc.getTextWidth(section.label), cursorY + 6);
-                cursorY += 10;
-
                 for (const row of section.rows) {
                     processedItems++;
-                    // Check for progress
                     if (totalItemsCount > 0) {
                         if (!onProgress(`Drawing Row ${processedItems}...`, 10 + (processedItems / totalItemsCount) * 85)) {
                             throw new Error("Cancelled");
                         }
                     }
 
-                    const col2W = contentWidth;
-                    let contentH = 0;
+                    const fullW = contentWidth - 4; // leave room for left accent strip
+                    const textX = margin.left + 4;   // indent text past the accent strip
                     const title = row.name || this.stripHtml(row.description).substring(0, 50);
-                    if (title) contentH += 6;
-                    const descH = this.renderer.measureHeight(row.description || '', col2W);
-                    if (descH > 0) contentH += descH + 2;
-                    const notesH = row.notes ? this.renderer.measureHeight(row.notes, col2W) + 4 : 0;
-                    contentH += notesH;
-
-                    // Estimate supplier info height
-                    let supplierH = 0;
-                    if (row.answer === 'RFQ' && (row.supplierName || row.supplierEmail)) {
-                        supplierH = 10;
-                    }
-                    contentH += supplierH;
-
-                    checkPageBreak(Math.min(contentH + 5, 40));
-
-                    let drawY = cursorY + 4;
-                    const fullW = contentWidth;
                     const answerConf = ANSWER_CONFIG[row.answer as AnswerState] || ANSWER_CONFIG.BLANK;
 
+                    checkPageBreak(10);
+                    const rowStartY = cursorY;
+                    let drawY = cursorY + 2;
+
+                    // Title + Answer pill on same line
                     if (title) {
                         doc.setTextColor(BRAND_COLORS.BLACK);
-                        doc.setFontSize(11);
+                        doc.setFontSize(10);
                         doc.setFont('helvetica', 'bold');
-                        doc.text(title, margin.left, drawY + 3);
-                        const titleW = doc.getTextWidth(title);
-                        const pillX = margin.left + titleW + 4;
+                        // Draw answer pill first (left of title)
                         const pillW = doc.getTextWidth(answerConf.label) + 6;
                         doc.setFillColor(answerConf.color);
-                        doc.roundedRect(pillX, drawY - 1, pillW, 5, 2, 2, 'F');
+                        doc.roundedRect(textX, drawY - 0.5, pillW, 4.5, 1.5, 1.5, 'F');
                         doc.setTextColor(BRAND_COLORS.WHITE);
-                        doc.setFontSize(7);
+                        doc.setFontSize(6.5);
                         doc.setFont('helvetica', 'bold');
-                        doc.text(answerConf.label, pillX + (pillW / 2), drawY + 2.5, { align: 'center' });
-                        drawY += 7;
+                        doc.text(answerConf.label, textX + pillW / 2, drawY + 2.5, { align: 'center' });
+                        // Title text after pill
+                        doc.setTextColor(BRAND_COLORS.BLACK);
+                        doc.setFontSize(10);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(title, textX + pillW + 3, drawY + 3);
+                        drawY += 6;
                     }
 
+                    // Description
                     if (row.description) {
                         doc.setFontSize(9);
                         doc.setTextColor('#323130');
-                        drawY = this.renderer.render(row.description, margin.left, drawY, fullW, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; }) + 2;
+                        doc.setFont('helvetica', 'normal');
+                        drawY = this.renderer.render(row.description, textX, drawY, fullW, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; }) + 1;
                     }
 
                     // RFQ Supplier Block
@@ -296,86 +271,69 @@ export class PdfGeneratorService {
                         drawY += 1;
                         const sH = 8;
                         if (drawY + sH > pageHeight - margin.bottom) { doc.addPage(); drawY = margin.top + 2; }
-                        doc.setFillColor('#ebf3fc'); doc.rect(margin.left, drawY, fullW, sH, 'F');
-                        doc.setFillColor('#0078d4'); doc.rect(margin.left, drawY, 1.5, sH, 'F');
+                        doc.setFillColor('#ebf3fc'); doc.rect(textX, drawY, fullW, sH, 'F');
+                        doc.setFillColor('#0078d4'); doc.rect(textX, drawY, 1.5, sH, 'F');
                         doc.setFontSize(8); doc.setTextColor('#0078d4'); doc.setFont('helvetica', 'bold');
-                        doc.text("SUPPLIER:", margin.left + 3, drawY + 3.5);
+                        doc.text("SUPPLIER:", textX + 3, drawY + 3.5);
                         doc.setFontSize(9); doc.setTextColor('#004578'); doc.setFont('helvetica', 'normal');
                         const supplierText = [row.supplierName, row.supplierEmail].filter(Boolean).join(' | ');
-                        doc.text(supplierText, margin.left + 3, drawY + 6.5);
+                        doc.text(supplierText, textX + 3, drawY + 6.5);
                         drawY += sH + 2;
                     }
 
+                    // Notes — inline, no background box, section-colored text
                     if (row.notes) {
                         drawY += 1;
-                        const bH = this.renderer.measureHeight(row.notes, fullW) + 5;
-                        if (drawY + bH > pageHeight - margin.bottom) { doc.addPage(); drawY = margin.top + 2; }
-                        doc.setFillColor(BRAND_COLORS.NOTES_BG); doc.rect(margin.left, drawY, fullW, bH, 'F');
-                        doc.setFillColor(BRAND_COLORS.NOTES_BORDER); doc.rect(margin.left, drawY, 1.5, bH, 'F');
-                        doc.setFontSize(8); doc.setTextColor(BRAND_COLORS.NOTES_LABEL); doc.setFont('helvetica', 'bold');
-                        doc.text("NOTES:", margin.left + 3, drawY + 3.5);
-                        doc.setFontSize(9); doc.setTextColor('#484644'); doc.setFont('helvetica', 'normal');
-                        this.renderer.render(row.notes, margin.left + 3, drawY + 5, fullW - 4, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; });
-                        drawY += bH + 2;
+                        if (drawY > pageHeight - margin.bottom) { doc.addPage(); drawY = margin.top + 2; }
+                        doc.setFontSize(8);
+                        doc.setTextColor(section.notesColor);
+                        doc.setFont('helvetica', 'normal');
+                        drawY = this.renderer.render(row.notes, textX, drawY, fullW, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; }) + 1;
                     }
 
+                    // Inline images — max 40mm height, full content width, vertical flow
                     if (row.images && row.images.length > 0) {
+                        const maxImgH = 40; // mm
                         for (const img of row.images) {
-                            if (img.source) {
-                                workgroupImages.push({ data: img.source, ratio: 1.77, caption: row.name });
+                            if (!img.source) continue;
+                            try {
+                                let d = img.source;
+                                if (d.startsWith('http') || d.startsWith('blob:')) {
+                                    const r = await fetch(d).catch(() => null);
+                                    if (!r || !r.ok) continue;
+                                    const b = await r.blob();
+                                    d = await this.readBlobAsDataURL(b);
+                                }
+                                let format = 'JPEG';
+                                if (d.startsWith('data:image/png')) format = 'PNG';
+                                else if (d.startsWith('data:image/webp')) format = 'WEBP';
+                                const props = await this.getImageProperties(d).catch(() => ({ ratio: 1.77, width: 0, height: 0 }));
+                                const imgH = Math.min(maxImgH, fullW / props.ratio);
+                                const imgW = imgH * props.ratio;
+                                drawY += 2;
+                                if (drawY + imgH > pageHeight - margin.bottom) { doc.addPage(); drawY = margin.top + 2; }
+                                doc.addImage(d, format, textX, drawY, imgW, imgH);
+                                drawY += imgH + 2;
+                            } catch (e) {
+                                console.warn('[PDF] Inline image render failed', e);
                             }
                         }
                     }
+
                     cursorY = drawY;
+
+                    // Draw left-border accent strip for the whole row
+                    const rowH = cursorY - rowStartY;
+                    if (rowH > 0) {
+                        doc.setFillColor(section.accentColor);
+                        doc.rect(margin.left, rowStartY, 2, rowH, 'F');
+                    }
+
+                    // Thin divider between rows (tighter spacing)
                     doc.setDrawColor('#e1dfdd'); doc.setLineWidth(0.1);
                     doc.line(margin.left, cursorY, pageWidth - margin.right, cursorY);
-                    cursorY += 1;
+                    cursorY += 3;
                 }
-            }
-
-            // Render Workgroup Images
-            if (workgroupImages.length > 0) {
-                checkPageBreak(30);
-                doc.setFontSize(10); doc.setTextColor(BRAND_COLORS.BLUE); doc.setFont('helvetica', 'bold');
-                doc.text("Workgroup Images:", margin.left, cursorY + 5);
-                cursorY += 8;
-
-                const gap = 4;
-                const gridW = (contentWidth - gap) / 2;
-                // Process all workgroup images in parallel — getImageProperties() on base64 data
-                // is synchronous image decoding, so parallel is safe and significantly faster.
-                const loadedImages = (await Promise.all(
-                    workgroupImages.map(async (item) => {
-                        try {
-                            let d = item.data;
-                            if (d.startsWith('http') || d.startsWith('blob:')) {
-                                const r = await fetch(d).catch(() => null);
-                                if (!r || !r.ok) return null;
-                                const b = await r.blob();
-                                d = await this.readBlobAsDataURL(b);
-                            }
-                            let format = 'JPEG';
-                            if (d.startsWith('data:image/png')) format = 'PNG';
-                            else if (d.startsWith('data:image/webp')) format = 'WEBP';
-                            const props = await this.getImageProperties(d).catch(() => ({ ratio: 1.77 }));
-                            return { data: d, ratio: props.ratio, format };
-                        } catch (e) {
-                            console.error('Img Load Err', e);
-                            return null;
-                        }
-                    })
-                )).filter(Boolean) as { data: string; ratio: number; format: string }[];
-
-                for (let i = 0; i < loadedImages.length; i += 2) {
-                    const img1 = loadedImages[i]; const img2 = loadedImages[i + 1];
-                    const h1 = gridW / img1.ratio; const h2 = img2 ? (gridW / img2.ratio) : 0;
-                    const rH = Math.max(h1, h2);
-                    if (cursorY + rH > pageHeight - margin.bottom) { doc.addPage(); cursorY = margin.top; }
-                    doc.addImage(img1.data, img1.format, margin.left, cursorY, gridW, h1);
-                    if (img2) doc.addImage(img2.data, img2.format, margin.left + gridW + gap, cursorY, gridW, h2);
-                    cursorY += rH + 4;
-                }
-                cursorY += 5;
             }
         };
 
@@ -584,6 +542,35 @@ export class PdfGeneratorService {
                 });
             };
             img.onerror = reject;
+            img.src = dataUrl;
+        });
+    }
+
+    /**
+     * Re-renders an image onto a canvas at 2× native resolution and exports as PNG.
+     * Preserves transparency and improves sharpness in PDF output.
+     */
+    private upscaleToPng(dataUrl: string, scale: number = 2): Promise<string> {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth * scale;
+                    canvas.height = img.naturalHeight * scale;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) { resolve(dataUrl); return; }
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    // Do NOT fill background — preserve transparency for PNG logos
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/png'));
+                } catch (e) {
+                    console.warn('[PdfGeneratorService] upscaleToPng failed, using original', e);
+                    resolve(dataUrl);
+                }
+            };
+            img.onerror = () => resolve(dataUrl); // fallback to original on error
             img.src = dataUrl;
         });
     }

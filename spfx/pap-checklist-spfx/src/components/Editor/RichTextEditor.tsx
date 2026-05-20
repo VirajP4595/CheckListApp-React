@@ -24,7 +24,7 @@ import {
     TextNumberListLtr20Regular,
     CheckboxChecked20Regular,
     TextParagraph20Regular,
-    TextEffects20Regular,
+    Highlight20Regular,
     Circle20Filled,
     Color20Regular,
 } from '@fluentui/react-icons';
@@ -176,7 +176,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                                     className={`${styles['toolbar-btn']} ${editor.isActive('highlight') ? styles['toolbar-btn--active'] : ''}`}
                                     appearance="subtle"
                                     size="small"
-                                    icon={<TextEffects20Regular />}
+                                    icon={<Highlight20Regular />}
                                 />
                             </Tooltip>
                         </MenuTrigger>

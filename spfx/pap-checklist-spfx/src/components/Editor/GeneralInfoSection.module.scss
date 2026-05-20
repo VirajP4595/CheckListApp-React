@@ -1,0 +1,125 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.general-info {
+    @include card;
+    margin-bottom: $spacing-4;
+    overflow: hidden;
+}
+
+.general-info-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: $spacing-3 $spacing-4;
+    cursor: pointer;
+    text-align: left;
+    border-bottom: 1px solid $color-border;
+    transition: background $transition-base;
+
+    &:hover {
+        background: $color-gray-100;
+    }
+}
+
+.general-info-chevron {
+    font-size: 12px;
+    color: $color-text-secondary;
+    width: 16px;
+    flex-shrink: 0;
+}
+
+.general-info-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: $color-text-primary;
+    letter-spacing: 0.01em;
+}
+
+.general-info-body {
+    padding: $spacing-3 $spacing-4;
+}
+
+.general-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-3 $spacing-4;
+
+    @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.general-info-field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+}
+
+.general-info-sub-field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+    margin-top: $spacing-1;
+    padding-left: $spacing-3;
+    border-left: 2px solid $color-border;
+}
+
+.general-info-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: $color-text-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.general-info-date-input {
+    @include input-filled;
+    font-size: 13px;
+    padding: $spacing-2 $spacing-3;
+    border-radius: $border-radius-sm;
+    width: 100%;
+    max-width: 180px;
+    color: $color-text-primary;
+
+    &:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px $input-focus-ring;
+    }
+}
+
+.general-info-select {
+    @include input-filled;
+    font-size: 13px;
+    padding: $spacing-2 $spacing-3;
+    border-radius: $border-radius-sm;
+    width: 100%;
+    max-width: 200px;
+    color: $color-text-primary;
+    cursor: pointer;
+
+    &:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px $input-focus-ring;
+    }
+}
+
+.general-info-textarea {
+    @include input-filled;
+    font-size: 13px;
+    padding: $spacing-2 $spacing-3;
+    border-radius: $border-radius-sm;
+    width: 100%;
+    color: $color-text-primary;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.5;
+
+    &:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px $input-focus-ring;
+    }
+}

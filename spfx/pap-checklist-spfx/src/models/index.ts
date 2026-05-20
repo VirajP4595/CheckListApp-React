@@ -161,16 +161,25 @@ export interface Checklist {
         meetingOccurred?: boolean;
         checklistChoice?: string | number | null;
         appointmentDate?: Date | null;
-        // ── Job Metadata Header fields (TEMP column names — pending client confirmation) ──
-        builderName?: string;          // TEMP: _vin_account_value (same as client?) — TBC
-        siteAddress?: string;          // TEMP: vin_buildarea — TBC
-        qbeFlagged?: boolean;          // vin_qbeflagged
+        // ── Job Metadata Header fields ──
+        builderName?: string;          // _vin_account_value (formatted)
+        siteAddress?: string;          // vin_name (job address)
+        qbeFlagged?: boolean;          // vin_qbecomplete (QB Complete on FQE card)
         qbeLow?: number | null;        // vin_qbelow
         qbeHigh?: number | null;       // vin_qbehigh
-        engineering?: boolean | null;   // TEMP: unknown column — TBC
-        threeDModel?: boolean | null;   // TEMP: vin_dmodelsuited — TBC
+        engineering?: boolean | null;  // reserved
+        threeDModel?: boolean | null;  // vin_dmodelsuited
+        googleMapsLink?: string;       // vin_googlemapslink (stored URL on job record)
+        fqeRevisionNumber?: number | null; // vin_revisionnumber (FQE revision counter)
         // procurement?: boolean;       // ON HOLD — Adrienne to confirm
     };
+    // ── General Info Section fields (Dataverse columns on pap_checklist) ──
+    hardDeadline?: boolean;
+    hardDeadlineDate?: Date | null;
+    builderSuppliedQuotes?: boolean;
+    contractType?: 'standard' | 'cost-plus' | null;
+    buildStages?: boolean;
+    buildStagesNotes?: string;
     carpentryLabourImageUrl?: string;
     carpentryLabourDescription?: string;
     // ────────────────────────

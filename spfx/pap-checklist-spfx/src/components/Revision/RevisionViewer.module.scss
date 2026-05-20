@@ -257,6 +257,14 @@
     &:last-child {
         border-bottom: none;
     }
+
+    // Internal-only rows: muted background + left border indicator
+    &--internal {
+        background: rgba(107, 114, 128, 0.04);
+        border-left: 3px solid $color-gray-300;
+        padding-left: calc(#{$spacing-4} - 3px);
+        opacity: 0.75;
+    }
 }
 
 .revision-row-content {
@@ -267,9 +275,28 @@
 
 .revision-row-header {
     display: flex;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: center;
     gap: $spacing-2;
+}
+
+.revision-row-header-badges {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    flex-shrink: 0;
+}
+
+.revision-internal-badge {
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgba(107, 114, 128, 0.12);
+    color: $color-gray-500;
+    white-space: nowrap;
 }
 
 .revision-row-name {

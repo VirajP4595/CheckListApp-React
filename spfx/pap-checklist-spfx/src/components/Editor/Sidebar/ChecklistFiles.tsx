@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button, Spinner } from '@fluentui/react-components';
 import { Attach24Regular, Delete24Regular, Document24Regular, ArrowDownload24Regular } from '@fluentui/react-icons';
 import { Checklist } from '../../../models';
@@ -14,28 +14,48 @@ interface ChecklistFilesProps {
 
 export const ChecklistFiles: React.FC<ChecklistFilesProps> = ({ checklist, readOnly }) => {
     const { uploadFile, deleteFile, isSaving } = useChecklistStore();
-    const [isUploading, setIsUploading] = React.useState(false);
+    const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+    const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleUploadClick = () => {
-        if (!isSaving) fileInputRef.current?.click();
+        if (!isSaving && !uploadProgress) fileInputRef.current?.click();
+    };
+
+    const uploadFiles = async (files: File[]) => {
+        if (!files.length || readOnly) return;
+        setUploadProgress({ current: 0, total: files.length });
+        for (let i = 0; i < files.length; i++) {
+            try {
+                await uploadFile(files[i]);
+            } catch (e) {
+                console.error(`[ChecklistFiles] Failed to upload ${files[i].name}`, e);
+            }
+            setUploadProgress({ current: i + 1, total: files.length });
+        }
+        setUploadProgress(null);
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files?.length || readOnly) return;
-
-        const file = e.target.files[0];
-        setIsUploading(true);
-        try {
-            await uploadFile(file);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setIsUploading(false);
-        }
-
+        if (!e.target.files?.length) return;
+        const files = Array.from(e.target.files);
         if (fileInputRef.current) fileInputRef.current.value = '';
+        await uploadFiles(files);
     };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        if (readOnly || !e.dataTransfer.files.length) return;
+        await uploadFiles(Array.from(e.dataTransfer.files));
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = () => setIsDragOver(false);
 
     const handleDelete = async (id: string) => {
         if (readOnly) return;
@@ -50,8 +70,11 @@ export const ChecklistFiles: React.FC<ChecklistFilesProps> = ({ checklist, readO
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     };
 
-    // Determine Loading Text
-    const loadingText = isUploading ? 'Uploading...' : 'Processing...';
+    const formatUploadDate = (date: Date) => {
+        return new Date(date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    const isBusy = isSaving || !!uploadProgress;
 
     return (
         <div className={styles['files-container']}>
@@ -78,7 +101,7 @@ export const ChecklistFiles: React.FC<ChecklistFilesProps> = ({ checklist, readO
                                 {file.name}
                             </a>
                             <div className={styles['files-item-meta']}>
-                                {formatSize(file.size)} • {new Date(file.uploadedAt).toLocaleDateString()}
+                                {formatSize(file.size)} • Uploaded {formatUploadDate(file.uploadedAt)}
                             </div>
                         </div>
                         <div className={styles['files-item-actions']}>
@@ -100,7 +123,7 @@ export const ChecklistFiles: React.FC<ChecklistFilesProps> = ({ checklist, readO
                                     appearance="subtle"
                                     onClick={() => handleDelete(file.id)}
                                     title="Delete"
-                                    disabled={isSaving} // Disable delete while any save is happening
+                                    disabled={isBusy}
                                 />
                             )}
                         </div>
@@ -113,18 +136,38 @@ export const ChecklistFiles: React.FC<ChecklistFilesProps> = ({ checklist, readO
                     <input
                         type="file"
                         ref={fileInputRef}
+                        multiple
                         style={{ display: 'none' }}
                         onChange={handleFileChange}
-                        aria-label="Upload file"
+                        aria-label="Upload files"
                     />
                     <div
-                        className={`${styles['files-upload']} ${isSaving ? styles['files-upload--disabled'] : ''}`}
+                        className={`${styles['files-upload']} ${isBusy ? styles['files-upload--disabled'] : ''} ${isDragOver ? styles['files-upload--dragging'] : ''}`}
                         onClick={handleUploadClick}
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
                     >
-                        {isSaving ? <Spinner size="small" /> : <Attach24Regular className={styles['files-upload-icon']} />}
-                        <span className={styles['files-upload-text']}>
-                            {isSaving ? loadingText : 'Click to Upload File'}
-                        </span>
+                        {uploadProgress ? (
+                            <>
+                                <Spinner size="small" />
+                                <span className={styles['files-upload-text']}>
+                                    Uploading {uploadProgress.current} / {uploadProgress.total}…
+                                </span>
+                            </>
+                        ) : isSaving ? (
+                            <>
+                                <Spinner size="small" />
+                                <span className={styles['files-upload-text']}>Processing...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Attach24Regular className={styles['files-upload-icon']} />
+                                <span className={styles['files-upload-text']}>
+                                    Click or drag files to upload
+                                </span>
+                            </>
+                        )}
                     </div>
                 </>
             )}

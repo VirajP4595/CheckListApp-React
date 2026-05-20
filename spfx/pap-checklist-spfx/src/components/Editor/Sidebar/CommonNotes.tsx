@@ -43,7 +43,7 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
         const serialized = JSON.stringify(updated);
         if (serialized !== originalRef.current) {
             onUpdate({ commonNotes: updated });
-            void getActivityLogService().logAction(checklist.id, 'common_notes_updated', user?.name || 'Unknown', 'Updated Common Notes');
+            void getActivityLogService().logAction(checklist.id, 'common_notes_updated', user?.name || 'Unknown', 'Updated General Notes');
             onSave?.();
             originalRef.current = serialized;
         }
@@ -54,9 +54,10 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
             id: generateId(),
             title: `Notes Section ${sections.length + 1}`,
             content: '',
-            order: sections.length,
+            order: 0,
         };
-        const updated = [...sections, newSection];
+        // Prepend new section so newest appears at the top
+        const updated = [newSection, ...sections.map((s, i) => ({ ...s, order: i + 1 }))];
         setSections(updated);
         setExpandedSections(prev => ({ ...prev, [newSection.id]: true }));
         saveSections(updated);
@@ -122,7 +123,7 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
                             {containerExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                         </span>
                         <Notepad24Regular className={styles['common-notes-title-icon']} />
-                        <span className={styles['common-notes-title']}>Common Notes</span>
+                        <span className={styles['common-notes-title']}>General Notes</span>
                         {sections.length === 0 && !containerExpanded && (
                             <span className={styles['common-notes-empty-hint']}>Click to add project-wide notes</span>
                         )}

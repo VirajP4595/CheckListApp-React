@@ -9,10 +9,10 @@
     @include card;
     border: 1px solid $color-border;
     border-radius: $border-radius-lg;
-    padding: 1.25rem 1.5rem; // Increased padding for premium feel
-    margin-bottom: $spacing-6; // More breathing room below
+    padding: 1.25rem 1.5rem;
+    margin-bottom: $spacing-6;
     background: $color-white;
-    box-shadow: $shadow-sm; // Subtle lift
+    box-shadow: $shadow-sm;
 }
 
 .job-metadata-title {
@@ -36,8 +36,8 @@
 
 .job-metadata-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); // Wider columns
-    gap: $spacing-4 $spacing-6; // Increased gap
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: $spacing-4 $spacing-6;
 
     @include mobile {
         grid-template-columns: 1fr 1fr;
@@ -48,21 +48,30 @@
 .job-metadata-field {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: $spacing-1;
+
+    // Wide variant — lets Build Stages + text input span more columns
+    &--wide {
+        grid-column: span 2;
+
+        @include mobile {
+            grid-column: span 1;
+        }
+    }
 }
 
 .job-metadata-label {
     font-size: 11px;
     font-weight: $font-weight-semibold;
-    color: $color-gray-500; // Better contrast
+    color: $color-gray-500;
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
 
 .job-metadata-value {
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold; // Bolder value
-    color: $color-gray-900; // Darker text for readability
+    font-weight: $font-weight-semibold;
+    color: $color-gray-900;
     line-height: 1.4;
 }
 
@@ -72,21 +81,180 @@
     font-weight: 400;
 }
 
-.job-metadata-value--on-hold {
-    color: $color-gray-300;
-    font-style: italic;
-    font-weight: 400;
-    font-size: 11px;
+
+// ── View Property links ──────────────────────────────────────
+
+// Span remaining columns so links never get squeezed into a narrow cell
+.job-metadata-field--span {
+    grid-column: span 2;
 }
 
-// QBE sub-values
+.job-metadata-links {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    flex-wrap: nowrap; // keep both links on one horizontal line
+}
+
+.job-metadata-text-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: $color-primary;
+    text-decoration: none;
+    white-space: nowrap;
+    padding: 4px 10px;
+    border-radius: $border-radius-sm;
+    border: 1px solid rgba($color-primary, 0.25);
+    background: rgba($color-primary, 0.04);
+    transition: background $transition-base, border-color $transition-base;
+
+    &:hover {
+        background: rgba($color-primary, 0.10);
+        border-color: rgba($color-primary, 0.5);
+        text-decoration: none;
+    }
+}
+
+.job-metadata-text-link-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+// ── Divider ──────────────────────────────────────────────────
+.job-metadata-divider {
+    height: 1px;
+    background: $color-border;
+    margin: $spacing-4 0 $spacing-4;
+}
+
+// ── Editable controls ────────────────────────────────────────
+
+// Toggle + optional inline input on same row
+.job-metadata-control-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    flex-wrap: nowrap;
+    min-height: 32px;
+}
+
+// CSS toggle switch — matches the portal's colour palette
+.toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    input[type='checkbox'] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+
+        &:checked + .toggle-track {
+            background: $color-primary;
+
+            &::after {
+                transform: translateX(16px);
+            }
+        }
+
+        &:focus + .toggle-track {
+            box-shadow: 0 0 0 2px $input-focus-ring;
+        }
+    }
+}
+
+.toggle-track {
+    display: block;
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: $color-gray-300;
+    transition: background $transition-base;
+    position: relative;
+    flex-shrink: 0;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: $color-white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        transition: transform $transition-base;
+    }
+}
+
+// Shared input style — matches portal's filled-input aesthetic exactly
+.jm-input,
+.jm-select {
+    height: 32px;
+    padding: 0 $spacing-3;
+    font-size: 13px;
+    font-family: inherit;
+    color: $color-text-primary;
+    background: $color-gray-100;
+    border: 1px solid transparent;
+    border-radius: $border-radius-md;
+    outline: none;
+    transition: background $transition-fast, box-shadow $transition-fast;
+
+    &:hover {
+        background: $color-gray-200;
+    }
+
+    &:focus {
+        background: $color-white;
+        border-color: transparent;
+        box-shadow: 0 0 0 2px $input-focus-ring;
+    }
+}
+
+.jm-input {
+    width: 160px;
+}
+
+// Grows to fill available space (Build Stages notes)
+.jm-input--grow {
+    flex: 1;
+    width: auto;
+    min-width: 180px;
+    max-width: 100%;
+}
+
+.jm-select {
+    width: 160px;
+    cursor: pointer;
+    appearance: auto; // keep native dropdown arrow
+}
+
+// ── QBE sub-values ───────────────────────────────────────────
+
+// Badge + range on one horizontal line
+.qbe-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    flex-wrap: nowrap;
+}
+
 .qbe-range {
     display: flex;
     align-items: center;
     gap: $spacing-2;
     font-size: $font-size-xs;
     color: $color-gray-600;
-    margin-top: 2px;
 }
 
 .qbe-range-label {
@@ -101,7 +269,7 @@
     color: $color-gray-700;
 }
 
-// Boolean badges
+// ── Boolean badges ───────────────────────────────────────────
 .badge-yes {
     display: inline-block;
     padding: 1px 8px;
