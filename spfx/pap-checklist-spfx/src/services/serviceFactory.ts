@@ -14,6 +14,7 @@ import { SharePointImageService } from './sharePointService';
 import { ActivityLogService } from './activityLogService';
 import { dataverseClient } from './dataverseService';
 import { GraphEmailService } from './graphEmailService';
+import { GraphChatService } from './graphChatService';
 
 // ─── SERVICE INSTANCES ─────────────────────────────────────
 
@@ -22,6 +23,7 @@ let revisionServiceInstance: IRevisionService | null = null;
 let imageServiceInstance: SharePointImageService | null = null; // Concrete type for init
 let activityLogServiceInstance: ActivityLogService | null = null;
 let graphEmailServiceInstance: GraphEmailService | null = null;
+let graphChatServiceInstance: GraphChatService | null = null;
 
 // ─── INITIALIZATION ────────────────────────────────────────
 
@@ -41,6 +43,11 @@ export async function initializeServices(context: WebPartContext): Promise<void>
         graphEmailServiceInstance = new GraphEmailService();
     }
     await graphEmailServiceInstance.initialize(context);
+
+    if (!graphChatServiceInstance) {
+        graphChatServiceInstance = new GraphChatService();
+    }
+    await graphChatServiceInstance.initialize(context);
 
     console.log('[ServiceFactory] Services Initialized.');
 }
@@ -82,6 +89,13 @@ export function getGraphEmailService(): GraphEmailService {
     return graphEmailServiceInstance;
 }
 
+export function getGraphChatService(): GraphChatService {
+    if (!graphChatServiceInstance) {
+        graphChatServiceInstance = new GraphChatService();
+    }
+    return graphChatServiceInstance;
+}
+
 // ─── RESET (for testing) ───────────────────────────────────
 
 export function resetServices(): void {
@@ -90,4 +104,5 @@ export function resetServices(): void {
     imageServiceInstance = null;
     activityLogServiceInstance = null;
     graphEmailServiceInstance = null;
+    graphChatServiceInstance = null;
 }

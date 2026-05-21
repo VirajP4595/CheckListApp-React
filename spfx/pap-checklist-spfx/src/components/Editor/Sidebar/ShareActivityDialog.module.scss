@@ -31,7 +31,10 @@
 .share-email-input {
     width: 100%;
     @include input-filled;
-    min-height: 36px;
+
+    & {
+        min-height: 36px;
+    }
 }
 
 .share-status-success {

@@ -14,7 +14,8 @@ import {
     PersonArrowRight20Filled
 } from '@fluentui/react-icons';
 import type { ChecklistRow } from '../../models';
-import { useChecklistStore } from '../../stores';
+import { useChecklistStore, useUserStore } from '../../stores';
+import { AppConfig } from '../../config/environment';
 import { AnswerSelector } from './AnswerSelector';
 import { RichTextEditor } from './RichTextEditor';
 import { VoiceInputButton } from './VoiceInputButton';
@@ -50,6 +51,7 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
     const [expanded, setExpanded] = React.useState(!isCompact);
     const [showNotifyDialog, setShowNotifyDialog] = React.useState(false);
     const activeChecklist = useChecklistStore(state => state.activeChecklist);
+    const user = useUserStore(state => state.user);
 
     React.useEffect(() => {
         setExpanded(!isCompact);
@@ -74,6 +76,51 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
         if (!row.notifyAdmin) {
             updateRow(row.id, { notifyAdmin: true });
             void saveRow(row.id);
+
+            // Fire-and-forget: send Teams chat notification to admin(s) via Graph API
+            const adminEmails = (AppConfig.admin.btcAdminEmail || '').split(';').map(e => e.trim()).filter(Boolean);
+            if (adminEmails.length > 0) {
+                const workgroup = activeChecklist?.workgroups.find(wg => wg.id === workgroupId);
+                const checklistTitle = activeChecklist?.title || 'Untitled Checklist';
+                const wgName = workgroup ? `${workgroup.number} - ${workgroup.name}` : '';
+                const estimatorName = user?.name || 'Unknown';
+                const timestamp = new Date().toLocaleString('en-AU');
+                const plainNotes = row.notes ? row.notes.replace(/<[^>]*>/g, '').trim() : '';
+                const notesSnippet = plainNotes ? plainNotes.substring(0, 200) + (plainNotes.length > 200 ? '...' : '') : '';
+
+                const htmlMessage = [
+                    `<b>🔔 Notify Admin</b>`,
+                    `<br/>Flagged by <b>${estimatorName}</b> on ${timestamp}`,
+                    `<br/><br/><b>Checklist:</b> ${checklistTitle}`,
+                    `<br/><b>Workgroup:</b> ${wgName}`,
+                    `<br/><b>Item:</b> ${row.name || '(unnamed)'}`,
+                    notesSnippet ? `<br/><b>Notes:</b> <i>${notesSnippet}</i>` : '',
+                ].join('');
+
+                // Resolve admin emails to user IDs, then send Teams chat
+                void (async () => {
+                    try {
+                        const { getGraphChatService } = await import('../../services/serviceFactory');
+                        const chatService = getGraphChatService();
+                        for (const email of adminEmails) {
+                            try {
+                                // Search for admin user by email
+                                const users = await chatService.searchUsers(email);
+                                const adminUser = users.find(u => u.mail.toLowerCase() === email.toLowerCase() || u.userPrincipalName.toLowerCase() === email.toLowerCase());
+                                if (adminUser) {
+                                    await chatService.sendTeamsChatNotification(adminUser.id, htmlMessage);
+                                } else {
+                                    console.warn(`[NotifyAdmin] Could not find user for ${email}`);
+                                }
+                            } catch (e) {
+                                console.warn(`[NotifyAdmin] Failed to notify ${email}`, e);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('[NotifyAdmin] Graph notification error:', e);
+                    }
+                })();
+            }
         } else {
             updateRow(row.id, { notifyAdmin: false });
             void saveRow(row.id);
@@ -108,7 +155,7 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
 
     return (
         <div
-            className={`${styles['row-item']} ${!expanded ? styles['row-item--compact'] : ''}`}
+            className={`${styles['row-item']} ${!expanded ? styles['row-item--compact'] : ''} ${row.answer === 'TBC' ? styles['row-item--confirmation-required'] : ''}`}
             onMouseEnter={() => setActiveRowId(row.id)}
         >
             <div className={styles['row-main-flex']}>
@@ -202,24 +249,28 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                             onClick={handleToggleReview}
                         />
                     </Tooltip>
-                    <Tooltip content={row.notifyAdmin ? 'Remove admin notification' : 'Notify admin'} relationship="label">
-                        <Button
-                            className={row.notifyAdmin ? styles['row-action-btn--notify'] : styles['row-action-btn']}
-                            appearance="subtle"
-                            size="small"
-                            icon={row.notifyAdmin ? <Alert20Filled /> : <Alert20Regular />}
-                            onClick={handleToggleNotify}
-                        />
-                    </Tooltip>
-                    <Tooltip content={row.builderToConfirm ? 'Remove BTC flag' : 'Builder to Confirm'} relationship="label">
-                        <Button
-                            className={row.builderToConfirm ? styles['row-action-btn--btc'] : styles['row-action-btn']}
-                            appearance="subtle"
-                            size="small"
-                            icon={row.builderToConfirm ? <PersonArrowRight20Filled /> : <PersonArrowRight20Regular />}
-                            onClick={handleToggleBtc}
-                        />
-                    </Tooltip>
+                    {row.section !== 'estimator' && row.section !== 'reviewer' && (
+                        <Tooltip content={row.notifyAdmin ? 'Remove admin notification' : 'Notify admin'} relationship="label">
+                            <Button
+                                className={row.notifyAdmin ? styles['row-action-btn--notify'] : styles['row-action-btn']}
+                                appearance="subtle"
+                                size="small"
+                                icon={row.notifyAdmin ? <Alert20Filled /> : <Alert20Regular />}
+                                onClick={handleToggleNotify}
+                            />
+                        </Tooltip>
+                    )}
+                    {row.section !== 'estimator' && row.section !== 'reviewer' && (
+                        <Tooltip content={row.builderToConfirm ? 'Remove BTC flag' : 'Builder to Confirm'} relationship="label">
+                            <Button
+                                className={row.builderToConfirm ? styles['row-action-btn--btc'] : styles['row-action-btn']}
+                                appearance="subtle"
+                                size="small"
+                                icon={row.builderToConfirm ? <PersonArrowRight20Filled /> : <PersonArrowRight20Regular />}
+                                onClick={handleToggleBtc}
+                            />
+                        </Tooltip>
+                    )}
                     <Tooltip content={row.internalOnly ? 'Remove internal flag' : 'Mark as internal only'} relationship="label">
                         <Button
                             className={row.internalOnly ? styles['row-action-btn--internal'] : styles['row-action-btn']}

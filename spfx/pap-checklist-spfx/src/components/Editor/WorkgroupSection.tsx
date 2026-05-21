@@ -7,12 +7,10 @@ import {
     Edit20Regular,
     Delete20Regular,
     Checkmark20Regular,
-    Chat20Regular
 } from '@fluentui/react-icons';
 import type { Workgroup } from '../../models';
 import { useChecklistStore } from '../../stores';
 import { ChecklistRowItem } from './ChecklistRowItem';
-import { WorkgroupChatDialog } from './WorkgroupChatDialog';
 import type { FilterState } from './FilterBar';
 import styles from './WorkgroupSection.module.scss';
 
@@ -42,7 +40,6 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
     const [isEditing, setIsEditing] = useState(false);
     const [tempName, setTempName] = useState(workgroup.name);
     const [tempNumber, setTempNumber] = useState(workgroup.number);
-    const [showChat, setShowChat] = useState(false);
 
     useEffect(() => {
         setLocalCollapsed(isCollapsed || false);
@@ -250,24 +247,6 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                     )}
 
                     <div className={styles['workgroup-actions']}>
-                        <Tooltip content="Workgroup chat" relationship="label">
-                            <Button
-                                className={`${styles['workgroup-action-btn']} ${styles['workgroup-chat-btn']}`}
-                                appearance="subtle"
-                                size="small"
-                                icon={
-                                    <span className={styles['chat-icon-wrapper']}>
-                                        <Chat20Regular />
-                                        {(workgroup.comments?.length ?? 0) > 0 && (
-                                            <span className={styles['chat-badge']}>
-                                                {workgroup.comments!.length}
-                                            </span>
-                                        )}
-                                    </span>
-                                }
-                                onClick={(e) => { e.stopPropagation(); setShowChat(true); }}
-                            />
-                        </Tooltip>
                         {isEditing ? (
                             <Button
                                 className={styles['workgroup-action-btn']}
@@ -336,7 +315,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                                 {/* Client Section */}
                                 <div className={styles['section-group']}>
                                     <div className={styles['section-header']}>
-                                        <span className={styles['section-title']}>Client Checklist</span>
+                                        <span className={styles['section-title']}>Client/Checklist Notes</span>
                                         <button
                                             className={styles['section-add-btn']}
                                             onClick={() => addRow(workgroup.id, undefined, 'client')}
@@ -364,7 +343,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                                 {/* Estimator Section */}
                                 <div className={styles['section-group']}>
                                     <div className={styles['section-header']}>
-                                        <span className={styles['section-title']}>Estimator Checklist</span>
+                                        <span className={styles['section-title']}>Estimator Notes</span>
                                         <button
                                             className={styles['section-add-btn']}
                                             onClick={() => addRow(workgroup.id, undefined, 'estimator')}
@@ -392,7 +371,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                                 {/* Reviewer Section */}
                                 <div className={styles['section-group']}>
                                     <div className={styles['section-header']}>
-                                        <span className={styles['section-title']}>Reviewers Checklist</span>
+                                        <span className={styles['section-title']}>Reviewer Notes</span>
                                         <button
                                             className={styles['section-add-btn']}
                                             onClick={() => addRow(workgroup.id, undefined, 'reviewer')}
@@ -425,13 +404,6 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                     </div>
                 )
             }
-            {showChat && (
-                <WorkgroupChatDialog
-                    workgroup={workgroup}
-                    open={showChat}
-                    onClose={() => setShowChat(false)}
-                />
-            )}
         </section >
     );
 });

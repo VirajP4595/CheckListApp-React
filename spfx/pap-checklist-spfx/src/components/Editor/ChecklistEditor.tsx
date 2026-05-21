@@ -1,6 +1,6 @@
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react';
 import { Button, Spinner, Dialog, DialogTrigger, DialogSurface, DialogTitle, DialogBody, DialogActions, DialogContent, Text } from '@fluentui/react-components';
-import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular, ClipboardPulse24Regular, Delete24Regular, ArrowDownload24Regular } from '@fluentui/react-icons';
+import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular, ClipboardPulse24Regular, Delete24Regular, ArrowDownload24Regular, Chat24Regular } from '@fluentui/react-icons';
 import { Panel, PanelType } from '@fluentui/react/lib/Panel';
 import { useChecklistStore, useUserStore } from '../../stores';
 import { STATUS_CONFIG, type Revision } from '../../models';
@@ -15,6 +15,7 @@ import { HelpGuide } from './HelpGuide';
 import { CommonNotes } from './Sidebar/CommonNotes';
 import { JobMetadataHeader } from './Sidebar/JobMetadataHeader';
 import { ChecklistInfoDialog } from './Sidebar/ChecklistInfoDialog';
+import { ChecklistChat, getUnreadCount } from './Sidebar/ChecklistChat';
 import ActivityLogPanel from './Sidebar/ActivityLogPanel';
 import { PdfGenerationProgressModal } from '../Checklist/PdfGenerationProgressModal';
 import { DeleteProgressModal } from '../Checklist/DeleteProgressModal';
@@ -38,11 +39,10 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
         updateChecklist,
         addWorkgroup,
         processingItems,
-        deleteChecklist,
-        createRevision
+        deleteChecklist
     } = useChecklistStore();
 
-    const { isSuperAdmin } = useUserStore();
+    const { isSuperAdmin, user } = useUserStore();
 
     // PDF Export Hook
     const { exportPdf, loadingProgress: pdfLoadingProgress, cancelExport: cancelPdfExport } = usePdfExport();
@@ -52,6 +52,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
     // Local state for full load overlay (initial load/preview)
     const [showActivityPanel, setShowActivityPanel] = useState(false);
+    const [showChatPanel, setShowChatPanel] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const [loadingProgress, setLoadingProgress] = useState<{ open: boolean; title: string; status: string; percent: number; cancelled: boolean }>({ open: false, title: 'Loading...', status: '', percent: 0, cancelled: false });
@@ -60,11 +61,15 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
     const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, notifyAdmin: null, builderToConfirm: null, workgroupIds: [], showRowsWithData: false });
     const [expandWorkgroups, setExpandWorkgroups] = useState(false);  // Collapsed by default
     const [expandTasks, setExpandTasks] = useState(false);  // Collapsed by default
-    const [fqeBannerDismissed, setFqeBannerDismissed] = useState(false);
-    const [fqeBannerCreating, setFqeBannerCreating] = useState(false);
 
     const isCancelledRef = useRef(false);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Chat unread badge count (suppress when chat panel is open)
+    const chatUnreadCount = useMemo(() => {
+        if (!user || !activeChecklist || showChatPanel) return 0;
+        return getUnreadCount(activeChecklist, user.id);
+    }, [activeChecklist, activeChecklist?.comments, user, showChatPanel]);
 
     useEffect(() => {
         void loadChecklist(checklistId);
@@ -86,11 +91,6 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
             }
         };
     }, []);
-
-    // FQE revision sync: reset banner whenever a new checklist is loaded
-    useEffect(() => {
-        setFqeBannerDismissed(false);
-    }, [checklistId]);
 
     const handleViewPreview = async () => {
         if (!activeChecklist) return;
@@ -166,24 +166,6 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                 return styles['editor-status--in-revision'];
             default:
                 return styles['editor-status--draft'];
-        }
-    };
-
-    // ── FQE Revision sync banner ──────────────────────────────────────────────
-    const fqeRevisionNumber = activeChecklist?.jobDetails?.fqeRevisionNumber ?? null;
-    const showFqeBanner =
-        !fqeBannerDismissed &&
-        fqeRevisionNumber !== null &&
-        fqeRevisionNumber > (activeChecklist?.currentRevisionNumber ?? 0);
-
-    const handleFqeCreateRevision = async () => {
-        if (!fqeRevisionNumber) return;
-        setFqeBannerCreating(true);
-        try {
-            await createRevision(`FQE Revision ${fqeRevisionNumber}`, '');
-        } finally {
-            setFqeBannerCreating(false);
-            setFqeBannerDismissed(true);
         }
     };
 
@@ -270,6 +252,21 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                             triggerClassName={styles['editor-action-btn']}
                         />
 
+                        <Button
+                            className={styles['editor-action-btn']}
+                            appearance="subtle"
+                            icon={<Chat24Regular />}
+                            onClick={() => setShowChatPanel(true)}
+                            title="Chat"
+                        >
+                            Chat
+                            {chatUnreadCount > 0 && (
+                                <span className={styles['editor-chat-badge']}>
+                                    {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
+                                </span>
+                            )}
+                        </Button>
+
                         {isSuperAdmin && (
                             <>
                                 <Button
@@ -320,43 +317,9 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                 </div>
             </header >
 
-            {/* FQE Revision Sync Banner */}
-            {showFqeBanner && (
-                <div className={styles['fqe-revision-banner']}>
-                    <span className={styles['fqe-revision-banner-text']}>
-                        FQE Revision {fqeRevisionNumber} detected — create a matching checklist revision?
-                    </span>
-                    <div className={styles['fqe-revision-banner-actions']}>
-                        <Button
-                            appearance="primary"
-                            size="small"
-                            onClick={() => void handleFqeCreateRevision()}
-                            disabled={fqeBannerCreating}
-                        >
-                            {fqeBannerCreating ? <Spinner size="extra-tiny" /> : 'Create Revision'}
-                        </Button>
-                        <Button
-                            appearance="subtle"
-                            size="small"
-                            onClick={() => setFqeBannerDismissed(true)}
-                        >
-                            Dismiss
-                        </Button>
-                    </div>
-                </div>
-            )}
-
             {/* Main Layout */}
             < div className={styles['editor-layout']} >
                 <main className={styles['editor-main']}>
-                    <JobMetadataHeader
-                        checklist={activeChecklist}
-                        onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
-                        onSave={saveChecklist}
-                    />
-
-
-
                     <FilterBar
                         filters={filters}
                         onFiltersChange={setFilters}
@@ -367,7 +330,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                         onExpandTasksChange={setExpandTasks}
                     />
 
-                    <CommonNotes
+                    <JobMetadataHeader
                         checklist={activeChecklist}
                         onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
                         onSave={saveChecklist}
@@ -375,7 +338,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
                     {/* ─── Revision Sections (descending order, filtered) ─── */}
                     {activeChecklist.revisions.length > 0 && (
-                        <div className={styles['editor-revisions']} style={{ marginTop: '20px' }}>
+                        <div className={styles['editor-revisions']}>
                             <div className={styles['revisions-header']}>
                                 <Text size={400} weight="semibold">Revision History</Text>
                             </div>
@@ -410,6 +373,12 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                                 })}
                         </div>
                     )}
+
+                    <CommonNotes
+                        checklist={activeChecklist}
+                        onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
+                        onSave={saveChecklist}
+                    />
 
                     <div className={styles['editor-workgroups']} id="checklist-print-content">
                         {activeChecklist.workgroups
@@ -455,6 +424,21 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                 closeButtonAriaLabel="Close"
             >
                 <ActivityLogPanel checklistId={checklistId} checklistTitle={activeChecklist.title} />
+            </Panel>
+
+            <Panel
+                isOpen={showChatPanel}
+                onDismiss={() => setShowChatPanel(false)}
+                type={PanelType.medium}
+                headerText="Chat"
+                closeButtonAriaLabel="Close"
+            >
+                <ChecklistChat
+                    checklist={activeChecklist}
+                    onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
+                    onSave={saveChecklist}
+                    readOnly={false}
+                />
             </Panel>
 
             {/* PDF / Preview Progress Modal */}

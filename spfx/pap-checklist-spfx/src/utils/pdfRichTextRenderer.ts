@@ -22,6 +22,7 @@ interface TextNode {
     isList: boolean;
     listType?: 'bullet' | 'ordered' | 'checkbox';
     isChecked?: boolean; // For checkboxes
+    listIndex?: number; // 1-based index for ordered lists
     indent: number;
     isHighlighted?: boolean;
     highlightColor?: string;
@@ -132,8 +133,10 @@ export class PdfRichTextRenderer {
                     // Block Elements (Paragraphs)
                     if (tagName === 'p' || tagName === 'div') {
                         walk(el, indent, newContext);
-                        // Add Paragraph Break after content
-                        nodes.push({ text: '\n', isBold: false, isItalic: false, isList: false, indent });
+                        // Add paragraph break, but skip if inside a list item (li already adds one)
+                        if (!context.isList) {
+                            nodes.push({ text: '\n', isBold: false, isItalic: false, isList: false, indent });
+                        }
                         return;
                     }
 
@@ -144,21 +147,30 @@ export class PdfRichTextRenderer {
                         } else {
                             newContext.listType = tagName === 'ul' ? 'bullet' : 'ordered';
                         }
-                        walk(el, indent + 1, newContext);
+                        // Walk each <li> child with its 1-based index for ordered lists
+                        let liIndex = 0;
+                        Array.from(el.children).forEach(child => {
+                            if ((child as Element).tagName?.toLowerCase() === 'li') {
+                                liIndex++;
+                                const liContext = { ...newContext, isList: true, listIndex: liIndex };
+                                if (newContext.listType === 'checkbox') {
+                                    liContext.isChecked = (child as Element).getAttribute('data-checked') === 'true';
+                                }
+                                walk(child, indent + 1, liContext);
+                                nodes.push({ text: '\n', isBold: false, isItalic: false, isList: false, indent });
+                            } else {
+                                walk(child, indent + 1, newContext);
+                            }
+                        });
                         return;
                     }
 
-                    // List Items
+                    // List Items (fallback — normally handled above inside ol/ul)
                     if (tagName === 'li') {
                         const localContext = { ...newContext, isList: true };
                         if (newContext.listType === 'checkbox') {
                             localContext.isChecked = el.getAttribute('data-checked') === 'true';
                         }
-                        // Add newline before list item if not first?
-                        // Actually, list items usually act as blocks.
-                        // We push a newline node implicitly via render logic or explicit node.
-                        // Let's be explicit: List Item = New Line + Content + New Line?
-                        // Render logic handles the "Start of item" placement.
 
                         walk(el, indent, localContext);
 
@@ -254,16 +266,17 @@ export class PdfRichTextRenderer {
                         }
                         contentX += 5;
                     } else if (node.listType === 'bullet') {
-                        this.doc.text('•', contentX, cursorY);
+                        this.doc.text('-', contentX, cursorY);
                         contentX += 4;
                     } else if (node.listType === 'ordered') {
-                        this.doc.text('1.', contentX, cursorY);
-                        contentX += 5;
+                        const numLabel = `${node.listIndex || 1}.`;
+                        this.doc.text(numLabel, contentX, cursorY);
+                        contentX += this.doc.getTextWidth(numLabel) + 1.5;
                     }
                 } else {
                     if (node.listType === 'checkbox') contentX += 5;
                     else if (node.listType === 'bullet') contentX += 4;
-                    else if (node.listType === 'ordered') contentX += 5;
+                    else if (node.listType === 'ordered') contentX += this.doc.getTextWidth(`${node.listIndex || 1}.`) + 1.5;
                 }
                 cursorX = contentX;
             }

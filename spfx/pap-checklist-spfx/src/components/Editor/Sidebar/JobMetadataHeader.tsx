@@ -35,13 +35,6 @@ export const JobMetadataHeader: React.FC<JobMetadataHeaderProps> = ({ checklist,
         return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(val);
     };
 
-    const renderBoolean = (val?: boolean | null) => {
-        if (val === null || val === undefined) return <span className={styles['job-metadata-value--empty']}>—</span>;
-        return val
-            ? <span className={styles['badge-yes']}>Yes</span>
-            : <span className={styles['badge-no']}>No</span>;
-    };
-
     const mapsHref = job.googleMapsLink
         || (job.jobName ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.jobName)}` : undefined);
 
@@ -51,109 +44,83 @@ export const JobMetadataHeader: React.FC<JobMetadataHeaderProps> = ({ checklist,
 
     return (
         <div className={styles['job-metadata']}>
-            <div className={styles['job-metadata-title']}>
-                <Briefcase20Regular className={styles['job-metadata-title-icon']} />
-                Job Details
+            {/* ── Line 1: Title + Read-Only Fields (single inline row) ── */}
+            <div className={styles['job-metadata-readonly-row']}>
+                <span className={styles['job-metadata-title']}>
+                    <Briefcase20Regular className={styles['job-metadata-title-icon']} />
+                    Job Details
+                </span>
+
+                <div className={styles['job-metadata-inline-fields']}>
+                    <span className={styles['inline-field']}>
+                        <span className={styles['inline-label']}>Builder</span>
+                        <span className={styles['inline-value']}>{job.builderName || '—'}</span>
+                    </span>
+                    <span className={styles['inline-sep']}>|</span>
+
+                    <span className={styles['inline-field']}>
+                        <span className={styles['inline-label']}>Site</span>
+                        <span className={styles['inline-value']}>{job.siteAddress || '—'}</span>
+                    </span>
+                    <span className={styles['inline-sep']}>|</span>
+
+                    <span className={styles['inline-field']}>
+                        <span className={styles['inline-label']}>Due</span>
+                        <span className={styles['inline-value']}>{formatDate(job.dueDate) || '—'}</span>
+                    </span>
+                    <span className={styles['inline-sep']}>|</span>
+
+                    <span className={styles['inline-field']}>
+                        <span className={styles['inline-label']}>Estimator</span>
+                        <span className={styles['inline-value']}>{job.leadEstimator || '—'}</span>
+                    </span>
+                    <span className={styles['inline-sep']}>|</span>
+
+                    <span className={styles['inline-field']}>
+                        <span className={styles['inline-label']}>QBE</span>
+                        <span className={styles['inline-value']}>
+                            {job.qbeFlagged
+                                ? <>{formatCurrency(job.qbeLow)} – {formatCurrency(job.qbeHigh)}</>
+                                : (job.qbeFlagged === false ? 'No' : '—')}
+                        </span>
+                    </span>
+                    <span className={styles['inline-sep']}>|</span>
+
+                    <span className={styles['inline-field']}>
+                        <span className={styles['inline-label']}>3D</span>
+                        <span className={styles['inline-value']}>
+                            {job.threeDModel === true ? 'Yes' : job.threeDModel === false ? 'No' : '—'}
+                        </span>
+                    </span>
+
+                    {(mapsHref || reaHref) && (
+                        <>
+                            <span className={styles['inline-sep']}>|</span>
+                            <span className={styles['inline-field']}>
+                                {mapsHref && (
+                                    <a className={styles['inline-link']} href={mapsHref} target="_blank" rel="noopener noreferrer">
+                                        <Location20Regular className={styles['inline-link-icon']} />
+                                        Maps
+                                    </a>
+                                )}
+                                {reaHref && (
+                                    <a className={styles['inline-link']} href={reaHref} target="_blank" rel="noopener noreferrer">
+                                        <Home20Regular className={styles['inline-link-icon']} />
+                                        REA
+                                    </a>
+                                )}
+                            </span>
+                        </>
+                    )}
+                </div>
             </div>
 
-            {/* ── Read-only job fields ── */}
-            <div className={styles['job-metadata-grid']}>
-                {/* Builder */}
-                <div className={styles['job-metadata-field']}>
-                    <span className={styles['job-metadata-label']}>Builder</span>
-                    <span className={job.builderName ? styles['job-metadata-value'] : `${styles['job-metadata-value']} ${styles['job-metadata-value--empty']}`}>
-                        {job.builderName || '—'}
-                    </span>
-                </div>
-
-                {/* Site Address */}
-                <div className={styles['job-metadata-field']}>
-                    <span className={styles['job-metadata-label']}>Site Address</span>
-                    <span className={job.siteAddress ? styles['job-metadata-value'] : `${styles['job-metadata-value']} ${styles['job-metadata-value--empty']}`}>
-                        {job.siteAddress || '—'}
-                    </span>
-                </div>
-
-                {/* Due Date */}
-                <div className={styles['job-metadata-field']}>
-                    <span className={styles['job-metadata-label']}>Due Date</span>
-                    <span className={job.dueDate ? styles['job-metadata-value'] : `${styles['job-metadata-value']} ${styles['job-metadata-value--empty']}`}>
-                        {formatDate(job.dueDate) || '—'}
-                    </span>
-                </div>
-
-                {/* Estimator */}
-                <div className={styles['job-metadata-field']}>
-                    <span className={styles['job-metadata-label']}>Estimator</span>
-                    <span className={job.leadEstimator ? styles['job-metadata-value'] : `${styles['job-metadata-value']} ${styles['job-metadata-value--empty']}`}>
-                        {job.leadEstimator || '—'}
-                    </span>
-                </div>
-
-                {/* QBE */}
-                <div className={styles['job-metadata-field']}>
-                    <span className={styles['job-metadata-label']}>QBE</span>
-                    <div className={styles['qbe-row']}>
-                        {renderBoolean(job.qbeFlagged)}
-                        {job.qbeFlagged && (
-                            <div className={styles['qbe-range']}>
-                                <span className={styles['qbe-range-label']}>Low</span>
-                                <span className={styles['qbe-range-value']}>{formatCurrency(job.qbeLow)}</span>
-                                <span className={styles['qbe-range-label']}>High</span>
-                                <span className={styles['qbe-range-value']}>{formatCurrency(job.qbeHigh)}</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* 3D */}
-                <div className={styles['job-metadata-field']}>
-                    <span className={styles['job-metadata-label']}>3D</span>
-                    <span className={styles['job-metadata-value']}>
-                        {renderBoolean(job.threeDModel)}
-                    </span>
-                </div>
-
-                {/* View Property — replaces Procurement */}
-                {(mapsHref || reaHref) && (
-                    <div className={`${styles['job-metadata-field']} ${styles['job-metadata-field--span']}`}>
-                        <span className={styles['job-metadata-label']}>View Property</span>
-                        <div className={styles['job-metadata-links']}>
-                            {mapsHref && (
-                                <a
-                                    className={styles['job-metadata-text-link']}
-                                    href={mapsHref}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <Location20Regular className={styles['job-metadata-text-link-icon']} />
-                                    Google Maps
-                                </a>
-                            )}
-                            {reaHref && (
-                                <a
-                                    className={styles['job-metadata-text-link']}
-                                    href={reaHref}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <Home20Regular className={styles['job-metadata-text-link-icon']} />
-                                    realestate.com.au
-                                </a>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* ── Editable checklist fields ── */}
-            <div className={styles['job-metadata-divider']} />
-            <div className={styles['job-metadata-grid']}>
-
+            {/* ── Line 2: Editable Fields (compact row) ── */}
+            <div className={styles['job-metadata-editable-row']}>
                 {/* Hard Submission Deadline */}
-                <div className={styles['job-metadata-field']}>
-                    <span className={styles['job-metadata-label']}>Hard Submission Deadline</span>
-                    <div className={styles['job-metadata-control-row']}>
+                <div className={styles['editable-field']}>
+                    <span className={styles['editable-label']}>Hard Deadline</span>
+                    <div className={styles['editable-control']}>
                         <label className={styles['toggle']}>
                             <input
                                 type="checkbox"
@@ -175,10 +142,12 @@ export const JobMetadataHeader: React.FC<JobMetadataHeaderProps> = ({ checklist,
                     </div>
                 </div>
 
+                <span className={styles['editable-sep']} />
+
                 {/* Builder Supplied Quotes */}
-                <div className={styles['job-metadata-field']}>
-                    <span className={styles['job-metadata-label']}>Builder Supplied Quotes</span>
-                    <div className={styles['job-metadata-control-row']}>
+                <div className={styles['editable-field']}>
+                    <span className={styles['editable-label']}>Builder Quotes</span>
+                    <div className={styles['editable-control']}>
                         <label className={styles['toggle']}>
                             <input
                                 type="checkbox"
@@ -190,9 +159,11 @@ export const JobMetadataHeader: React.FC<JobMetadataHeaderProps> = ({ checklist,
                     </div>
                 </div>
 
+                <span className={styles['editable-sep']} />
+
                 {/* Contract Type */}
-                <div className={styles['job-metadata-field']}>
-                    <span className={styles['job-metadata-label']}>Contract Type</span>
+                <div className={styles['editable-field']}>
+                    <span className={styles['editable-label']}>Contract Type</span>
                     <select
                         className={styles['jm-select']}
                         value={checklist.contractType ?? 'standard'}
@@ -203,10 +174,12 @@ export const JobMetadataHeader: React.FC<JobMetadataHeaderProps> = ({ checklist,
                     </select>
                 </div>
 
+                <span className={styles['editable-sep']} />
+
                 {/* Build Stages */}
-                <div className={`${styles['job-metadata-field']} ${checklist.buildStages ? styles['job-metadata-field--wide'] : ''}`}>
-                    <span className={styles['job-metadata-label']}>Build Stages</span>
-                    <div className={styles['job-metadata-control-row']}>
+                <div className={`${styles['editable-field']} ${checklist.buildStages ? styles['editable-field--grow'] : ''}`}>
+                    <span className={styles['editable-label']}>Build Stages</span>
+                    <div className={styles['editable-control']}>
                         <label className={styles['toggle']}>
                             <input
                                 type="checkbox"
@@ -227,7 +200,6 @@ export const JobMetadataHeader: React.FC<JobMetadataHeaderProps> = ({ checklist,
                         )}
                     </div>
                 </div>
-
             </div>
         </div>
     );

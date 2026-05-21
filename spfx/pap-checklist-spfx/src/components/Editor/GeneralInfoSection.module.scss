@@ -78,12 +78,15 @@
 
 .general-info-date-input {
     @include input-filled;
-    font-size: 13px;
-    padding: $spacing-2 $spacing-3;
-    border-radius: $border-radius-sm;
-    width: 100%;
-    max-width: 180px;
-    color: $color-text-primary;
+
+    & {
+        font-size: 13px;
+        padding: $spacing-2 $spacing-3;
+        border-radius: $border-radius-sm;
+        width: 100%;
+        max-width: 180px;
+        color: $color-text-primary;
+    }
 
     &:focus {
         outline: none;
@@ -93,13 +96,16 @@
 
 .general-info-select {
     @include input-filled;
-    font-size: 13px;
-    padding: $spacing-2 $spacing-3;
-    border-radius: $border-radius-sm;
-    width: 100%;
-    max-width: 200px;
-    color: $color-text-primary;
-    cursor: pointer;
+
+    & {
+        font-size: 13px;
+        padding: $spacing-2 $spacing-3;
+        border-radius: $border-radius-sm;
+        width: 100%;
+        max-width: 200px;
+        color: $color-text-primary;
+        cursor: pointer;
+    }
 
     &:focus {
         outline: none;
@@ -109,14 +115,17 @@
 
 .general-info-textarea {
     @include input-filled;
-    font-size: 13px;
-    padding: $spacing-2 $spacing-3;
-    border-radius: $border-radius-sm;
-    width: 100%;
-    color: $color-text-primary;
-    resize: vertical;
-    font-family: inherit;
-    line-height: 1.5;
+
+    & {
+        font-size: 13px;
+        padding: $spacing-2 $spacing-3;
+        border-radius: $border-radius-sm;
+        width: 100%;
+        color: $color-text-primary;
+        resize: vertical;
+        font-family: inherit;
+        line-height: 1.5;
+    }
 
     &:focus {
         outline: none;

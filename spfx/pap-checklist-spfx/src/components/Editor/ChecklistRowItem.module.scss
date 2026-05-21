@@ -10,8 +10,8 @@
     @include surface;
     background-color: $color-white;
     border: 1px solid $color-border;
-    padding: $spacing-4; // Increased padding for breathing room
-    border-radius: $border-radius-lg;
+    padding: $spacing-1 $spacing-3; // Reduced top/bottom from spacing-2 → spacing-1
+    border-radius: $border-radius-md;
     transition: all $transition-base;
 
     &:hover {
@@ -20,13 +20,18 @@
     }
 
     &--compact {
-        padding: $spacing-2 $spacing-3;
+        padding: $spacing-1 $spacing-2;
     }
 
 
     &--internal {
         // border-right color removed as per request
         background-color: rgba($color-gray-100, 0.5);
+    }
+
+    &--confirmation-required {
+        background: rgba(#a4262c, 0.06);
+        border-left: 3px solid #a4262c;
     }
 }
 
@@ -36,7 +41,7 @@
 
 .row-main-flex {
     display: flex;
-    gap: $spacing-4; // gap-4
+    gap: $spacing-3;
 }
 
 // Column 1: Expand Button
@@ -66,7 +71,7 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: $spacing-3; // space-y-3
+    gap: $spacing-2; // Reduced from spacing-3
 }
 
 // Column 3: Actions

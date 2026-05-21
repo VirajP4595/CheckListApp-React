@@ -217,34 +217,6 @@
 }
 
 // ============================================
-// FQE Revision Sync Banner
-// ============================================
-
-.fqe-revision-banner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: $spacing-3;
-    padding: $spacing-3 $spacing-4;
-    background: #fff8e1;
-    border-bottom: 2px solid #f59e0b;
-    flex-wrap: wrap;
-
-    .fqe-revision-banner-text {
-        font-size: 13px;
-        font-weight: 500;
-        color: #92400e;
-        flex: 1;
-        min-width: 200px;
-    }
-
-    .fqe-revision-banner-actions {
-        display: flex;
-        align-items: center;
-        gap: $spacing-2;
-    }
-}
-
 // ============================================
 // Editor Layout
 // ============================================
@@ -253,13 +225,13 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: $spacing-4;
+    padding: 0 $spacing-3; // Zero top padding to minimize gap below header
     overflow-x: hidden; // Prevent horizontal scrollbar
 
     @include breakpoint('lg') {
         flex-direction: row;
-        gap: $spacing-6;
-        padding: $spacing-6;
+        gap: $spacing-4;
+        padding: 0 $spacing-5;
     }
 }
 
@@ -273,12 +245,13 @@
 .editor-revisions {
     display: flex;
     flex-direction: column;
-    gap: $spacing-4;
-    padding: $spacing-4;
+    gap: $spacing-2;
+    padding: $spacing-2 $spacing-3;
     background: #e5e8eb; // Very light grey background for the entire revision history section in editor
-    border-radius: $border-radius-lg;
-    border: 1px solid $color-gray-100;
-    margin-bottom: 2rem;
+    border-radius: $border-radius-md;
+    border: 1px solid $color-gray-200;
+    margin-bottom: $spacing-2;
+    margin-top: $spacing-1;
 }
 
 .revisions-header {
@@ -313,11 +286,7 @@
 .editor-workgroups {
     display: flex;
     flex-direction: column;
-    gap: $spacing-4;
-
-    @include breakpoint('md') {
-        gap: $spacing-4;
-    }
+    gap: $spacing-2;
 }
 
 .editor-add-workgroup {
@@ -435,6 +404,23 @@
     gap: $spacing-2;
     font-size: $font-size-xs;
     color: rgba($color-white, 0.8);
+}
+
+// Chat unread badge (in header)
+.editor-chat-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    margin-left: 4px;
+    border-radius: $border-radius-full;
+    background-color: $color-error;
+    color: $color-white;
+    font-size: 10px !important;
+    font-weight: $font-weight-bold;
+    line-height: 16px;
 }
 
 // ============================================

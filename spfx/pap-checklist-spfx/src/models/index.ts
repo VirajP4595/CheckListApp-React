@@ -11,7 +11,7 @@ export const ANSWER_CONFIG: Record<AnswerState, { label: string; color: string; 
     PC: { label: 'PC', color: '#0078d4', description: 'Prime Cost' },
     SUB: { label: 'Subcontractor Quote', color: '#8764b8', description: 'Subcontractor' },
     OTS: { label: 'OTS', color: '#038387', description: 'Owner to Supply' },
-    TBC: { label: 'TBC', color: '#a4262c', description: 'To Be Confirmed' },
+    TBC: { label: 'Confirmation Required', color: '#a4262c', description: 'Confirmation Required' },
     OPT_EXTRA: { label: 'Optional Extra', color: '#ca5010', description: 'Optional extra item' },
     BUILDER_SPEC: { label: 'Builder Spec Item', color: '#498205', description: 'Builder specification item' },
     RFQ: { label: 'RFQ', color: '#986f0b', description: 'Request for Quote' },
@@ -22,9 +22,9 @@ export const ANSWER_CONFIG: Record<AnswerState, { label: string; color: string; 
 export type RowSection = 'client' | 'estimator' | 'reviewer';
 
 export const SECTION_CONFIG: Record<RowSection, { label: string; color: string }> = {
-    'client': { label: 'Checklist Filler / Client', color: '#0078d4' },
-    'estimator': { label: 'Estimator', color: '#8764b8' },
-    'reviewer': { label: 'Reviewer', color: '#c239b3' },
+    'client': { label: 'Client/Checklist Notes', color: '#0078d4' },
+    'estimator': { label: 'Estimator Notes', color: '#8764b8' },
+    'reviewer': { label: 'Reviewer Notes', color: '#c239b3' },
 };
 
 export const ROW_SECTIONS: RowSection[] = ['client', 'estimator', 'reviewer'];
@@ -45,6 +45,7 @@ export interface CommonNoteSection {
     title: string;
     content: string;
     order: number;
+    createdAt?: Date;
 }
 
 // ─── INLINE IMAGE ────────────────────────────────────────
@@ -115,11 +116,25 @@ export interface Revision {
 }
 
 // ─── COMMENT ─────────────────────────────────────────────
+export interface CommentLike {
+    userId: string;       // Graph user ID
+    displayName: string;
+    timestamp: string;    // ISO string
+}
+
+export interface CommentMention {
+    userId: string;       // Graph user ID (used for Teams notification)
+    displayName: string;
+}
+
 export interface ChecklistComment {
     id: string;
     text: string;
     author: string;
+    authorEmail?: string;
     createdAt: Date;
+    likes?: CommentLike[];       // Rich like data with user identity
+    mentions?: CommentMention[]; // @mentioned users with Graph IDs
 }
 
 // ─── FILE ────────────────────────────────────────────────

@@ -26,7 +26,7 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
     const user = useUserStore(state => state.user);
     const [sections, setSections] = useState<CommonNoteSection[]>(checklist.commonNotes || []);
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
-    const [containerExpanded, setContainerExpanded] = useState(sections.length > 0);
+    const [containerExpanded, setContainerExpanded] = useState(false);
     const [showCarpentryDialog, setShowCarpentryDialog] = useState(false);
     const originalRef = useRef<string>(JSON.stringify(checklist.commonNotes || []));
     const editorRefs = useRef<Record<string, any>>({});
@@ -36,7 +36,7 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
         const newSections = checklist.commonNotes || [];
         setSections(newSections);
         originalRef.current = JSON.stringify(newSections);
-        setContainerExpanded(newSections.length > 0);
+        setContainerExpanded(false); // Always start collapsed when checklist changes
     }, [checklist.id]);
 
     const saveSections = useCallback((updated: CommonNoteSection[]) => {
@@ -55,6 +55,7 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
             title: `Notes Section ${sections.length + 1}`,
             content: '',
             order: 0,
+            createdAt: new Date(),
         };
         // Prepend new section so newest appears at the top
         const updated = [newSection, ...sections.map((s, i) => ({ ...s, order: i + 1 }))];
@@ -170,6 +171,11 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
                                         disabled={readOnly}
                                         placeholder="Section title..."
                                     />
+                                    {section.createdAt && (
+                                        <span className={styles['note-section-date']}>
+                                            Added {new Date(section.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </span>
+                                    )}
                                     <div className={styles['note-section-actions']}>
                                         <button
                                             className={styles['note-section-action-btn']}

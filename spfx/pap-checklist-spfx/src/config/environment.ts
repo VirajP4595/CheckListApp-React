@@ -22,7 +22,7 @@ export const AppConfig = {
     },
     powerAutomate: {
         //DEV
-        createChecklistFlowUrl: "https://644999d214b2ecea9a447627ced3c4.c0.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/49885650306b46d59224d1bf6bf6e1ab/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Wax0w4aai9NtAbtJOZ7WcrsZAEfJJy-k11GNBZhisfQ"
+        createChecklistFlowUrl: "https://644999d214b2ecea9a447627ced3c4.c0.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/49885650306b46d59224d1bf6bf6e1ab/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Wax0w4aai9NtAbtJOZ7WcrsZAEfJJy-k11GNBZhisfQ",
         //PROD
         //createChecklistFlowUrl: "YOUR_FLOW_URL_HERE"
     }

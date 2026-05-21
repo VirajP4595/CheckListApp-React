@@ -29,13 +29,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: $spacing-4;
-    padding: $spacing-3 $spacing-4; // Increased padding for breathing room
+    gap: $spacing-3;
+    padding: $spacing-2 $spacing-3;
     border-bottom: 1px solid $color-border;
     border-radius: $border-radius-lg $border-radius-lg 0 0;
 
     @include mobile {
-        padding: $spacing-3;
+        padding: $spacing-2;
         flex-wrap: wrap;
         gap: $spacing-2;
     }
@@ -44,7 +44,7 @@
 .workgroup-header-left {
     display: flex;
     align-items: center;
-    gap: $spacing-4;
+    gap: $spacing-2;
     flex: 1;
     min-width: 0;
 }
@@ -52,14 +52,14 @@
 .workgroup-header-right {
     display: flex;
     align-items: center;
-    gap: $spacing-4;
+    gap: $spacing-2;
     flex-shrink: 0;
 }
 
 .workgroup-expand-btn {
     color: $color-gray-700 !important;
-    min-width: 32px !important;
-    height: 32px !important;
+    min-width: 28px !important;
+    height: 28px !important;
     padding: 0 !important;
     border-radius: $border-radius-sm !important;
     @include button-ghost;
@@ -76,7 +76,7 @@
 
 $badge-bg: $color-primary-subtle;
 $badge-color: $color-primary;
-$badge-height: 40px;
+$badge-height: 32px; // Reduced from 40px for compactness
 $badge-radius: $border-radius-lg;
 
 .workgroup-number-badge {
@@ -123,15 +123,13 @@ $badge-radius: $border-radius-lg;
 // ============================================
 
 .workgroup-title-text {
-    font-size: $font-size-base;
+    font-size: $font-size-sm;
     font-weight: $font-weight-bold;
     color: $color-gray-900;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 1.5; // Ensure descenders fit
-    padding-bottom: 1px; // Safety buffer
-    padding-top: 1px;
+    line-height: 1.4;
 }
 
 .workgroup-title-input {
@@ -277,7 +275,7 @@ $badge-radius: $border-radius-lg;
 // ============================================
 
 .workgroup-content {
-    padding: 0.75rem 1.25rem;
+    padding: $spacing-1 $spacing-2; // Tighter: 4px 8px
     background-color: $color-gray-50;
     border-radius: 0 0 $border-radius-lg $border-radius-lg; // Rounded bottom only
 }
@@ -285,23 +283,23 @@ $badge-radius: $border-radius-lg;
 .workgroup-rows-container {
     display: flex;
     flex-direction: column;
-    gap: $spacing-6;
-    padding-top: $spacing-2;
+    gap: $spacing-2; // Reduced from spacing-4
+    padding-top: 0;
 }
 
 .section-group {
     display: flex;
     flex-direction: column;
-    gap: $spacing-3;
+    gap: $spacing-1; // Reduced from spacing-3
 }
 
 .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: $spacing-1 0;
-    border-bottom: 2px solid $color-gray-200;
-    margin-bottom: $spacing-1;
+    padding: 2px 0;
+    border-bottom: 1px solid $color-gray-200;
+    margin-bottom: 2px;
 }
 
 .section-title {
@@ -350,14 +348,14 @@ $badge-radius: $border-radius-lg;
 .section-content {
     display: flex;
     flex-direction: column;
-    gap: $spacing-2;
+    gap: $spacing-1; // Tighter rows
 }
 
 .section-empty {
     font-size: $font-size-xs;
     color: $color-gray-400;
     font-style: italic;
-    padding: $spacing-3;
+    padding: $spacing-1 $spacing-3; // Reduced vertical padding
     text-align: center;
     background: rgba($color-gray-100, 0.5);
     border: 1px dashed $color-gray-200;

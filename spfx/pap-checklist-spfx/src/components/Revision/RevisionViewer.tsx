@@ -72,8 +72,8 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
         if (visibleRows.length === 0) return null;
 
         const sections = [
-            { id: 'client', label: 'Checklist Filler / Client', rows: visibleRows.filter((r: any) => r.section === 'client' || !r.section) },
-            { id: 'estimator', label: 'Estimator', rows: visibleRows.filter((r: any) => r.section === 'estimator') }
+            { id: 'client', label: 'Client/Checklist Notes', rows: visibleRows.filter((r: any) => r.section === 'client' || !r.section) },
+            { id: 'estimator', label: 'Estimator Notes', rows: visibleRows.filter((r: any) => r.section === 'estimator') }
         ];
 
         return (

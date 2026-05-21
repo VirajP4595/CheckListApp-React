@@ -243,7 +243,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                             style={{ justifyContent: 'space-between', fontWeight: 400 }}
                         >
                             <span style={{ color: filters.answerStates.length === 0 ? '#616161' : 'inherit' }}>
-                                {filters.answerStates.length === 0 ? 'Answer' : `${filters.answerStates.length} Selected`}
+                                {filters.answerStates.length === 0 ? 'Key' : `${filters.answerStates.length} Selected`}
                             </span>
                         </Button>
                     </MenuTrigger>
