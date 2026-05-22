@@ -100,7 +100,7 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                 // Resolve admin emails to user IDs, then send Teams chat
                 void (async () => {
                     try {
-                        const { getGraphChatService } = await import('../../services/serviceFactory');
+                        const { getGraphChatService } = await import(/* webpackChunkName: 'service-factory' */ '../../services/serviceFactory');
                         const chatService = getGraphChatService();
                         for (const email of adminEmails) {
                             try {

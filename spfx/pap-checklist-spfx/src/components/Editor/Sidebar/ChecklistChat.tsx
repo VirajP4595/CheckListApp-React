@@ -27,26 +27,46 @@ export const getUnreadCount = (checklist: Checklist, userId: string): number => 
     return (checklist.comments || []).filter(c => new Date(c.createdAt).getTime() > lastReadTime).length;
 };
 
-/** Render message text with @mentions highlighted */
+/** Render message text with @mentions highlighted (string-based, no dynamic RegExp) */
 const renderMessageText = (text: string, mentions?: CommentMention[]): React.ReactNode => {
     if (!mentions || mentions.length === 0) return text;
 
-    const escapedNames = mentions.map(m => m.displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    const mentionPattern = new RegExp(`(@(?:${escapedNames.join('|')}))`, 'gi');
+    // Build list of mention tags to search for
+    const mentionTags = mentions.map(m => '@' + m.displayName);
 
-    const parts = text.split(mentionPattern);
-    return parts.map((part, i) => {
-        if (mentionPattern.test(part)) {
-            mentionPattern.lastIndex = 0;
-            return (
-                <span key={i} className={styles['chat-mention']}>
-                    {part}
-                </span>
-            );
+    // Split text into segments: plain text and mention spans
+    const segments: Array<{ text: string; isMention: boolean }> = [];
+    let remaining = text;
+
+    while (remaining.length > 0) {
+        // Find the earliest mention in the remaining text
+        let earliestIdx = -1;
+        let earliestTag = '';
+        for (let t = 0; t < mentionTags.length; t++) {
+            const idx = remaining.toLowerCase().indexOf(mentionTags[t].toLowerCase());
+            if (idx !== -1 && (earliestIdx === -1 || idx < earliestIdx)) {
+                earliestIdx = idx;
+                earliestTag = mentionTags[t];
+            }
         }
-        mentionPattern.lastIndex = 0;
-        return part;
-    });
+
+        if (earliestIdx === -1) {
+            segments.push({ text: remaining, isMention: false });
+            break;
+        }
+
+        if (earliestIdx > 0) {
+            segments.push({ text: remaining.substring(0, earliestIdx), isMention: false });
+        }
+        segments.push({ text: remaining.substring(earliestIdx, earliestIdx + earliestTag.length), isMention: true });
+        remaining = remaining.substring(earliestIdx + earliestTag.length);
+    }
+
+    return segments.map((seg, i) =>
+        seg.isMention
+            ? <span key={i} className={styles['chat-mention']}>{seg.text}</span>
+            : seg.text
+    );
 };
 
 export const ChecklistChat: React.FC<ChecklistChatProps> = ({ checklist, onUpdate, onSave, readOnly }) => {

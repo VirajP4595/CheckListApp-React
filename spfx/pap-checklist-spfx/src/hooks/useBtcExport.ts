@@ -66,7 +66,7 @@ export const useBtcExport = () => {
             // 3b. Fetch PAP Company Logo from SiteAssets
             let papLogoBlob: Blob | null = null;
             try {
-                const { AppConfig } = await import('../config/environment');
+                const { AppConfig } = await import(/* webpackChunkName: 'app-config' */ '../config/environment');
                 const papLogoUrl = `${AppConfig.sharepoint.absoluteUrl}/SiteAssets/PAPLogo/2024_PAP%20logo%20vert_transparent%20bkgrd_HR.png`;
                 const response = await fetch(papLogoUrl);
                 if (response.ok) {

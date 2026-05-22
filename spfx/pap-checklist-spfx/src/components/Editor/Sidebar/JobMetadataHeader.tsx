@@ -121,7 +121,7 @@ export const JobMetadataHeader: React.FC<JobMetadataHeaderProps> = ({ checklist,
                 <div className={styles['editable-field']}>
                     <span className={styles['editable-label']}>Hard Deadline</span>
                     <div className={styles['editable-control']}>
-                        <label className={styles['toggle']}>
+                        <label className={styles.toggle}>
                             <input
                                 type="checkbox"
                                 checked={checklist.hardDeadline ?? false}
@@ -148,7 +148,7 @@ export const JobMetadataHeader: React.FC<JobMetadataHeaderProps> = ({ checklist,
                 <div className={styles['editable-field']}>
                     <span className={styles['editable-label']}>Builder Quotes</span>
                     <div className={styles['editable-control']}>
-                        <label className={styles['toggle']}>
+                        <label className={styles.toggle}>
                             <input
                                 type="checkbox"
                                 checked={checklist.builderSuppliedQuotes ?? false}
@@ -180,7 +180,7 @@ export const JobMetadataHeader: React.FC<JobMetadataHeaderProps> = ({ checklist,
                 <div className={`${styles['editable-field']} ${checklist.buildStages ? styles['editable-field--grow'] : ''}`}>
                     <span className={styles['editable-label']}>Build Stages</span>
                     <div className={styles['editable-control']}>
-                        <label className={styles['toggle']}>
+                        <label className={styles.toggle}>
                             <input
                                 type="checkbox"
                                 checked={checklist.buildStages ?? false}

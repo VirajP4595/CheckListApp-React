@@ -17,10 +17,18 @@ export interface OrgUser {
  */
 export class GraphChatService {
     private client: MSGraphClientV3 | undefined;
+    private currentUserId: string | undefined;
 
     public async initialize(context: WebPartContext): Promise<void> {
         this.client = await context.msGraphClientFactory.getClient('3');
-        console.log('[GraphChatService] Initialized');
+        // Cache current user ID at init time
+        try {
+            const me = await this.client.api('/me').select('id').get();
+            this.currentUserId = me.id;
+        } catch (e) {
+            console.warn('[GraphChatService] Failed to get current user ID', e);
+        }
+        console.log('[GraphChatService] Initialized, userId:', this.currentUserId);
     }
 
     private getClient(): MSGraphClientV3 {
@@ -30,38 +38,14 @@ export class GraphChatService {
 
     /**
      * Search org users by name or email.
-     * Uses /me/people first (most relevant), falls back to /users for broader search.
+     * Always uses /users directory endpoint to get reliable Azure AD user IDs
+     * (People API IDs are person-specific and cannot be used for chat creation).
      * Returns up to 10 results.
      */
     public async searchUsers(query: string): Promise<OrgUser[]> {
         if (!query || query.length < 2) return [];
         const client = this.getClient();
 
-        try {
-            // Try People API first — returns contextually relevant users
-            const peopleResponse = await client
-                .api('/me/people')
-                .filter(`startswith(displayName,'${this.escapeOData(query)}')`)
-                .select('id,displayName,scoredEmailAddresses,jobTitle')
-                .top(10)
-                .get();
-
-            if (peopleResponse?.value?.length > 0) {
-                return peopleResponse.value
-                    .filter((p: any) => p.displayName) // exclude empty
-                    .map((p: any) => ({
-                        id: p.id,
-                        displayName: p.displayName,
-                        mail: p.scoredEmailAddresses?.[0]?.address || '',
-                        userPrincipalName: p.scoredEmailAddresses?.[0]?.address || '',
-                        jobTitle: p.jobTitle,
-                    }));
-            }
-        } catch (e) {
-            console.warn('[GraphChatService] People API failed, trying /users', e);
-        }
-
-        // Fallback: directory search
         try {
             const usersResponse = await client
                 .api('/users')
@@ -92,12 +76,21 @@ export class GraphChatService {
         message: string
     ): Promise<void> {
         const client = this.getClient();
+        const myId = this.currentUserId;
+
+        if (!myId) {
+            console.error('[GraphChatService] Cannot send chat — current user ID not available');
+            return;
+        }
+
+        if (!recipientUserId) {
+            console.error('[GraphChatService] Cannot send chat — recipient user ID is empty');
+            return;
+        }
+
+        console.log(`[GraphChatService] Creating chat: me=${myId}, recipient=${recipientUserId}`);
 
         try {
-            // Get current user's ID
-            const me = await client.api('/me').select('id').get();
-            const myId = me.id;
-
             // Create or get existing 1:1 chat
             const chat = await client.api('/chats').post({
                 chatType: 'oneOnOne',
@@ -115,6 +108,8 @@ export class GraphChatService {
                 ]
             });
 
+            console.log(`[GraphChatService] Chat created/found: ${chat.id}`);
+
             // Send message in the chat
             await client.api(`/chats/${chat.id}/messages`).post({
                 body: {
@@ -122,8 +117,10 @@ export class GraphChatService {
                     content: message
                 }
             });
-        } catch (e) {
-            console.warn(`[GraphChatService] Failed to send Teams chat to ${recipientUserId}`, e);
+
+            console.log(`[GraphChatService] Message sent successfully to ${recipientUserId}`);
+        } catch (e: any) {
+            console.error(`[GraphChatService] Failed to send Teams chat to ${recipientUserId}`, e?.statusCode, e?.message || e);
         }
     }
 
