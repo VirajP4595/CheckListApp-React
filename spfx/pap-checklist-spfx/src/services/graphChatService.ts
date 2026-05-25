@@ -18,9 +18,11 @@ export interface OrgUser {
 export class GraphChatService {
     private client: MSGraphClientV3 | undefined;
     private currentUserId: string | undefined;
+    private siteUrl: string = '';
 
     public async initialize(context: WebPartContext): Promise<void> {
         this.client = await context.msGraphClientFactory.getClient('3');
+        this.siteUrl = context.pageContext.web.absoluteUrl;
         // Cache current user ID at init time
         try {
             const me = await this.client.api('/me').select('id').get();
@@ -29,6 +31,11 @@ export class GraphChatService {
             console.warn('[GraphChatService] Failed to get current user ID', e);
         }
         console.log('[GraphChatService] Initialized, userId:', this.currentUserId);
+    }
+
+    /** Build a deep-link URL to open a specific checklist */
+    private buildChecklistUrl(checklistId: string): string {
+        return `${this.siteUrl}/SitePages/Checklist.aspx?checklistId=${encodeURIComponent(checklistId)}`;
     }
 
     private getClient(): MSGraphClientV3 {
@@ -88,6 +95,12 @@ export class GraphChatService {
             return;
         }
 
+        // Skip if trying to message yourself (Graph rejects duplicate members)
+        if (recipientUserId.toLowerCase() === myId.toLowerCase()) {
+            console.log('[GraphChatService] Skipping — recipient is the current user');
+            return;
+        }
+
         console.log(`[GraphChatService] Creating chat: me=${myId}, recipient=${recipientUserId}`);
 
         try {
@@ -132,9 +145,13 @@ export class GraphChatService {
         mentionedUsers: Array<{ id: string; displayName: string }>,
         messageText: string,
         authorName: string,
-        checklistTitle: string
+        checklistTitle: string,
+        checklistId?: string
     ): Promise<void> {
-        const htmlMessage = `<b>${this.escapeHtml(authorName)}</b> mentioned you in <b>${this.escapeHtml(checklistTitle)}</b>:<br/><br/><i>"${this.escapeHtml(messageText)}"</i>`;
+        const checklistLink = checklistId
+            ? `<a href="${this.buildChecklistUrl(checklistId)}">${this.escapeHtml(checklistTitle)}</a>`
+            : `<b>${this.escapeHtml(checklistTitle)}</b>`;
+        const htmlMessage = `<b>${this.escapeHtml(authorName)}</b> mentioned you in ${checklistLink}:<br/><br/><i>"${this.escapeHtml(messageText)}"</i>`;
 
         const promises = mentionedUsers.map(user =>
             this.sendTeamsChatNotification(user.id, htmlMessage).catch(e => {

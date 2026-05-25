@@ -177,6 +177,7 @@ export interface Checklist {
         checklistChoice?: string | number | null;
         appointmentDate?: Date | null;
         // ── Job Metadata Header fields ──
+        accountId?: string;            // _vin_account_value (raw GUID for SP folder path)
         builderName?: string;          // _vin_account_value (formatted)
         siteAddress?: string;          // vin_name (job address)
         qbeFlagged?: boolean;          // vin_qbecomplete (QB Complete on FQE card)

@@ -98,7 +98,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 autocapitalize: 'on',
             },
         },
-        // ... (existing handlers)
         onUpdate: ({ editor }) => {
             onChange?.(editor.getHTML());
         },
@@ -136,6 +135,30 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         editor.commands.setContent(content);
     }, [content, editor]);
 
+    // Prevent task list checkboxes from stealing focus.
+    // When ProseMirror re-renders the DOM (e.g. Enter creates a new task item),
+    // the browser may auto-focus a checkbox <input>. This listener catches that
+    // and immediately returns focus to the ProseMirror editor view.
+    useEffect(() => {
+        if (!editor || readOnly) return;
+        const editorDom = editor.view.dom;
+
+        const handleFocusIn = (e: FocusEvent): void => {
+            const target = e.target as HTMLElement;
+            if (target && target.tagName === 'INPUT'
+                && (target as HTMLInputElement).type === 'checkbox'
+                && editorDom.contains(target)) {
+                // Defer so we don't fight the current focus event
+                setTimeout(() => editor.commands.focus(), 0);
+            }
+        };
+
+        editorDom.addEventListener('focusin', handleFocusIn);
+        return () => {
+            editorDom.removeEventListener('focusin', handleFocusIn);
+        };
+    }, [editor, readOnly]);
+
     return (
         <div className={`${styles['editor-container']} ${readOnly ? styles['editor-container--readonly'] : ''} ${className || ''}`}>
             {!readOnly && (
@@ -147,6 +170,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                             appearance="subtle"
                             size="small"
                             icon={<TextBold20Regular />}
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => editor.chain().focus().toggleBold().run()}
                         />
                     </Tooltip>
@@ -156,6 +180,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                             appearance="subtle"
                             size="small"
                             icon={<TextItalic20Regular />}
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => editor.chain().focus().toggleItalic().run()}
                         />
                     </Tooltip>
@@ -165,6 +190,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                             appearance="subtle"
                             size="small"
                             icon={<TextUnderline20Regular />}
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => editor.chain().focus().toggleUnderline().run()}
                         />
                     </Tooltip>
@@ -210,6 +236,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                             appearance="subtle"
                             size="small"
                             icon={<TextParagraph20Regular />}
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => {
                                 editor.chain().focus().liftListItem('listItem').run();
                                 editor.chain().focus().liftListItem('taskItem').run();
@@ -222,6 +249,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                             appearance="subtle"
                             size="small"
                             icon={<TextBulletList20Regular />}
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => editor.chain().focus().toggleBulletList().run()}
                         />
                     </Tooltip>
@@ -231,6 +259,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                             appearance="subtle"
                             size="small"
                             icon={<TextNumberListLtr20Regular />}
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => editor.chain().focus().toggleOrderedList().run()}
                         />
                     </Tooltip>
@@ -240,6 +269,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                             appearance="subtle"
                             size="small"
                             icon={<CheckboxChecked20Regular />}
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => editor.chain().focus().toggleTaskList().run()}
                         />
                     </Tooltip>

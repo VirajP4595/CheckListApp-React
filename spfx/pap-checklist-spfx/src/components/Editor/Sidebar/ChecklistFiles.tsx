@@ -1,9 +1,9 @@
-
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { Button, Spinner } from '@fluentui/react-components';
-import { Attach24Regular, Delete24Regular, Document24Regular, ArrowDownload24Regular } from '@fluentui/react-icons';
+import { Attach24Regular, Delete24Regular, Document24Regular, ArrowDownload24Regular, FolderOpen24Regular } from '@fluentui/react-icons';
 import { Checklist } from '../../../models';
 import { useChecklistStore } from '../../../stores';
+import { getImageService } from '../../../services';
 import styles from './ChecklistFiles.module.scss';
 
 interface ChecklistFilesProps {
@@ -15,6 +15,7 @@ interface ChecklistFilesProps {
 export const ChecklistFiles: React.FC<ChecklistFilesProps> = ({ checklist, readOnly }) => {
     const { uploadFile, deleteFile, isSaving } = useChecklistStore();
     const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
     const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -24,12 +25,17 @@ export const ChecklistFiles: React.FC<ChecklistFilesProps> = ({ checklist, readO
 
     const uploadFiles = async (files: File[]) => {
         if (!files.length || readOnly) return;
+        setUploadError(null);
         setUploadProgress({ current: 0, total: files.length });
         for (let i = 0; i < files.length; i++) {
             try {
                 await uploadFile(files[i]);
-            } catch (e) {
+            } catch (e: any) {
+                const msg = e?.message || String(e);
                 console.error(`[ChecklistFiles] Failed to upload ${files[i].name}`, e);
+                setUploadError(msg);
+                setUploadProgress(null);
+                return; // Stop uploading remaining files
             }
             setUploadProgress({ current: i + 1, total: files.length });
         }
@@ -76,8 +82,41 @@ export const ChecklistFiles: React.FC<ChecklistFilesProps> = ({ checklist, readO
 
     const isBusy = isSaving || !!uploadProgress;
 
+    // Build SharePoint folder link if job details are available
+    const folderUrl = useMemo(() => {
+        const accountName = checklist.jobDetails?.builderName || checklist.jobDetails?.clientName;
+        const accountId = checklist.jobDetails?.accountId;
+        if (!accountName || !accountId) return null;
+        try {
+            return getImageService().getChecklistFolderUrl(accountName, accountId);
+        } catch {
+            return null;
+        }
+    }, [checklist.jobDetails]);
+
     return (
         <div className={styles['files-container']}>
+            {folderUrl && (
+                <button
+                    type="button"
+                    className={styles['files-folder-link']}
+                    onClick={() => window.open(folderUrl, '_blank', 'noopener,noreferrer')}
+                >
+                    <FolderOpen24Regular />
+                    <span>Open Job Folder</span>
+                </button>
+            )}
+            {uploadError && (
+                <div className={styles['files-error']}>
+                    <span>{uploadError}</span>
+                    <button
+                        className={styles['files-error-dismiss']}
+                        onClick={() => setUploadError(null)}
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
             <div className={styles['files-list']}>
                 {(checklist.files || []).length === 0 && (
                     <div className={styles['files-empty']}>

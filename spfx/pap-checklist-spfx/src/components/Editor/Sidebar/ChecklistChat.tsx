@@ -158,7 +158,8 @@ export const ChecklistChat: React.FC<ChecklistChatProps> = ({ checklist, onUpdat
                 finalMentions.map(m => ({ id: m.userId, displayName: m.displayName })),
                 newMessage.trim(),
                 user.name,
-                currentChecklist.title
+                currentChecklist.title,
+                currentChecklist.id
             );
         }
 

@@ -10,7 +10,13 @@ export const AppConfig = {
     sharepoint: {
         //absoluteUrl: "https://spfordev.sharepoint.com/sites/PAPChecklist", //SPForDev
         absoluteUrl: "https://adriennesimmons.sharepoint.com/sites/IntranetDev", //PAPDev
-        documentLibrary: "PAPAttachments"
+        documentLibrary: "PAPAttachments",
+        // Checklist files library — linked to CRM account folders
+        // DEV: uses same site as absoluteUrl above, with matching folder structure
+        checklistFilesSiteUrl: "https://adriennesimmons.sharepoint.com/sites/IntranetDev", //PAPDev
+        //PROD
+        //checklistFilesSiteUrl: "https://adriennesimmons.sharepoint.com/sites/Customers",
+        checklistFilesLibrary: "Account"
     },
     // Auth config removed - handled by SPFx Context
     admin: {

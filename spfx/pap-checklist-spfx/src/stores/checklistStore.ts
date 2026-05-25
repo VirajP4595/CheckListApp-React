@@ -774,8 +774,16 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
 
         set({ isSaving: true });
         try {
-            // 1. Upload to SharePoint
-            const result = await getImageService().uploadFile(activeChecklist.id, file);
+            // 1. Upload to CRM-linked SharePoint folder if job details available,
+            //    otherwise fall back to PAPAttachments library
+            const accountName = activeChecklist.jobDetails?.builderName || activeChecklist.jobDetails?.clientName;
+            const accountId = activeChecklist.jobDetails?.accountId;
+            const imageService = getImageService();
+
+            const jobName = activeChecklist.jobDetails?.jobName;
+            const result = (accountName && accountId)
+                ? await imageService.uploadChecklistFile(accountName, accountId, file, jobName)
+                : await imageService.uploadFile(activeChecklist.id, file);
 
             // 2. Construct File Object
             const newFile: import('../models').ChecklistFile = {
@@ -813,14 +821,22 @@ export const useChecklistStore = create<ChecklistState>((set, get) => ({
 
         set({ isSaving: true });
         try {
-            // 1. Delete from SharePoint
-            // Note: We need the SharePoint Item ID. If 'id' is generated locally (legacy), this might fail.
-            // But going forward we use SharePoint ID.
-            // For safety, we wrap in try-catch in case it doesn't exist or is legacy.
+            // 1. Delete from SharePoint (try CRM library first, then PAPAttachments)
+            const imageService = getImageService();
             try {
-                await getImageService().removeImage(fileId); // removeImage is generic delete item
+                const hasAccountInfo = !!(activeChecklist.jobDetails?.builderName && activeChecklist.jobDetails?.accountId);
+                if (hasAccountInfo) {
+                    await imageService.deleteChecklistFile(fileId);
+                } else {
+                    await imageService.removeImage(fileId);
+                }
             } catch (e) {
-                console.warn('[Store] Failed to delete file from SharePoint (might be legacy or already gone)', e);
+                // Fallback: try the other library in case file was uploaded before the switch
+                try {
+                    await imageService.removeImage(fileId);
+                } catch (e2) {
+                    console.warn('[Store] Failed to delete file from SharePoint (might be legacy or already gone)', e2);
+                }
             }
 
             // 2. Update Metadata

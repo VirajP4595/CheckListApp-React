@@ -91,7 +91,7 @@ export const ChecklistRowItem: React.FC<ChecklistRowItemProps> = React.memo(({
                 const htmlMessage = [
                     `<b>🔔 Notify Admin</b>`,
                     `<br/>Flagged by <b>${estimatorName}</b> on ${timestamp}`,
-                    `<br/><br/><b>Checklist:</b> ${checklistTitle}`,
+                    `<br/><br/><b>Checklist:</b> <a href="${window.location.href}">${checklistTitle}</a>`,
                     `<br/><b>Workgroup:</b> ${wgName}`,
                     `<br/><b>Item:</b> ${row.name || '(unnamed)'}`,
                     notesSnippet ? `<br/><b>Notes:</b> <i>${notesSnippet}</i>` : '',

@@ -45,6 +45,9 @@ export interface IImageService {
     getAllImageMetadata(checklistId: string): Promise<ChecklistImage[]>;
     uploadClientLogo(checklistId: string, file: File): Promise<string>;
     uploadFile(checklistId: string, file: File): Promise<ChecklistFileResult>;
+    uploadChecklistFile(accountName: string, accountId: string, file: File, jobName?: string): Promise<ChecklistFileResult>;
+    deleteChecklistFile(itemId: string): Promise<void>;
+    getChecklistFolderUrl(accountName: string, accountId: string): string;
     uploadPDFReport(checklistId: string, filename: string, blob: Blob): Promise<string>;
     downloadImageContent(itemId: string): Promise<string>;
     downloadImagesBatch(itemIds: string[]): Promise<Map<string, string>>;

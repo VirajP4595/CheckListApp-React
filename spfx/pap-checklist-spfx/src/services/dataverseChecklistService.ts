@@ -260,6 +260,7 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
         checklistChoice: dv.pap_jobid["vin_checklistchoice@OData.Community.Display.V1.FormattedValue"] || dv.pap_jobid.vin_checklistchoice,
         appointmentDate: dv.pap_jobid.vin_checklistappointment ? new Date(dv.pap_jobid.vin_checklistappointment) : null,
         // Job Metadata Header fields
+        accountId: dv.pap_jobid._vin_account_value || '',
         builderName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '',
         siteAddress: dv.pap_jobid.vin_name || '',   // vin_name IS the job address
         qbeFlagged: dv.pap_jobid.vin_qbecomplete ?? false,   // QB Complete (vin_qbeflagged is a separate "flagged for review" concept)
@@ -459,6 +460,7 @@ export class DataverseChecklistService implements IChecklistService {
                 meetingOccurred: dv.pap_jobid.vin_jobstartmtg ?? true,
                 checklistChoice: dv.pap_jobid["vin_checklistchoice@OData.Community.Display.V1.FormattedValue"] || dv.pap_jobid.vin_checklistchoice,
                 appointmentDate: dv.pap_jobid.vin_checklistappointment ? new Date(dv.pap_jobid.vin_checklistappointment) : null,
+                accountId: dv.pap_jobid._vin_account_value || '',
                 builderName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '',
                 siteAddress: dv.pap_jobid.vin_name || '',   // vin_name IS the job address
                 qbeFlagged: dv.pap_jobid.vin_qbecomplete ?? false,   // QB Complete (not vin_qbeflagged which is a different concept)
