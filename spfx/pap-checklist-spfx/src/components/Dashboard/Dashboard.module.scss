@@ -222,8 +222,16 @@
     border-left-color: $color-status-draft;
 }
 
-.checklist-card--status-in-review {
+.checklist-card--status-in-progress {
     border-left-color: $color-status-review;
+}
+
+.checklist-card--status-in-revision {
+    border-left-color: #5b5fc7;
+}
+
+.checklist-card--status-delivered {
+    border-left-color: #0078d4;
 }
 
 .checklist-card--status-final {
@@ -313,9 +321,19 @@
         color: $color-status-draft;
     }
 
-    &--in-review {
+    &--in-progress {
         background-color: rgba($color-status-review, 0.15);
         color: $color-status-review;
+    }
+
+    &--in-revision {
+        background-color: rgba(91, 95, 199, 0.15);
+        color: #5b5fc7;
+    }
+
+    &--delivered {
+        background-color: rgba(#0078d4, 0.15);
+        color: #0078d4;
     }
 
     &--final {

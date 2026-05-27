@@ -111,7 +111,7 @@ $grid-cols: 64px minmax(0, 1fr) 120px 80px 80px 96px;
     :global(.fui-Input__input),
     :global(.fui-Textarea__textarea) {
         width: 100%;
-        font-size: $font-size-sm;
+        font-size: $font-size-xs;
     }
 }
 

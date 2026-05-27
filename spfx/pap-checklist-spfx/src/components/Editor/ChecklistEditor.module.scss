@@ -135,7 +135,7 @@
         border: 1px solid rgba($color-white, 0.2);
     }
 
-    &--in-review {
+    &--in-progress {
         background-color: rgba($color-status-review, 0.2);
         color: color.adjust($color-status-review, $lightness: 10%);
         border: 1px solid rgba($color-status-review, 0.4);
@@ -151,6 +151,12 @@
         background-color: rgba(91, 95, 199, 0.15);
         color: #5b5fc7;
         border: 1px solid rgba(91, 95, 199, 0.3);
+    }
+
+    &--delivered {
+        background-color: rgba(#0078d4, 0.2);
+        color: color.adjust(#0078d4, $lightness: 10%);
+        border: 1px solid rgba(#0078d4, 0.4);
     }
 }
 
@@ -174,7 +180,7 @@
         border: 1px solid rgba($color-white, 0.25);
     }
 
-    &--in-review {
+    &--in-progress {
         background-color: rgba($color-status-review, 0.25);
         color: color.adjust($color-status-review, $lightness: 15%);
         border: 1px solid rgba($color-status-review, 0.4);
@@ -190,6 +196,12 @@
         background-color: rgba(91, 95, 199, 0.2);
         color: #e1e2fd; // Lighter purple for dark header
         border: 1px solid rgba(91, 95, 199, 0.4);
+    }
+
+    &--delivered {
+        background-color: rgba(#0078d4, 0.25);
+        color: #cce4f7; // Lighter blue for dark header
+        border: 1px solid rgba(#0078d4, 0.4);
     }
 }
 
@@ -225,8 +237,8 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 0 $spacing-3; // Zero top padding to minimize gap below header
-    overflow-x: hidden; // Prevent horizontal scrollbar
+    padding: 0 $spacing-3;
+    overflow-x: clip; // Use clip instead of hidden to preserve sticky positioning
 
     @include breakpoint('lg') {
         flex-direction: row;
@@ -245,8 +257,8 @@
 .editor-revisions {
     display: flex;
     flex-direction: column;
-    gap: $spacing-2;
-    padding: $spacing-2 $spacing-3;
+    gap: 0.2rem;
+    padding: 0.1rem 0.4rem;
     background: #e5e8eb; // Very light grey background for the entire revision history section in editor
     border-radius: $border-radius-md;
     border: 1px solid $color-gray-200;

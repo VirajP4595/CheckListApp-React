@@ -313,88 +313,94 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                         {(clientRows.length > 0 || estimatorRows.length > 0 || reviewerRows.length > 0 || workgroup.rows.length === 0) ? (
                             <div className={styles['workgroup-rows-container']}>
                                 {/* Client Section */}
-                                <div className={styles['section-group']}>
-                                    <div className={styles['section-header']}>
-                                        <span className={styles['section-title']}>Client/Checklist Notes</span>
-                                        <button
-                                            className={styles['section-add-btn']}
-                                            onClick={() => addRow(workgroup.id, undefined, 'client')}
-                                            disabled={isAdding}
-                                        >
-                                            <Add20Regular /> Add Row
-                                        </button>
+                                {(!filters?.sections || filters.sections.length === 0 || filters.sections.includes('client')) && (
+                                    <div className={styles['section-group']}>
+                                        <div className={styles['section-header']}>
+                                            <span className={styles['section-title']}>Client/Checklist Notes</span>
+                                            <button
+                                                className={styles['section-add-btn']}
+                                                onClick={() => addRow(workgroup.id, undefined, 'client')}
+                                                disabled={isAdding}
+                                            >
+                                                <Add20Regular /> Add Row
+                                            </button>
+                                        </div>
+                                        <div className={styles['section-content']}>
+                                            {clientRows.length === 0 ? (
+                                                <div className={styles['section-empty']}>No client items.</div>
+                                            ) : (
+                                                clientRows.map((row) => (
+                                                    <ChecklistRowItem
+                                                        key={row.id}
+                                                        row={row}
+                                                        workgroupId={workgroup.id}
+                                                        isCompact={!expandTasks}
+                                                    />
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className={styles['section-content']}>
-                                        {clientRows.length === 0 ? (
-                                            <div className={styles['section-empty']}>No client items.</div>
-                                        ) : (
-                                            clientRows.map((row) => (
-                                                <ChecklistRowItem
-                                                    key={row.id}
-                                                    row={row}
-                                                    workgroupId={workgroup.id}
-                                                    isCompact={!expandTasks}
-                                                />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
+                                )}
 
                                 {/* Estimator Section */}
-                                <div className={styles['section-group']}>
-                                    <div className={styles['section-header']}>
-                                        <span className={styles['section-title']}>Estimator Notes</span>
-                                        <button
-                                            className={styles['section-add-btn']}
-                                            onClick={() => addRow(workgroup.id, undefined, 'estimator')}
-                                            disabled={isAdding}
-                                        >
-                                            <Add20Regular /> Add Row
-                                        </button>
+                                {(!filters?.sections || filters.sections.length === 0 || filters.sections.includes('estimator')) && (
+                                    <div className={styles['section-group']}>
+                                        <div className={styles['section-header']}>
+                                            <span className={styles['section-title']}>Estimator Notes</span>
+                                            <button
+                                                className={styles['section-add-btn']}
+                                                onClick={() => addRow(workgroup.id, undefined, 'estimator')}
+                                                disabled={isAdding}
+                                            >
+                                                <Add20Regular /> Add Row
+                                            </button>
+                                        </div>
+                                        <div className={styles['section-content']}>
+                                            {estimatorRows.length === 0 ? (
+                                                <div className={styles['section-empty']}>No estimator items.</div>
+                                            ) : (
+                                                estimatorRows.map((row) => (
+                                                    <ChecklistRowItem
+                                                        key={row.id}
+                                                        row={row}
+                                                        workgroupId={workgroup.id}
+                                                        isCompact={!expandTasks}
+                                                    />
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className={styles['section-content']}>
-                                        {estimatorRows.length === 0 ? (
-                                            <div className={styles['section-empty']}>No estimator items.</div>
-                                        ) : (
-                                            estimatorRows.map((row) => (
-                                                <ChecklistRowItem
-                                                    key={row.id}
-                                                    row={row}
-                                                    workgroupId={workgroup.id}
-                                                    isCompact={!expandTasks}
-                                                />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
+                                )}
 
                                 {/* Reviewer Section */}
-                                <div className={styles['section-group']}>
-                                    <div className={styles['section-header']}>
-                                        <span className={styles['section-title']}>Reviewer Notes</span>
-                                        <button
-                                            className={styles['section-add-btn']}
-                                            onClick={() => addRow(workgroup.id, undefined, 'reviewer')}
-                                            disabled={isAdding}
-                                        >
-                                            <Add20Regular /> Add Row
-                                        </button>
+                                {(!filters?.sections || filters.sections.length === 0 || filters.sections.includes('reviewer')) && (
+                                    <div className={styles['section-group']}>
+                                        <div className={styles['section-header']}>
+                                            <span className={styles['section-title']}>Reviewer Notes</span>
+                                            <button
+                                                className={styles['section-add-btn']}
+                                                onClick={() => addRow(workgroup.id, undefined, 'reviewer')}
+                                                disabled={isAdding}
+                                            >
+                                                <Add20Regular /> Add Row
+                                            </button>
+                                        </div>
+                                        <div className={styles['section-content']}>
+                                            {reviewerRows.length === 0 ? (
+                                                <div className={styles['section-empty']}>No reviewer items.</div>
+                                            ) : (
+                                                reviewerRows.map((row) => (
+                                                    <ChecklistRowItem
+                                                        key={row.id}
+                                                        row={row}
+                                                        workgroupId={workgroup.id}
+                                                        isCompact={!expandTasks}
+                                                    />
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className={styles['section-content']}>
-                                        {reviewerRows.length === 0 ? (
-                                            <div className={styles['section-empty']}>No reviewer items.</div>
-                                        ) : (
-                                            reviewerRows.map((row) => (
-                                                <ChecklistRowItem
-                                                    key={row.id}
-                                                    row={row}
-                                                    workgroupId={workgroup.id}
-                                                    isCompact={!expandTasks}
-                                                />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         ) : (
                             <div className={styles['workgroup-empty']}>

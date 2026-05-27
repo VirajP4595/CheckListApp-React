@@ -3,20 +3,19 @@
 
 .revisionSection {
     @include surface;
-    margin-bottom: $spacing-4;
+    margin-bottom: $spacing-2;
     transition: box-shadow $transition-base;
-    overflow: hidden; // Prevent header hover from clipping rounded corners
+    overflow: hidden;
 }
 
 .revisionHeader {
     @include flex-between;
-    padding: $spacing-3 $spacing-4;
+    padding: $spacing-2 $spacing-3;
     cursor: pointer;
-    gap: $spacing-3;
+    gap: $spacing-2;
     user-select: none;
-    border-radius: $border-radius-md $border-radius-md 0 0; // Match parent's top corners
+    border-radius: $border-radius-md $border-radius-md 0 0;
 
-    // If section is closed, we want all corners rounded
     &:last-child {
         border-radius: $border-radius-md;
     }
@@ -29,17 +28,17 @@
 .revisionLeft {
     display: flex;
     align-items: center;
-    gap: $spacing-3;
+    gap: $spacing-2;
     flex: 1;
 }
 
 .revisionBadge {
     display: inline-flex;
     align-items: center;
-    padding: $spacing-1 $spacing-3;
+    padding: 2px $spacing-2;
     background-color: $color-primary-subtle;
     color: $color-primary;
-    font-size: $font-size-xs;
+    font-size: 10px;
     font-weight: $font-weight-bold;
     border-radius: $border-radius-full;
     letter-spacing: 0.04em;
@@ -48,45 +47,47 @@
 }
 
 .revisionTitle {
-    @include heading-4;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-900;
     @include truncate;
 }
 
 .revisionMeta {
-    @include body-small;
-    color: $color-gray-600;
+    font-size: $font-size-xs;
+    color: $color-gray-500;
     white-space: nowrap;
 }
 
 .revisionRight {
     display: flex;
     align-items: center;
-    gap: $spacing-3;
+    gap: $spacing-2;
 }
 
 .revisionCount {
-    @include body-small;
+    font-size: $font-size-xs;
     color: $color-gray-500;
     white-space: nowrap;
 }
 
 .revisionBody {
-    padding: $spacing-2 $spacing-4 $spacing-4;
+    padding: $spacing-2 $spacing-3 $spacing-3;
     @include fade-in;
     border-top: 1px solid $color-gray-100;
 }
 
 .revisionNotes {
-    @include body-small;
-    padding: $spacing-2 $spacing-3;
+    font-size: $font-size-xs;
+    padding: $spacing-1 $spacing-2;
     background-color: $color-gray-50;
     border-radius: $border-radius-sm;
-    margin-bottom: $spacing-3;
+    margin-bottom: $spacing-2;
     border-left: 2px solid $color-gray-300;
 }
 
 .addWorkgroupRow {
-    margin-bottom: $spacing-4;
+    margin-bottom: $spacing-2;
     display: flex;
     align-items: center;
     gap: $spacing-2;
@@ -158,5 +159,5 @@
 .revisionWorkgroups {
     display: flex;
     flex-direction: column;
-    gap: $spacing-3;
+    gap: $spacing-2;
 }

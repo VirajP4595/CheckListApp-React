@@ -156,7 +156,7 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
                                                     }}
                                                 >
                                                     <img
-                                                        src={img.source?.startsWith('data:') ? img.source : (img.thumbnailUrl || img.source)}
+                                                        src={img.source}
                                                         alt={img.caption}
                                                         className={styles['revision-image']}
                                                     />

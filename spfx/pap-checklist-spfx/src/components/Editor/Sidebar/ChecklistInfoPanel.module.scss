@@ -91,7 +91,7 @@
   }
 }
 
-.chip--in-review {
+.chip--in-progress {
   &.chip--selected {
     background-color: rgba($color-status-review, 0.15);
     border-color: $color-status-review;
@@ -112,6 +112,18 @@
 
   .chip-icon {
     color: #5b5fc7;
+  }
+}
+
+.chip--delivered {
+  &.chip--selected {
+    background-color: rgba(#0078d4, 0.15);
+    border-color: #0078d4;
+    color: color.adjust(#0078d4, $lightness: -10%);
+  }
+
+  .chip-icon {
+    color: #0078d4;
   }
 }
 

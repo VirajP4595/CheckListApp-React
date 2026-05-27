@@ -58,12 +58,23 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
     const [loadingProgress, setLoadingProgress] = useState<{ open: boolean; title: string; status: string; percent: number; cancelled: boolean }>({ open: false, title: 'Loading...', status: '', percent: 0, cancelled: false });
     const [viewingRevision, setViewingRevision] = useState<Revision | null>(null);
     const [deleteProgress, setDeleteProgress] = useState<{ open: boolean; status: string; percent: number }>({ open: false, status: '', percent: 0 });
-    const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, notifyAdmin: null, builderToConfirm: null, workgroupIds: [], showRowsWithData: false });
+    const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, notifyAdmin: null, builderToConfirm: null, workgroupIds: [], showRowsWithData: false, sections: [] });
     const [expandWorkgroups, setExpandWorkgroups] = useState(false);  // Collapsed by default
     const [expandTasks, setExpandTasks] = useState(false);  // Collapsed by default
 
     const isCancelledRef = useRef(false);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const sectionDefaultApplied = useRef(false);
+
+    // When checklistChoice is "Standard Inclusions", hide client section by default
+    useEffect(() => {
+        if (sectionDefaultApplied.current || !activeChecklist?.jobDetails?.checklistChoice) return;
+        const choice = String(activeChecklist.jobDetails.checklistChoice).toLowerCase();
+        if (choice.includes('standard inclusions')) {
+            setFilters(prev => ({ ...prev, sections: ['estimator', 'reviewer'] }));
+            sectionDefaultApplied.current = true;
+        }
+    }, [activeChecklist?.jobDetails?.checklistChoice]);
 
     // Chat unread badge count (suppress when chat panel is open)
     const chatUnreadCount = useMemo(() => {
@@ -160,10 +171,12 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
         switch (activeChecklist?.status) {
             case 'final':
                 return styles['editor-status--final'];
-            case 'in-review':
-                return styles['editor-status--in-review'];
+            case 'in-progress':
+                return styles['editor-status--in-progress'];
             case 'in-revision':
                 return styles['editor-status--in-revision'];
+            case 'delivered':
+                return styles['editor-status--delivered'];
             default:
                 return styles['editor-status--draft'];
         }

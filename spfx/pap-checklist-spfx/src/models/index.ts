@@ -30,12 +30,13 @@ export const SECTION_CONFIG: Record<RowSection, { label: string; color: string }
 export const ROW_SECTIONS: RowSection[] = ['client', 'estimator', 'reviewer'];
 
 // ─── CHECKLIST STATUS ────────────────────────────────────
-export type ChecklistStatus = 'draft' | 'in-review' | 'in-revision' | 'final';
+export type ChecklistStatus = 'draft' | 'in-progress' | 'in-revision' | 'delivered' | 'final';
 
 export const STATUS_CONFIG: Record<ChecklistStatus, { label: string; color: string }> = {
     'draft': { label: 'Draft', color: '#8a8886' },
-    'in-review': { label: 'In Review', color: '#ff8c00' },
+    'in-progress': { label: 'In Progress', color: '#ff8c00' },
     'in-revision': { label: 'In Revision', color: '#5b5fc7' },
+    'delivered': { label: 'Delivered', color: '#0078d4' },
     'final': { label: 'Final', color: '#107c10' },
 };
 

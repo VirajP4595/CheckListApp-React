@@ -39,6 +39,8 @@ interface DataverseChecklist {
         _vin_estimator_value?: string;
         "_vin_estimator_value@OData.Community.Display.V1.FormattedValue"?: string;
         vin_estimator?: { fullname: string }; // Nested expand
+        _vin_currentestimator_value?: string;
+        "_vin_currentestimator_value@OData.Community.Display.V1.FormattedValue"?: string;
         _ownerid_value?: string;
         "_ownerid_value@OData.Community.Display.V1.FormattedValue"?: string;
         ownerid?: { fullname: string }; // Nested expand
@@ -122,16 +124,18 @@ function parseJsonField(val: string | undefined | null): any {
 
 const STATUS_MAP: Record<number, ChecklistStatus> = {
     1: 'draft',
-    2: 'in-review',
+    2: 'in-progress',
     3: 'final',
-    4: 'in-revision'
+    4: 'in-revision',
+    5: 'delivered'
 };
 
 const STATUS_VALUE_MAP: Record<ChecklistStatus, number> = {
     'draft': 1,
-    'in-review': 2,
+    'in-progress': 2,
     'final': 3,
-    'in-revision': 4
+    'in-revision': 4,
+    'delivered': 5
 };
 
 const ANSWER_MAP: Record<number, AnswerState> = {
@@ -252,7 +256,7 @@ function mapChecklist(dv: DataverseChecklist): Checklist {
         jobName: dv.pap_jobid.vin_name,
         jobNumber: dv.pap_jobid.vin_jobnumber || '',
         clientName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '',
-        leadEstimator: dv.pap_jobid["_vin_estimator_value@OData.Community.Display.V1.FormattedValue"] || (dv.pap_jobid.vin_estimator as any)?.fullname || '',
+        leadEstimator: dv.pap_jobid["_vin_currentestimator_value@OData.Community.Display.V1.FormattedValue"] || dv.pap_jobid["_vin_estimator_value@OData.Community.Display.V1.FormattedValue"] || '',
         reviewer: dv.pap_jobid["_ownerid_value@OData.Community.Display.V1.FormattedValue"] || (dv.pap_jobid.ownerid as any)?.fullname || '',
         dueDate: dv.pap_jobid.vin_duedate ? new Date(dv.pap_jobid.vin_duedate) : undefined,
         jobType: dv.pap_jobid["vin_jobtype@OData.Community.Display.V1.FormattedValue"] || '',
@@ -335,7 +339,7 @@ export class DataverseChecklistService implements IChecklistService {
         ].join(',');
 
         // Expand Job to get details
-        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg,vin_checklistchoice,vin_checklistappointment,vin_qbecomplete,vin_qbeflagged,vin_qbelow,vin_qbehigh,vin_dmodelsuited,vin_googlemapslink,vin_revisionnumber),createdby($select=fullname)`;
+        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_vin_currentestimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg,vin_checklistchoice,vin_checklistappointment,vin_qbecomplete,vin_qbeflagged,vin_qbelow,vin_qbehigh,vin_dmodelsuited,vin_googlemapslink,vin_revisionnumber),createdby($select=fullname)`;
 
         const dv = await dataverseClient.getById<DataverseChecklist>(
             entities.checklists,
@@ -453,7 +457,7 @@ export class DataverseChecklistService implements IChecklistService {
                 jobName: dv.pap_jobid.vin_name,
                 jobNumber: dv.pap_jobid.vin_jobnumber || '',
                 clientName: dv.pap_jobid["_vin_account_value@OData.Community.Display.V1.FormattedValue"] || '',
-                leadEstimator: dv.pap_jobid["_vin_estimator_value@OData.Community.Display.V1.FormattedValue"] || (dv.pap_jobid.vin_estimator as any)?.fullname || '',
+                leadEstimator: dv.pap_jobid["_vin_currentestimator_value@OData.Community.Display.V1.FormattedValue"] || dv.pap_jobid["_vin_estimator_value@OData.Community.Display.V1.FormattedValue"] || '',
                 reviewer: dv.pap_jobid["_ownerid_value@OData.Community.Display.V1.FormattedValue"] || (dv.pap_jobid.ownerid as any)?.fullname || '',
                 dueDate: dv.pap_jobid.vin_duedate ? new Date(dv.pap_jobid.vin_duedate) : undefined,
                 jobType: dv.pap_jobid["vin_jobtype@OData.Community.Display.V1.FormattedValue"] || '',
@@ -606,7 +610,7 @@ export class DataverseChecklistService implements IChecklistService {
         ].join(',');
 
         // Expand Job to get details
-        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg,vin_checklistchoice,vin_checklistappointment,vin_qbecomplete,vin_googlemapslink,vin_revisionnumber),createdby($select=fullname)`;
+        const expand = `pap_jobid($select=vin_name,_vin_account_value,vin_jobnumber,_vin_estimator_value,_vin_currentestimator_value,_ownerid_value,vin_duedate,vin_jobtype,vin_jobstartmtg,vin_checklistchoice,vin_checklistappointment,vin_qbecomplete,vin_googlemapslink,vin_revisionnumber),createdby($select=fullname)`;
 
         const response = await dataverseClient.get<{ value: DataverseChecklist[] }>(
             entities.checklists,

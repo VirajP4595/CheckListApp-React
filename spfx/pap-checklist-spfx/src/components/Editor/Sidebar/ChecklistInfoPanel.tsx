@@ -17,8 +17,9 @@ interface ChecklistInfoPanelProps {
 
 const STATUS_OPTIONS: { value: ChecklistStatus; label: string }[] = [
     { value: 'draft', label: 'Draft' },
-    { value: 'in-review', label: 'In Review' },
+    { value: 'in-progress', label: 'In Progress' },
     { value: 'in-revision', label: 'In Revision' },
+    { value: 'delivered', label: 'Delivered' },
     { value: 'final', label: 'Final' }
 ];
 const CORRESPONDENCE_OPTIONS = ['Builder Copy', 'Client Copy', 'File Copy', 'Other'];

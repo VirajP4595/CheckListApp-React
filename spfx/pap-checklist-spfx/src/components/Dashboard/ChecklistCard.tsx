@@ -23,8 +23,12 @@ export const ChecklistCard: React.FC<ChecklistCardProps> = ({ checklist, onClick
         switch (checklist.status) {
             case 'final':
                 return styles['checklist-card-status--final'];
-            case 'in-review':
-                return styles['checklist-card-status--in-review'];
+            case 'in-progress':
+                return styles['checklist-card-status--in-progress'];
+            case 'in-revision':
+                return styles['checklist-card-status--in-revision'];
+            case 'delivered':
+                return styles['checklist-card-status--delivered'];
             default:
                 return styles['checklist-card-status--draft'];
         }
@@ -33,11 +37,15 @@ export const ChecklistCard: React.FC<ChecklistCardProps> = ({ checklist, onClick
     const getCardStatusClass = () => {
         switch (checklist.status) {
             case 'final':
-                return styles['checklist-card-status--final'];
-            case 'in-review':
-                return styles['checklist-card-status--in-review'];
+                return styles['checklist-card--status-final'];
+            case 'in-progress':
+                return styles['checklist-card--status-in-progress'];
+            case 'in-revision':
+                return styles['checklist-card--status-in-revision'];
+            case 'delivered':
+                return styles['checklist-card--status-delivered'];
             default:
-                return styles['checklist-card-status--draft'];
+                return styles['checklist-card--status-draft'];
         }
     };
 
