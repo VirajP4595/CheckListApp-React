@@ -103,7 +103,9 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
             }
 
             if (filters?.answerStates && filters.answerStates.length > 0) {
-                if (!filters.answerStates.includes(row.answer)) {
+                // Treat empty/undefined answers as 'BLANK' for filtering purposes
+                const effectiveAnswer = row.answer || 'BLANK';
+                if (!filters.answerStates.includes(effectiveAnswer)) {
                     return false;
                 }
             }
@@ -265,6 +267,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                             />
                         )}
 
+                        {/* R6-C3: Workgroup deletion hidden per client request — can be re-enabled
                         <Dialog>
                             <DialogTrigger disableButtonEnhancement>
                                 <Tooltip content="Delete workgroup" relationship="label">
@@ -301,6 +304,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                                 </DialogBody>
                             </DialogSurface>
                         </Dialog>
+                        */}
                     </div>
                 </div>
             </header>

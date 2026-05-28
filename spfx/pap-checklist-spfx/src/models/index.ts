@@ -1,7 +1,7 @@
 // ─── ANSWER STATE ────────────────────────────────────────
-export type AnswerState = 'YES' | 'NO' | 'BLANK' | 'PS' | 'PC' | 'SUB' | 'OTS' | 'TBC' | 'OPT_EXTRA' | 'BUILDER_SPEC' | 'RFQ' | 'SPECS_PLANS';
+export type AnswerState = 'YES' | 'NO' | 'BLANK' | 'PS' | 'PC' | 'SUB' | 'OTS' | 'TBC' | 'OPT_EXTRA' | 'BUILDER_SPEC' | 'RFQ' | 'SPECS_PLANS' | 'CLIENT_NOTIF';
 
-export const ANSWER_STATES: AnswerState[] = ['YES', 'NO', 'BLANK', 'PS', 'PC', 'SUB', 'OTS', 'TBC', 'OPT_EXTRA', 'BUILDER_SPEC', 'RFQ', 'SPECS_PLANS'];
+export const ANSWER_STATES: AnswerState[] = ['YES', 'NO', 'BLANK', 'PS', 'PC', 'SUB', 'OTS', 'TBC', 'OPT_EXTRA', 'BUILDER_SPEC', 'RFQ', 'SPECS_PLANS', 'CLIENT_NOTIF'];
 
 export const ANSWER_CONFIG: Record<AnswerState, { label: string; color: string; description: string }> = {
     YES: { label: 'Yes', color: '#60923f', description: 'Included' },
@@ -16,6 +16,7 @@ export const ANSWER_CONFIG: Record<AnswerState, { label: string; color: string; 
     BUILDER_SPEC: { label: 'Builder Spec Item', color: '#498205', description: 'Builder specification item' },
     RFQ: { label: 'RFQ', color: '#986f0b', description: 'Request for Quote' },
     SPECS_PLANS: { label: 'As Per Specs/Plans', color: '#00695c', description: 'As per specifications/plans' },
+    CLIENT_NOTIF: { label: 'Client Notification', color: '#ff8c00', description: 'Requires client notification' },
 };
 
 // ─── ROW SECTION ─────────────────────────────────────────

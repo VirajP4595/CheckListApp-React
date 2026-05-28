@@ -150,7 +150,8 @@ const ANSWER_MAP: Record<number, AnswerState> = {
     9: 'OPT_EXTRA',
     10: 'BUILDER_SPEC',
     11: 'RFQ',
-    12: 'SPECS_PLANS'
+    12: 'SPECS_PLANS',
+    13: 'CLIENT_NOTIF'
 };
 
 const ANSWER_VALUE_MAP: Record<AnswerState, number> = {
@@ -165,7 +166,8 @@ const ANSWER_VALUE_MAP: Record<AnswerState, number> = {
     'OPT_EXTRA': 9,
     'BUILDER_SPEC': 10,
     'RFQ': 11,
-    'SPECS_PLANS': 12
+    'SPECS_PLANS': 12,
+    'CLIENT_NOTIF': 13
 };
 
 /** Parse pap_commonnotes: JSON array or legacy plain-text/HTML with migration */

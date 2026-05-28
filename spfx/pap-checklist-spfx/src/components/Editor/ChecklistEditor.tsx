@@ -404,7 +404,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                                     workgroup={workgroup}
                                     onRowChange={triggerAutoSave}
                                     filters={filters}
-                                    isCollapsed={!expandWorkgroups}
+                                    isCollapsed={filters.workgroupIds.includes(workgroup.id) ? false : !expandWorkgroups}
                                     expandTasks={expandTasks}
                                 />
                             ))}
