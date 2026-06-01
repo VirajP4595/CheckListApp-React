@@ -64,17 +64,24 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
     const isCancelledRef = useRef(false);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const sectionDefaultApplied = useRef(false);
+    const sectionDefaultApplied = useRef<string | null>(null); // tracks which checklistId the default was applied for
 
     // When checklistChoice is "Standard Inclusions", hide client section by default
     useEffect(() => {
-        if (sectionDefaultApplied.current || !activeChecklist?.jobDetails?.checklistChoice) return;
-        const choice = String(activeChecklist.jobDetails.checklistChoice).toLowerCase();
-        if (choice.includes('standard inclusions')) {
+        const checklistId = activeChecklist?.id;
+        const choice = activeChecklist?.jobDetails?.checklistChoice;
+        if (!checklistId || !choice) return;
+        // Only apply once per checklist (reset if navigating to a different checklist)
+        if (sectionDefaultApplied.current === checklistId) return;
+        sectionDefaultApplied.current = checklistId;
+        const choiceStr = String(choice).toLowerCase();
+        if (choiceStr.includes('standard inclusions')) {
             setFilters(prev => ({ ...prev, sections: ['estimator', 'reviewer'] }));
-            sectionDefaultApplied.current = true;
+        } else {
+            // Reset sections filter when opening a non-Standard Inclusions checklist
+            setFilters(prev => ({ ...prev, sections: [] }));
         }
-    }, [activeChecklist?.jobDetails?.checklistChoice]);
+    }, [activeChecklist?.id, activeChecklist?.jobDetails?.checklistChoice]);
 
     // Chat unread badge count (suppress when chat panel is open)
     const chatUnreadCount = useMemo(() => {
