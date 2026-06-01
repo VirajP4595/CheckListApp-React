@@ -8,7 +8,7 @@ export const AppConfig = {
         publisherPrefix: "pap_"
     },
     sharepoint: {
-        absoluteUrl: "https://spfordev.sharepoint.com/sites/PAPChecklist", //SPForDev
+        //absoluteUrl: "https://spfordev.sharepoint.com/sites/PAPChecklist", //SPForDev
         //absoluteUrl: "https://adriennesimmons.sharepoint.com/sites/IntranetDev", //PAPDev
         //documentLibrary: "PAPAttachments",
         // Checklist files library — linked to CRM account folders
@@ -16,7 +16,7 @@ export const AppConfig = {
         //checklistFilesSiteUrl: "https://adriennesimmons.sharepoint.com/sites/IntranetDev", //PAPDev
         //PROD
         checklistFilesSiteUrl: "https://adriennesimmons.sharepoint.com/sites/Customers",
-        checklistFilesLibrary: "Account"
+        checklistFilesLibrary: "Account",
         //absoluteUrl: "https://adriennesimmons.sharepoint.com/sites/IntranetDev", //PAPDev
         absoluteUrl: "https://adriennesimmons.sharepoint.com/sites/Intranet", //PAPProd
         documentLibrary: "PAPAttachments"
