@@ -12,6 +12,12 @@ export interface EmailMessagePayload {
     subject: string;
     bodyHtml: string;
     attachments?: EmailAttachment[];
+    /**
+     * If set, email is sent via `/users/{senderMailbox}/sendMail` rather than `/me/sendMail`.
+     * The signed-in user must have Send-As or Send-On-Behalf permission on this mailbox
+     * (typically a shared mailbox like estimates@priceaplan.com.au).
+     */
+    senderMailbox?: string;
 }
 
 export class GraphEmailService {
@@ -53,6 +59,10 @@ export class GraphEmailService {
             }));
         }
 
-        await client.api('/me/sendMail').post(graphPayload);
+        const endpoint = payload.senderMailbox
+            ? `/users/${encodeURIComponent(payload.senderMailbox)}/sendMail`
+            : '/me/sendMail';
+
+        await client.api(endpoint).post(graphPayload);
     }
 }

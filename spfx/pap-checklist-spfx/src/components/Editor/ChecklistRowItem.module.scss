@@ -10,8 +10,8 @@
     @include surface;
     background-color: $color-white;
     border: 1px solid $color-border;
-    padding: $spacing-4; // Increased padding for breathing room
-    border-radius: $border-radius-lg;
+    padding: $spacing-1 $spacing-3; // Reduced top/bottom from spacing-2 → spacing-1
+    border-radius: $border-radius-md;
     transition: all $transition-base;
 
     &:hover {
@@ -20,13 +20,18 @@
     }
 
     &--compact {
-        padding: $spacing-2 $spacing-3;
+        padding: $spacing-1 $spacing-2;
     }
 
 
     &--internal {
         // border-right color removed as per request
         background-color: rgba($color-gray-100, 0.5);
+    }
+
+    &--confirmation-required {
+        background: rgba(#a4262c, 0.06);
+        border-left: 3px solid #a4262c;
     }
 }
 
@@ -36,7 +41,7 @@
 
 .row-main-flex {
     display: flex;
-    gap: $spacing-4; // gap-4
+    gap: $spacing-2;
 }
 
 // Column 1: Expand Button
@@ -48,8 +53,8 @@
 
 .row-expand-btn {
     color: $color-gray-700 !important;
-    min-width: 28px !important;
-    height: 28px !important;
+    min-width: 24px !important;
+    height: 24px !important;
     padding: 0 !important;
     border-radius: $border-radius-sm !important;
     @include button-ghost;
@@ -66,7 +71,7 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: $spacing-3; // space-y-3
+    gap: $spacing-1;
 }
 
 // Column 3: Actions
@@ -89,22 +94,23 @@
 
 .row-inputs-row {
     display: flex;
-    gap: $spacing-3; // gap-3
+    gap: $spacing-2;
     align-items: center;
 }
 
 .row-answer {
-    width: 230px; // Slightly wider for new labels
+    width: 200px;
     flex-shrink: 0;
 }
 
 $input-border: $color-border;
-$input-focus-border: $color-primary-light; // blue-500
-$input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
+$input-focus-border: $color-primary-light;
+$input-focus-ring: rgba($color-primary-light, 0.2);
 
 .row-name {
     flex: 1;
     font-weight: $font-weight-normal;
+    font-size: $font-size-xs;
     color: $color-gray-900;
 
     @include input-filled;
@@ -116,8 +122,8 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
 
 .row-rfq-fields {
     display: flex;
-    gap: $spacing-4;
-    padding: $spacing-3;
+    gap: $spacing-3;
+    padding: $spacing-2 $spacing-3;
     background-color: rgba($color-primary, 0.03);
     border: 1px dashed rgba($color-primary, 0.2);
     border-radius: $border-radius-md;
@@ -157,7 +163,7 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
     // Wrapped in & {} to fix Sass mixed-decls deprecation warning
     & {
         background-color: $color-white !important;
-        font-size: $font-size-sm;
+        font-size: $font-size-xs;
     }
 
     &:focus {
@@ -177,13 +183,13 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
 .row-description {
     width: 100%;
     font-family: $font-family-body;
-    font-size: $font-size-base;
+    font-size: $font-size-sm;
     color: $color-gray-700;
 
     border: 1px solid $input-border;
     background-color: $color-input-bg;
     border-radius: $border-radius-md;
-    padding: $spacing-3;
+    padding: $spacing-2;
     transition: all $transition-fast;
 
     // Fluent UI Textarea wrapper
@@ -214,9 +220,9 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
 
 .row-action-btn {
     color: $color-gray-400 !important;
-    padding: $spacing-1 !important;
-    min-width: 32px !important;
-    height: 32px !important;
+    padding: 2px !important;
+    min-width: 26px !important;
+    height: 26px !important;
     @include button-ghost;
 
     &:hover {
@@ -227,9 +233,9 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
 
 .row-action-btn--delete {
     color: $color-gray-400 !important;
-    padding: $spacing-1 !important;
-    min-width: 32px !important;
-    height: 32px !important;
+    padding: 2px !important;
+    min-width: 26px !important;
+    height: 26px !important;
     @include button-ghost;
 
     &:hover {
@@ -240,9 +246,9 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
 
 .row-action-btn--review {
     color: $color-status-review !important;
-    padding: $spacing-1 !important;
-    min-width: 32px !important;
-    height: 32px !important;
+    padding: 2px !important;
+    min-width: 26px !important;
+    height: 26px !important;
     @include button-ghost;
 
     &:hover {
@@ -252,9 +258,9 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
 
 .row-action-btn--internal {
     color: $color-gray-600 !important;
-    padding: $spacing-1 !important;
-    min-width: 32px !important;
-    height: 32px !important;
+    padding: 2px !important;
+    min-width: 26px !important;
+    height: 26px !important;
     @include button-ghost;
 
     &:hover {
@@ -263,10 +269,10 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
 }
 
 .row-action-btn--notify {
-    color: #0078d4 !important; // Blue
-    padding: $spacing-1 !important;
-    min-width: 32px !important;
-    height: 32px !important;
+    color: #0078d4 !important;
+    padding: 2px !important;
+    min-width: 26px !important;
+    height: 26px !important;
     @include button-ghost;
 
     &:hover {
@@ -275,10 +281,10 @@ $input-focus-ring: rgba($color-primary-light, 0.2); // ring-blue-500/20
 }
 
 .row-action-btn--btc {
-    color: #ca5010 !important; // Amber
-    padding: $spacing-1 !important;
-    min-width: 32px !important;
-    height: 32px !important;
+    color: #ca5010 !important;
+    padding: 2px !important;
+    min-width: 26px !important;
+    height: 26px !important;
     @include button-ghost;
 
     &:hover {

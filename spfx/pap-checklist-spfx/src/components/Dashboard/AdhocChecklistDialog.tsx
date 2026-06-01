@@ -54,8 +54,8 @@ export const AdhocChecklistDialog: React.FC = () => {
     }, [isOpen]);
 
     const handleSubmit = async () => {
-        if (!selectedJobId || !checklistName) {
-            setError('Job and Checklist Name are required.');
+        if (!selectedJobId) {
+            setError('Job is required.');
             return;
         }
 
@@ -163,7 +163,7 @@ export const AdhocChecklistDialog: React.FC = () => {
                         </div>
 
                         <div className={styles['form-field']}>
-                            <Label className={styles['form-label']} htmlFor="checklist-name" required>Checklist Name</Label>
+                            <Label className={styles['form-label']} htmlFor="checklist-name">Checklist Name (Optional)</Label>
                             <Input
                                 id="checklist-name"
                                 className={styles['input-field']}
@@ -181,7 +181,7 @@ export const AdhocChecklistDialog: React.FC = () => {
                             className={styles['btn-primary']}
                             appearance="primary"
                             onClick={handleSubmit}
-                            disabled={isSubmitting || !selectedJobId || !checklistName}
+                            disabled={isSubmitting || !selectedJobId}
                             icon={isSubmitting ? <Spinner size="tiny" /> : undefined}
                         >
                             {isSubmitting ? 'Creating...' : 'Create Checklist'}

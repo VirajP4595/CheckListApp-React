@@ -123,3 +123,9 @@
 .ProseMirror-focused {
   outline: none;
 }
+
+/* Read-only: disable checkbox interaction */
+.ProseMirror[contenteditable="false"] ul[data-type="taskList"] li > label input[type="checkbox"] {
+  pointer-events: none;
+  cursor: default;
+}

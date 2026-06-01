@@ -205,11 +205,13 @@
     background-color: $color-white;
     border-radius: $border-radius-lg;
     overflow: hidden;
+    border-left: 4px solid $color-primary;
     @include card;
 
     &:hover {
         transform: translateY(-4px) scale(1.01);
-        box-shadow: 0 15px 35px -5px rgba(3, 81, 139, 0.12), 0 8px 15px -3px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 15px 35px -5px rgba($color-primary, 0.15), 0 8px 15px -3px rgba(0, 0, 0, 0.04);
+        border-left-color: $color-brand-lime;
     }
 
     &:focus-visible {
@@ -222,18 +224,26 @@
     border-left-color: $color-status-draft;
 }
 
-.checklist-card--status-in-review {
-    border-left-color: $color-status-review;
+.checklist-card--status-in-progress {
+    border-left-color: $color-brand-lime;
+}
+
+.checklist-card--status-in-revision {
+    border-left-color: $color-primary-light;
+}
+
+.checklist-card--status-delivered {
+    border-left-color: $color-primary;
 }
 
 .checklist-card--status-final {
-    border-left-color: $color-status-final;
+    border-left-color: $color-success;
 }
 
 .checklist-card-header {
-    padding: $spacing-2 $spacing-3; // Tighter padding
-    border-bottom: 1px solid $color-gray-200;
-    background-color: rgba($color-primary, 0.03);
+    padding: $spacing-2 $spacing-3;
+    border-bottom: 1px solid rgba($color-primary, 0.12);
+    background: linear-gradient(135deg, rgba($color-primary, 0.04), rgba($color-brand-lime, 0.03));
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -250,10 +260,10 @@
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    background: linear-gradient(135deg, $color-gray-700, $color-gray-900);
+    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
     color: $color-white;
-    box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 6px -1px rgba($color-primary, 0.3);
+    border: 1px solid rgba($color-white, 0.1);
 }
 
 .checklist-card-title {
@@ -313,14 +323,24 @@
         color: $color-status-draft;
     }
 
-    &--in-review {
-        background-color: rgba($color-status-review, 0.15);
-        color: $color-status-review;
+    &--in-progress {
+        background-color: rgba($color-brand-lime, 0.2);
+        color: color.adjust($color-brand-lime, $lightness: -20%);
+    }
+
+    &--in-revision {
+        background-color: rgba($color-primary-light, 0.15);
+        color: $color-primary-light;
+    }
+
+    &--delivered {
+        background-color: rgba($color-primary, 0.15);
+        color: $color-primary;
     }
 
     &--final {
-        background-color: rgba($color-status-final, 0.15);
-        color: $color-status-final;
+        background-color: rgba($color-success, 0.15);
+        color: $color-success;
     }
 }
 
@@ -332,12 +352,12 @@
     border: 1px solid transparent;
     transition: all $transition-base;
 
-    // REV 0 defaults to draft status colors
-    background-color: rgba($color-status-draft, 0.15);
-    color: $color-status-draft;
+    // REV 0 defaults to muted style
+    background-color: rgba($color-gray-400, 0.12);
+    color: $color-gray-500;
 
     &--active {
-        background-color: rgba($color-accent, 0.15);
+        background-color: rgba($color-primary, 0.12);
         color: $color-primary;
         border-color: rgba($color-accent, 0.3);
         font-weight: $font-weight-bold;
@@ -371,9 +391,9 @@
 }
 
 .checklist-card-footer {
-    padding: $spacing-2 $spacing-3; // Tighter padding
-    border-top: 1px solid $color-gray-100;
-    background-color: $color-gray-50;
+    padding: $spacing-2 $spacing-3;
+    border-top: 1px solid rgba($color-primary, 0.08);
+    background-color: rgba($color-primary, 0.02);
     display: flex;
     justify-content: space-between;
     align-items: center;

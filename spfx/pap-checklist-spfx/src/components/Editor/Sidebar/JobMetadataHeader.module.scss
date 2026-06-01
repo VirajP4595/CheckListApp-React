@@ -2,122 +2,250 @@
 @use '../../../styles/mixins' as *;
 
 // ============================================
-// Job Metadata Header
+// Job Metadata — Compact 2-Line Layout
+// Line 1: Title + read-only fields (inline)
+// Line 2: Editable fields (toggles/selects)
 // ============================================
 
 .job-metadata {
-    @include card;
-    border: 1px solid $color-border;
-    border-radius: $border-radius-lg;
-    padding: 1.25rem 1.5rem; // Increased padding for premium feel
-    margin-bottom: $spacing-6; // More breathing room below
     background: $color-white;
-    box-shadow: $shadow-sm; // Subtle lift
+    border: 1px solid $color-gray-300; // Stronger border for visibility on light bg
+    border-radius: $border-radius-md;
+    padding: $spacing-1 $spacing-3;
+    margin-bottom: $spacing-2;
+    box-shadow: $shadow-sm;
+    overflow: visible; // Ensure content is never clipped
+}
+
+// ── LINE 1: Title + Read-Only Inline Row ──
+
+.job-metadata-readonly-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    flex-wrap: wrap;
+    min-height: 28px;
 }
 
 .job-metadata-title {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: $spacing-2;
-    font-size: $font-size-sm;
-    font-weight: 600;
-    color: $color-gray-700;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: $color-gray-600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: $spacing-3;
-    padding-bottom: $spacing-2;
-    border-bottom: 1px solid $color-border;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .job-metadata-title-icon {
     color: $color-primary;
-    font-size: 16px;
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
 }
 
-.job-metadata-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); // Wider columns
-    gap: $spacing-4 $spacing-6; // Increased gap
+.job-metadata-inline-fields {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
+    justify-content: flex-start;
+}
 
-    @include mobile {
-        grid-template-columns: 1fr 1fr;
-        gap: $spacing-3 $spacing-4;
+.inline-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.inline-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: $color-gray-500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.inline-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: $color-gray-800;
+}
+
+.inline-sep {
+    color: $color-gray-200;
+    font-size: 12px;
+    user-select: none;
+}
+
+.inline-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 11px;
+    font-weight: 500;
+    color: $color-primary;
+    text-decoration: none;
+    margin-right: $spacing-2;
+
+    &:hover {
+        text-decoration: underline;
     }
 }
 
-.job-metadata-field {
+.inline-link-icon {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+}
+
+// ── LINE 2: Editable Fields Row ──
+
+.job-metadata-editable-row {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    gap: $spacing-3;
+    flex-wrap: wrap;
+    margin-top: $spacing-1;
+    padding-top: $spacing-1;
+    border-top: 1px solid $color-gray-100;
 }
 
-.job-metadata-label {
+.editable-field {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-2;
+    flex-shrink: 0;
+    flex: 0 0 auto;
+
+    &--grow {
+        flex: 1;
+        min-width: 200px;
+    }
+}
+
+.editable-label {
     font-size: 11px;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-500; // Better contrast
+    font-weight: 600;
+    color: $color-gray-500;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
 }
 
-.job-metadata-value {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold; // Bolder value
-    color: $color-gray-900; // Darker text for readability
-    line-height: 1.4;
-}
-
-.job-metadata-value--empty {
-    color: $color-gray-300;
-    font-style: italic;
-    font-weight: 400;
-}
-
-.job-metadata-value--on-hold {
-    color: $color-gray-300;
-    font-style: italic;
-    font-weight: 400;
-    font-size: 11px;
-}
-
-// QBE sub-values
-.qbe-range {
+.editable-control {
     display: flex;
     align-items: center;
     gap: $spacing-2;
-    font-size: $font-size-xs;
-    color: $color-gray-600;
-    margin-top: 2px;
+    flex-wrap: nowrap;
 }
 
-.qbe-range-label {
-    font-weight: 600;
-    color: $color-gray-500;
-    font-size: 10px;
-    text-transform: uppercase;
+.editable-sep {
+    width: 1px;
+    height: 20px;
+    background: $color-gray-200;
+    flex-shrink: 0;
 }
 
-.qbe-range-value {
-    font-weight: 500;
-    color: $color-gray-700;
+// ── Toggle Switch ──
+
+.toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    input[type='checkbox'] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+
+        &:checked + .toggle-track {
+            background: $color-primary;
+
+            &::after {
+                transform: translateX(14px);
+            }
+        }
+
+        &:focus + .toggle-track {
+            box-shadow: 0 0 0 2px $input-focus-ring;
+        }
+    }
 }
 
-// Boolean badges
-.badge-yes {
-    display: inline-block;
-    padding: 1px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
-    background: rgba($color-success, 0.12);
-    color: $color-success;
+.toggle-track {
+    display: block;
+    width: 32px;
+    height: 18px;
+    border-radius: 9px;
+    background: $color-gray-300;
+    transition: background $transition-base;
+    position: relative;
+    flex-shrink: 0;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: $color-white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        transition: transform $transition-base;
+    }
 }
 
-.badge-no {
-    display: inline-block;
-    padding: 1px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
-    background: rgba($color-gray-400, 0.12);
-    color: $color-gray-500;
+// ── Shared Input Styles ──
+
+.jm-input,
+.jm-select {
+    height: 26px;
+    padding: 0 $spacing-2;
+    font-size: 12px;
+    font-family: inherit;
+    color: $color-text-primary;
+    background: $color-gray-100;
+    border: 1px solid transparent;
+    border-radius: $border-radius-sm;
+    outline: none;
+    transition: background $transition-fast, box-shadow $transition-fast;
+
+    &:hover {
+        background: $color-gray-200;
+    }
+
+    &:focus {
+        background: $color-white;
+        border-color: transparent;
+        box-shadow: 0 0 0 2px $input-focus-ring;
+    }
+}
+
+.jm-input {
+    width: 155px;
+}
+
+.jm-input--grow {
+    flex: 1;
+    width: auto;
+    min-width: 180px;
+    max-width: 100%;
+}
+
+.jm-select {
+    width: 150px;
+    cursor: pointer;
+    appearance: auto;
 }

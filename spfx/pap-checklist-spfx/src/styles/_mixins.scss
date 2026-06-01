@@ -178,7 +178,7 @@
     border: 1px solid transparent !important;
     background-color: $color-gray-100 !important;
     border-radius: $border-radius-md !important;
-    min-height: 40px;
+    min-height: 28px;
     transition: all $transition-fast;
 
     // Remove Fluent UI outline
@@ -250,8 +250,8 @@
 
     // For overrides from SCSS module on the ROOT element:
     & :global(.fui-Checkbox__indicator) {
-        width: 30px !important; // Match Input Height (was 20px)
-        height: 30px !important;
+        width: 24px !important; // Match Input Height (was 20px)
+        height: 24px !important;
 
         border: 1px solid $color-gray-300 !important; // Subtle border for visibility
         background-color: $color-gray-100 !important;
@@ -307,7 +307,7 @@
     padding: 0 $spacing-5;
     min-height: 40px;
     font-family: $font-family-body;
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
     border-radius: $border-radius-md;
     border: none;
@@ -363,7 +363,7 @@
     background-color: transparent;
     color: currentColor;
     padding: 0 $spacing-3;
-    min-height: 36px;
+    min-height: 28px !important;
     @include button-base;
 
     &:hover:not(:disabled) {

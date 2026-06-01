@@ -8,7 +8,15 @@ export const AppConfig = {
         publisherPrefix: "pap_"
     },
     sharepoint: {
-        //absoluteUrl: "https://spfordev.sharepoint.com/sites/PAPChecklist", //SPForDev
+        absoluteUrl: "https://spfordev.sharepoint.com/sites/PAPChecklist", //SPForDev
+        //absoluteUrl: "https://adriennesimmons.sharepoint.com/sites/IntranetDev", //PAPDev
+        //documentLibrary: "PAPAttachments",
+        // Checklist files library — linked to CRM account folders
+        // DEV: uses same site as absoluteUrl above, with matching folder structure
+        //checklistFilesSiteUrl: "https://adriennesimmons.sharepoint.com/sites/IntranetDev", //PAPDev
+        //PROD
+        checklistFilesSiteUrl: "https://adriennesimmons.sharepoint.com/sites/Customers",
+        checklistFilesLibrary: "Account"
         //absoluteUrl: "https://adriennesimmons.sharepoint.com/sites/IntranetDev", //PAPDev
         absoluteUrl: "https://adriennesimmons.sharepoint.com/sites/Intranet", //PAPProd
         documentLibrary: "PAPAttachments"
@@ -16,7 +24,10 @@ export const AppConfig = {
     // Auth config removed - handled by SPFx Context
     admin: {
         superAdminGroup: "SP_Checklist_SuperAdmin",
-        btcAdminEmail: "IT_Team@priceaplan.com.au;adrienne@priceaplan.com.au"
+        btcAdminEmail: "IT_Team@priceaplan.com.au;adrienne@priceaplan.com.au",
+        // Shared mailbox used as the "From" address for RFQ supplier emails.
+        // Signed-in estimators must have Send-As or Send-On-Behalf permission on this mailbox.
+        rfqSenderMailbox: "estimates@priceaplan.com.au"
     },
     powerAutomate: {
         //DEV

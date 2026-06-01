@@ -26,7 +26,7 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
     const user = useUserStore(state => state.user);
     const [sections, setSections] = useState<CommonNoteSection[]>(checklist.commonNotes || []);
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
-    const [containerExpanded, setContainerExpanded] = useState(sections.length > 0);
+    const [containerExpanded, setContainerExpanded] = useState(false);
     const [showCarpentryDialog, setShowCarpentryDialog] = useState(false);
     const originalRef = useRef<string>(JSON.stringify(checklist.commonNotes || []));
     const editorRefs = useRef<Record<string, any>>({});
@@ -36,14 +36,14 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
         const newSections = checklist.commonNotes || [];
         setSections(newSections);
         originalRef.current = JSON.stringify(newSections);
-        setContainerExpanded(newSections.length > 0);
+        setContainerExpanded(false); // Always start collapsed when checklist changes
     }, [checklist.id]);
 
     const saveSections = useCallback((updated: CommonNoteSection[]) => {
         const serialized = JSON.stringify(updated);
         if (serialized !== originalRef.current) {
             onUpdate({ commonNotes: updated });
-            void getActivityLogService().logAction(checklist.id, 'common_notes_updated', user?.name || 'Unknown', 'Updated Common Notes');
+            void getActivityLogService().logAction(checklist.id, 'common_notes_updated', user?.name || 'Unknown', 'Updated General Notes');
             onSave?.();
             originalRef.current = serialized;
         }
@@ -54,9 +54,11 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
             id: generateId(),
             title: `Notes Section ${sections.length + 1}`,
             content: '',
-            order: sections.length,
+            order: 0,
+            createdAt: new Date(),
         };
-        const updated = [...sections, newSection];
+        // Prepend new section so newest appears at the top
+        const updated = [newSection, ...sections.map((s, i) => ({ ...s, order: i + 1 }))];
         setSections(updated);
         setExpandedSections(prev => ({ ...prev, [newSection.id]: true }));
         saveSections(updated);
@@ -122,7 +124,7 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
                             {containerExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                         </span>
                         <Notepad24Regular className={styles['common-notes-title-icon']} />
-                        <span className={styles['common-notes-title']}>Common Notes</span>
+                        <span className={styles['common-notes-title']}>General Notes</span>
                         {sections.length === 0 && !containerExpanded && (
                             <span className={styles['common-notes-empty-hint']}>Click to add project-wide notes</span>
                         )}
@@ -169,6 +171,11 @@ export const CommonNotes: React.FC<CommonNotesProps> = ({ checklist, onUpdate, o
                                         disabled={readOnly}
                                         placeholder="Section title..."
                                     />
+                                    {section.createdAt && (
+                                        <span className={styles['note-section-date']}>
+                                            Added {new Date(section.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </span>
+                                    )}
                                     <div className={styles['note-section-actions']}>
                                         <button
                                             className={styles['note-section-action-btn']}

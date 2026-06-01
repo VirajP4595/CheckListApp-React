@@ -135,7 +135,7 @@
         border: 1px solid rgba($color-white, 0.2);
     }
 
-    &--in-review {
+    &--in-progress {
         background-color: rgba($color-status-review, 0.2);
         color: color.adjust($color-status-review, $lightness: 10%);
         border: 1px solid rgba($color-status-review, 0.4);
@@ -151,6 +151,12 @@
         background-color: rgba(91, 95, 199, 0.15);
         color: #5b5fc7;
         border: 1px solid rgba(91, 95, 199, 0.3);
+    }
+
+    &--delivered {
+        background-color: rgba(#0078d4, 0.2);
+        color: color.adjust(#0078d4, $lightness: 10%);
+        border: 1px solid rgba(#0078d4, 0.4);
     }
 }
 
@@ -174,7 +180,7 @@
         border: 1px solid rgba($color-white, 0.25);
     }
 
-    &--in-review {
+    &--in-progress {
         background-color: rgba($color-status-review, 0.25);
         color: color.adjust($color-status-review, $lightness: 15%);
         border: 1px solid rgba($color-status-review, 0.4);
@@ -190,6 +196,12 @@
         background-color: rgba(91, 95, 199, 0.2);
         color: #e1e2fd; // Lighter purple for dark header
         border: 1px solid rgba(91, 95, 199, 0.4);
+    }
+
+    &--delivered {
+        background-color: rgba(#0078d4, 0.25);
+        color: #cce4f7; // Lighter blue for dark header
+        border: 1px solid rgba(#0078d4, 0.4);
     }
 }
 
@@ -217,6 +229,7 @@
 }
 
 // ============================================
+// ============================================
 // Editor Layout
 // ============================================
 
@@ -224,13 +237,13 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: $spacing-4;
-    overflow-x: hidden; // Prevent horizontal scrollbar
+    padding: 0 $spacing-3;
+    overflow-x: clip; // Use clip instead of hidden to preserve sticky positioning
 
     @include breakpoint('lg') {
         flex-direction: row;
-        gap: $spacing-6;
-        padding: $spacing-6;
+        gap: $spacing-4;
+        padding: 0 $spacing-5;
     }
 }
 
@@ -244,12 +257,13 @@
 .editor-revisions {
     display: flex;
     flex-direction: column;
-    gap: $spacing-4;
-    padding: $spacing-4;
+    gap: 0.2rem;
+    padding: 0.1rem 0.4rem;
     background: #e5e8eb; // Very light grey background for the entire revision history section in editor
-    border-radius: $border-radius-lg;
-    border: 1px solid $color-gray-100;
-    margin-bottom: 2rem;
+    border-radius: $border-radius-md;
+    border: 1px solid $color-gray-200;
+    margin-bottom: $spacing-2;
+    margin-top: $spacing-1;
 }
 
 .revisions-header {
@@ -284,11 +298,7 @@
 .editor-workgroups {
     display: flex;
     flex-direction: column;
-    gap: $spacing-4;
-
-    @include breakpoint('md') {
-        gap: $spacing-4;
-    }
+    gap: $spacing-2;
 }
 
 .editor-add-workgroup {
@@ -406,6 +416,23 @@
     gap: $spacing-2;
     font-size: $font-size-xs;
     color: rgba($color-white, 0.8);
+}
+
+// Chat unread badge (in header)
+.editor-chat-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    margin-left: 4px;
+    border-radius: $border-radius-full;
+    background-color: $color-error;
+    color: $color-white;
+    font-size: 10px !important;
+    font-weight: $font-weight-bold;
+    line-height: 16px;
 }
 
 // ============================================

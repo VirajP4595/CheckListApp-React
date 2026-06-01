@@ -7,12 +7,10 @@ import {
     Edit20Regular,
     Delete20Regular,
     Checkmark20Regular,
-    Chat20Regular
 } from '@fluentui/react-icons';
 import type { Workgroup } from '../../models';
 import { useChecklistStore } from '../../stores';
 import { ChecklistRowItem } from './ChecklistRowItem';
-import { WorkgroupChatDialog } from './WorkgroupChatDialog';
 import type { FilterState } from './FilterBar';
 import styles from './WorkgroupSection.module.scss';
 
@@ -42,7 +40,6 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
     const [isEditing, setIsEditing] = useState(false);
     const [tempName, setTempName] = useState(workgroup.name);
     const [tempNumber, setTempNumber] = useState(workgroup.number);
-    const [showChat, setShowChat] = useState(false);
 
     useEffect(() => {
         setLocalCollapsed(isCollapsed || false);
@@ -106,7 +103,9 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
             }
 
             if (filters?.answerStates && filters.answerStates.length > 0) {
-                if (!filters.answerStates.includes(row.answer)) {
+                // Treat empty/undefined answers as 'BLANK' for filtering purposes
+                const effectiveAnswer = row.answer || 'BLANK';
+                if (!filters.answerStates.includes(effectiveAnswer)) {
                     return false;
                 }
             }
@@ -250,24 +249,6 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                     )}
 
                     <div className={styles['workgroup-actions']}>
-                        <Tooltip content="Workgroup chat" relationship="label">
-                            <Button
-                                className={`${styles['workgroup-action-btn']} ${styles['workgroup-chat-btn']}`}
-                                appearance="subtle"
-                                size="small"
-                                icon={
-                                    <span className={styles['chat-icon-wrapper']}>
-                                        <Chat20Regular />
-                                        {(workgroup.comments?.length ?? 0) > 0 && (
-                                            <span className={styles['chat-badge']}>
-                                                {workgroup.comments!.length}
-                                            </span>
-                                        )}
-                                    </span>
-                                }
-                                onClick={(e) => { e.stopPropagation(); setShowChat(true); }}
-                            />
-                        </Tooltip>
                         {isEditing ? (
                             <Button
                                 className={styles['workgroup-action-btn']}
@@ -286,6 +267,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                             />
                         )}
 
+                        {/* R6-C3: Workgroup deletion hidden per client request — can be re-enabled
                         <Dialog>
                             <DialogTrigger disableButtonEnhancement>
                                 <Tooltip content="Delete workgroup" relationship="label">
@@ -322,6 +304,7 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                                 </DialogBody>
                             </DialogSurface>
                         </Dialog>
+                        */}
                     </div>
                 </div>
             </header>
@@ -334,88 +317,94 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                         {(clientRows.length > 0 || estimatorRows.length > 0 || reviewerRows.length > 0 || workgroup.rows.length === 0) ? (
                             <div className={styles['workgroup-rows-container']}>
                                 {/* Client Section */}
-                                <div className={styles['section-group']}>
-                                    <div className={styles['section-header']}>
-                                        <span className={styles['section-title']}>Client Checklist</span>
-                                        <button
-                                            className={styles['section-add-btn']}
-                                            onClick={() => addRow(workgroup.id, undefined, 'client')}
-                                            disabled={isAdding}
-                                        >
-                                            <Add20Regular /> Add Row
-                                        </button>
+                                {(!filters?.sections || filters.sections.length === 0 || filters.sections.includes('client')) && (
+                                    <div className={styles['section-group']}>
+                                        <div className={styles['section-header']}>
+                                            <span className={styles['section-title']}>Client/Checklist Notes</span>
+                                            <button
+                                                className={styles['section-add-btn']}
+                                                onClick={() => addRow(workgroup.id, undefined, 'client')}
+                                                disabled={isAdding}
+                                            >
+                                                <Add20Regular /> Add Row
+                                            </button>
+                                        </div>
+                                        <div className={styles['section-content']}>
+                                            {clientRows.length === 0 ? (
+                                                <div className={styles['section-empty']}>No client items.</div>
+                                            ) : (
+                                                clientRows.map((row) => (
+                                                    <ChecklistRowItem
+                                                        key={row.id}
+                                                        row={row}
+                                                        workgroupId={workgroup.id}
+                                                        isCompact={!expandTasks}
+                                                    />
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className={styles['section-content']}>
-                                        {clientRows.length === 0 ? (
-                                            <div className={styles['section-empty']}>No client items.</div>
-                                        ) : (
-                                            clientRows.map((row) => (
-                                                <ChecklistRowItem
-                                                    key={row.id}
-                                                    row={row}
-                                                    workgroupId={workgroup.id}
-                                                    isCompact={!expandTasks}
-                                                />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
+                                )}
 
                                 {/* Estimator Section */}
-                                <div className={styles['section-group']}>
-                                    <div className={styles['section-header']}>
-                                        <span className={styles['section-title']}>Estimator Checklist</span>
-                                        <button
-                                            className={styles['section-add-btn']}
-                                            onClick={() => addRow(workgroup.id, undefined, 'estimator')}
-                                            disabled={isAdding}
-                                        >
-                                            <Add20Regular /> Add Row
-                                        </button>
+                                {(!filters?.sections || filters.sections.length === 0 || filters.sections.includes('estimator')) && (
+                                    <div className={styles['section-group']}>
+                                        <div className={styles['section-header']}>
+                                            <span className={styles['section-title']}>Estimator Notes</span>
+                                            <button
+                                                className={styles['section-add-btn']}
+                                                onClick={() => addRow(workgroup.id, undefined, 'estimator')}
+                                                disabled={isAdding}
+                                            >
+                                                <Add20Regular /> Add Row
+                                            </button>
+                                        </div>
+                                        <div className={styles['section-content']}>
+                                            {estimatorRows.length === 0 ? (
+                                                <div className={styles['section-empty']}>No estimator items.</div>
+                                            ) : (
+                                                estimatorRows.map((row) => (
+                                                    <ChecklistRowItem
+                                                        key={row.id}
+                                                        row={row}
+                                                        workgroupId={workgroup.id}
+                                                        isCompact={!expandTasks}
+                                                    />
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className={styles['section-content']}>
-                                        {estimatorRows.length === 0 ? (
-                                            <div className={styles['section-empty']}>No estimator items.</div>
-                                        ) : (
-                                            estimatorRows.map((row) => (
-                                                <ChecklistRowItem
-                                                    key={row.id}
-                                                    row={row}
-                                                    workgroupId={workgroup.id}
-                                                    isCompact={!expandTasks}
-                                                />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
+                                )}
 
                                 {/* Reviewer Section */}
-                                <div className={styles['section-group']}>
-                                    <div className={styles['section-header']}>
-                                        <span className={styles['section-title']}>Reviewers Checklist</span>
-                                        <button
-                                            className={styles['section-add-btn']}
-                                            onClick={() => addRow(workgroup.id, undefined, 'reviewer')}
-                                            disabled={isAdding}
-                                        >
-                                            <Add20Regular /> Add Row
-                                        </button>
+                                {(!filters?.sections || filters.sections.length === 0 || filters.sections.includes('reviewer')) && (
+                                    <div className={styles['section-group']}>
+                                        <div className={styles['section-header']}>
+                                            <span className={styles['section-title']}>Reviewer Notes</span>
+                                            <button
+                                                className={styles['section-add-btn']}
+                                                onClick={() => addRow(workgroup.id, undefined, 'reviewer')}
+                                                disabled={isAdding}
+                                            >
+                                                <Add20Regular /> Add Row
+                                            </button>
+                                        </div>
+                                        <div className={styles['section-content']}>
+                                            {reviewerRows.length === 0 ? (
+                                                <div className={styles['section-empty']}>No reviewer items.</div>
+                                            ) : (
+                                                reviewerRows.map((row) => (
+                                                    <ChecklistRowItem
+                                                        key={row.id}
+                                                        row={row}
+                                                        workgroupId={workgroup.id}
+                                                        isCompact={!expandTasks}
+                                                    />
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className={styles['section-content']}>
-                                        {reviewerRows.length === 0 ? (
-                                            <div className={styles['section-empty']}>No reviewer items.</div>
-                                        ) : (
-                                            reviewerRows.map((row) => (
-                                                <ChecklistRowItem
-                                                    key={row.id}
-                                                    row={row}
-                                                    workgroupId={workgroup.id}
-                                                    isCompact={!expandTasks}
-                                                />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         ) : (
                             <div className={styles['workgroup-empty']}>
@@ -425,13 +414,6 @@ export const WorkgroupSection: React.FC<WorkgroupSectionProps> = React.memo(({
                     </div>
                 )
             }
-            {showChat && (
-                <WorkgroupChatDialog
-                    workgroup={workgroup}
-                    open={showChat}
-                    onClose={() => setShowChat(false)}
-                />
-            )}
         </section >
     );
 });

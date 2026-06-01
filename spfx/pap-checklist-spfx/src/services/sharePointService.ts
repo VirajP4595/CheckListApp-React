@@ -43,6 +43,7 @@ async function resizeImage(source: string, maxWidth: number, maxHeight: number):
 export class SharePointImageService implements IImageService {
     private client: MSGraphClientV3 | undefined;
     private driveInfoCache: { siteId: string; driveId: string; listId: string } | undefined;
+    private checklistFilesDriveCache: { driveId: string } | undefined;
     private context: WebPartContext | undefined;
 
     public async initialize(context: WebPartContext): Promise<void> {
@@ -203,6 +204,134 @@ export class SharePointImageService implements IImageService {
             url: data['@microsoft.graph.downloadUrl'] || data.webUrl,
             serverRelativeUrl: data.webUrl // Store webUrl as fallback
         };
+    }
+
+    /**
+     * Get the drive ID for the CRM-linked checklist files library.
+     * Uses checklistFilesSiteUrl + checklistFilesLibrary from config.
+     */
+    private async getChecklistFilesDriveId(): Promise<string> {
+        if (this.checklistFilesDriveCache) return this.checklistFilesDriveCache.driveId;
+
+        const client = this.getClient();
+        const siteUrl = new URL(AppConfig.sharepoint.checklistFilesSiteUrl);
+        const hostName = siteUrl.hostname;
+        const sitePath = siteUrl.pathname;
+
+        const site = await client.api(`/sites/${hostName}:${sitePath}`).get();
+        const drives = await client.api(`/sites/${site.id}/drives`).get();
+
+        const libraryName = AppConfig.sharepoint.checklistFilesLibrary;
+        const library = drives.value.find((d: { name: string; webUrl: string; id: string }) =>
+            d.name === libraryName ||
+            decodeURIComponent(d.webUrl).endsWith(`/${libraryName}`)
+        );
+
+        if (!library) {
+            throw new Error(`Checklist files library "${libraryName}" not found on ${AppConfig.sharepoint.checklistFilesSiteUrl}`);
+        }
+
+        this.checklistFilesDriveCache = { driveId: library.id };
+        return library.id;
+    }
+
+    /**
+     * Build the account folder name: {AccountName}_{AccountGUID}
+     * GUID is uppercased with hyphens removed to match CRM convention.
+     */
+    private formatAccountFolder(accountName: string, accountId: string): string {
+        const formattedId = accountId.replace(/-/g, '').toUpperCase();
+        return `${accountName}_${formattedId}`;
+    }
+
+    /**
+     * Find the job folder inside the account folder.
+     * Checks in order: (1) folder matching the job name, (2) "1 - A FQE FOLDER".
+     * Throws a descriptive error if neither exists — caller must surface this to the user.
+     */
+    private async findJobFolder(driveId: string, accountFolder: string, jobName?: string): Promise<string> {
+        const client = this.getClient();
+
+        // List all subfolders in the account folder
+        let folders: Array<{ name: string }> = [];
+        try {
+            const response = await client
+                .api(`/drives/${driveId}/root:/${accountFolder}:/children`)
+                .filter('folder ne null')
+                .select('name,folder')
+                .get();
+            folders = response?.value || [];
+        } catch (e: any) {
+            console.warn(`[SharePointService] Could not list folders in "${accountFolder}"`, e?.message || e);
+            throw new Error(`Account folder "${accountFolder}" not found in SharePoint. Please ensure the CRM folder structure exists.`);
+        }
+
+        if (folders.length === 0) {
+            throw new Error(`No subfolders found in "${accountFolder}". Please ensure the CRM folder structure has been created.`);
+        }
+
+        // 1. Check if a folder matching the job name exists
+        if (jobName) {
+            const jobLower = jobName.toLowerCase();
+            const match = folders.find(f => f.name.toLowerCase().indexOf(jobLower) !== -1);
+            if (match) return match.name;
+        }
+
+        // 2. Check if "1 - A FQE FOLDER" exists
+        const fqeFolder = folders.find(f => f.name === '1 - A FQE FOLDER');
+        if (fqeFolder) return fqeFolder.name;
+
+        // Neither found — throw with available folder names so user knows what exists
+        const available = folders.map(f => f.name).join(', ');
+        throw new Error(`Job folder not found in "${accountFolder}". Expected a folder matching "${jobName || '(no job name)'}" or "1 - A FQE FOLDER". Available folders: ${available}`);
+    }
+
+    /**
+     * Upload a file to the CRM-linked folder structure:
+     * {AccountName}_{AccountGUID}/{JobFolder}/z_Checklist/{filename}
+     *
+     * The job folder is auto-detected from the account folder contents.
+     */
+    async uploadChecklistFile(accountName: string, accountId: string, file: File, jobName?: string): Promise<ChecklistFileResult> {
+        const driveId = await this.getChecklistFilesDriveId();
+        const client = this.getClient();
+
+        const accountFolder = this.formatAccountFolder(accountName, accountId);
+        const jobFolder = await this.findJobFolder(driveId, accountFolder, jobName);
+        const folderPath = `${accountFolder}/${jobFolder}/z_Checklist`;
+        const uploadUrl = `/drives/${driveId}/root:/${folderPath}/${file.name}:/content`;
+
+        console.log(`[SharePointService] Uploading checklist file to: ${folderPath}/${file.name}`);
+
+        const data = await client.api(uploadUrl).put(file);
+
+        return {
+            id: data.id,
+            name: file.name,
+            url: data['@microsoft.graph.downloadUrl'] || data.webUrl,
+            serverRelativeUrl: data.webUrl
+        };
+    }
+
+    /**
+     * Get the SharePoint folder URL for the account/job folder.
+     * Returns a URL that opens the folder in SharePoint browser.
+     */
+    getChecklistFolderUrl(accountName: string, accountId: string): string {
+        const accountFolder = this.formatAccountFolder(accountName, accountId);
+        const siteUrl = AppConfig.sharepoint.checklistFilesSiteUrl;
+        const library = AppConfig.sharepoint.checklistFilesLibrary;
+        const folderPath = `/sites/${new URL(siteUrl).pathname.split('/sites/')[1]}/${library}/${accountFolder}`;
+        return `${new URL(siteUrl).origin}${folderPath}`;
+    }
+
+    /**
+     * Delete a file from the CRM-linked checklist files library by its drive item ID.
+     */
+    async deleteChecklistFile(itemId: string): Promise<void> {
+        const driveId = await this.getChecklistFilesDriveId();
+        const client = this.getClient();
+        await client.api(`/drives/${driveId}/items/${itemId}`).delete();
     }
 
     async getAllImageMetadata(checklistId: string): Promise<ChecklistImage[]> {

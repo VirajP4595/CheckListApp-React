@@ -64,7 +64,7 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
     };
 
     const renderWorkgroup = (workgroup: any) => {
-        // Filter rows - hide BLANK items
+        // Filter rows - hide BLANK items (internal-only rows remain visible in preview; PDF export handles its own filtering)
         const visibleRows = workgroup.rows.filter((r: any) =>
             r.answer && r.answer !== 'BLANK' && r.answer.trim() !== ''
         );
@@ -72,8 +72,8 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
         if (visibleRows.length === 0) return null;
 
         const sections = [
-            { id: 'client', label: 'Checklist Filler / Client', rows: visibleRows.filter((r: any) => r.section === 'client' || !r.section) },
-            { id: 'estimator', label: 'Estimator', rows: visibleRows.filter((r: any) => r.section === 'estimator') }
+            { id: 'client', label: 'Client/Checklist Notes', rows: visibleRows.filter((r: any) => r.section === 'client' || !r.section) },
+            { id: 'estimator', label: 'Estimator Notes', rows: visibleRows.filter((r: any) => r.section === 'estimator') }
         ];
 
         return (
@@ -89,16 +89,21 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
                             <div className={styles['revision-section-header']}>{section.label}</div>
                         )}
                         {section.rows.map((row: any) => (
-                            <div key={row.id} className={styles['revision-row']}>
+                            <div key={row.id} className={`${styles['revision-row']} ${row.internalOnly ? styles['revision-row--internal'] : ''}`}>
                                 <div className={styles['revision-row-content']}>
                                     <div className={styles['revision-row-header']}>
                                         <span className={styles['revision-row-name']}>{row.name}</span>
-                                        <span
-                                            className={styles['revision-status-pill']}
-                                            style={getAnswerStyle(row.answer)}
-                                        >
-                                            {ANSWER_CONFIG[row.answer as AnswerState]?.label || row.answer}
-                                        </span>
+                                        <div className={styles['revision-row-header-badges']}>
+                                            {row.internalOnly && (
+                                                <span className={styles['revision-internal-badge']}>Internal Only</span>
+                                            )}
+                                            <span
+                                                className={styles['revision-status-pill']}
+                                                style={getAnswerStyle(row.answer)}
+                                            >
+                                                {ANSWER_CONFIG[row.answer as AnswerState]?.label || row.answer}
+                                            </span>
+                                        </div>
                                     </div>
 
                                     {/* Description (Rich Text or plain) */}
@@ -151,7 +156,7 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
                                                     }}
                                                 >
                                                     <img
-                                                        src={img.source?.startsWith('data:') ? img.source : (img.thumbnailUrl || img.source)}
+                                                        src={img.source}
                                                         alt={img.caption}
                                                         className={styles['revision-image']}
                                                     />
@@ -232,10 +237,10 @@ export const RevisionViewer: React.FC<RevisionViewerProps> = ({ revision, onClos
                         </div>
                     )}
 
-                    {/* Common Notes (from Snapshot) */}
+                    {/* General Notes (from Snapshot) */}
                     {snapshot?.commonNotes && snapshot.commonNotes.length > 0 && (
                         <div className={styles['revision-common-notes']}>
-                            <h3 className={styles['revision-common-notes-title']}>Common Notes</h3>
+                            <h3 className={styles['revision-common-notes-title']}>General Notes</h3>
                             {snapshot.commonNotes.map((section) => (
                                 <div key={section.id} style={{ marginBottom: '8px' }}>
                                     <h4 style={{ fontSize: '13px', fontWeight: 600, margin: '4px 0' }}>{section.title}</h4>

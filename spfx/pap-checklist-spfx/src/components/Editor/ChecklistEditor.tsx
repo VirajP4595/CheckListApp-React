@@ -1,6 +1,6 @@
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react';
 import { Button, Spinner, Dialog, DialogTrigger, DialogSurface, DialogTitle, DialogBody, DialogActions, DialogContent, Text } from '@fluentui/react-components';
-import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular, ClipboardPulse24Regular, Delete24Regular, ArrowDownload24Regular } from '@fluentui/react-icons';
+import { ArrowLeft24Regular, Save24Regular, Add24Regular, History24Regular, Eye24Regular, ClipboardPulse24Regular, Delete24Regular, ArrowDownload24Regular, Chat24Regular } from '@fluentui/react-icons';
 import { Panel, PanelType } from '@fluentui/react/lib/Panel';
 import { useChecklistStore, useUserStore } from '../../stores';
 import { STATUS_CONFIG, type Revision } from '../../models';
@@ -15,6 +15,7 @@ import { HelpGuide } from './HelpGuide';
 import { CommonNotes } from './Sidebar/CommonNotes';
 import { JobMetadataHeader } from './Sidebar/JobMetadataHeader';
 import { ChecklistInfoDialog } from './Sidebar/ChecklistInfoDialog';
+import { ChecklistChat, getUnreadCount } from './Sidebar/ChecklistChat';
 import ActivityLogPanel from './Sidebar/ActivityLogPanel';
 import { PdfGenerationProgressModal } from '../Checklist/PdfGenerationProgressModal';
 import { DeleteProgressModal } from '../Checklist/DeleteProgressModal';
@@ -41,7 +42,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
         deleteChecklist
     } = useChecklistStore();
 
-    const { isSuperAdmin } = useUserStore();
+    const { isSuperAdmin, user } = useUserStore();
 
     // PDF Export Hook
     const { exportPdf, loadingProgress: pdfLoadingProgress, cancelExport: cancelPdfExport } = usePdfExport();
@@ -51,17 +52,42 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
     // Local state for full load overlay (initial load/preview)
     const [showActivityPanel, setShowActivityPanel] = useState(false);
+    const [showChatPanel, setShowChatPanel] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const [loadingProgress, setLoadingProgress] = useState<{ open: boolean; title: string; status: string; percent: number; cancelled: boolean }>({ open: false, title: 'Loading...', status: '', percent: 0, cancelled: false });
     const [viewingRevision, setViewingRevision] = useState<Revision | null>(null);
     const [deleteProgress, setDeleteProgress] = useState<{ open: boolean; status: string; percent: number }>({ open: false, status: '', percent: 0 });
-    const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, notifyAdmin: null, builderToConfirm: null, workgroupIds: [], showRowsWithData: false });
+    const [filters, setFilters] = useState<FilterState>({ answerStates: [], markedForReview: null, internalOnly: null, notifyAdmin: null, builderToConfirm: null, workgroupIds: [], showRowsWithData: false, sections: [] });
     const [expandWorkgroups, setExpandWorkgroups] = useState(false);  // Collapsed by default
     const [expandTasks, setExpandTasks] = useState(false);  // Collapsed by default
 
     const isCancelledRef = useRef(false);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const sectionDefaultApplied = useRef<string | null>(null); // tracks which checklistId the default was applied for
+
+    // When checklistChoice is "Standard Inclusions", hide client section by default
+    useEffect(() => {
+        const checklistId = activeChecklist?.id;
+        const choice = activeChecklist?.jobDetails?.checklistChoice;
+        if (!checklistId || !choice) return;
+        // Only apply once per checklist (reset if navigating to a different checklist)
+        if (sectionDefaultApplied.current === checklistId) return;
+        sectionDefaultApplied.current = checklistId;
+        const choiceStr = String(choice).toLowerCase();
+        if (choiceStr.includes('standard inclusions')) {
+            setFilters(prev => ({ ...prev, sections: ['estimator', 'reviewer'] }));
+        } else {
+            // Reset sections filter when opening a non-Standard Inclusions checklist
+            setFilters(prev => ({ ...prev, sections: [] }));
+        }
+    }, [activeChecklist?.id, activeChecklist?.jobDetails?.checklistChoice]);
+
+    // Chat unread badge count (suppress when chat panel is open)
+    const chatUnreadCount = useMemo(() => {
+        if (!user || !activeChecklist || showChatPanel) return 0;
+        return getUnreadCount(activeChecklist, user.id);
+    }, [activeChecklist, activeChecklist?.comments, user, showChatPanel]);
 
     useEffect(() => {
         void loadChecklist(checklistId);
@@ -152,10 +178,12 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
         switch (activeChecklist?.status) {
             case 'final':
                 return styles['editor-status--final'];
-            case 'in-review':
-                return styles['editor-status--in-review'];
+            case 'in-progress':
+                return styles['editor-status--in-progress'];
             case 'in-revision':
                 return styles['editor-status--in-revision'];
+            case 'delivered':
+                return styles['editor-status--delivered'];
             default:
                 return styles['editor-status--draft'];
         }
@@ -244,6 +272,21 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                             triggerClassName={styles['editor-action-btn']}
                         />
 
+                        <Button
+                            className={styles['editor-action-btn']}
+                            appearance="subtle"
+                            icon={<Chat24Regular />}
+                            onClick={() => setShowChatPanel(true)}
+                            title="Chat"
+                        >
+                            Chat
+                            {chatUnreadCount > 0 && (
+                                <span className={styles['editor-chat-badge']}>
+                                    {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
+                                </span>
+                            )}
+                        </Button>
+
                         {isSuperAdmin && (
                             <>
                                 <Button
@@ -297,10 +340,6 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
             {/* Main Layout */}
             < div className={styles['editor-layout']} >
                 <main className={styles['editor-main']}>
-                    <JobMetadataHeader checklist={activeChecklist} />
-
-
-
                     <FilterBar
                         filters={filters}
                         onFiltersChange={setFilters}
@@ -311,7 +350,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                         onExpandTasksChange={setExpandTasks}
                     />
 
-                    <CommonNotes
+                    <JobMetadataHeader
                         checklist={activeChecklist}
                         onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
                         onSave={saveChecklist}
@@ -319,7 +358,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
 
                     {/* ─── Revision Sections (descending order, filtered) ─── */}
                     {activeChecklist.revisions.length > 0 && (
-                        <div className={styles['editor-revisions']} style={{ marginTop: '20px' }}>
+                        <div className={styles['editor-revisions']}>
                             <div className={styles['revisions-header']}>
                                 <Text size={400} weight="semibold">Revision History</Text>
                             </div>
@@ -355,6 +394,12 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                         </div>
                     )}
 
+                    <CommonNotes
+                        checklist={activeChecklist}
+                        onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
+                        onSave={saveChecklist}
+                    />
+
                     <div className={styles['editor-workgroups']} id="checklist-print-content">
                         {activeChecklist.workgroups
                             .filter(wg => !wg.revisionId)
@@ -366,7 +411,7 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                                     workgroup={workgroup}
                                     onRowChange={triggerAutoSave}
                                     filters={filters}
-                                    isCollapsed={!expandWorkgroups}
+                                    isCollapsed={filters.workgroupIds.includes(workgroup.id) ? false : !expandWorkgroups}
                                     expandTasks={expandTasks}
                                 />
                             ))}
@@ -399,6 +444,21 @@ export const ChecklistEditor: React.FC<ChecklistEditorProps> = ({ checklistId, o
                 closeButtonAriaLabel="Close"
             >
                 <ActivityLogPanel checklistId={checklistId} checklistTitle={activeChecklist.title} />
+            </Panel>
+
+            <Panel
+                isOpen={showChatPanel}
+                onDismiss={() => setShowChatPanel(false)}
+                type={PanelType.medium}
+                headerText="Chat"
+                closeButtonAriaLabel="Close"
+            >
+                <ChecklistChat
+                    checklist={activeChecklist}
+                    onUpdate={(updates) => updateChecklist(activeChecklist.id, updates)}
+                    onSave={saveChecklist}
+                    readOnly={false}
+                />
             </Panel>
 
             {/* PDF / Preview Progress Modal */}

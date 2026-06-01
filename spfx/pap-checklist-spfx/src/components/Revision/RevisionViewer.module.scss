@@ -218,7 +218,7 @@
 
 .revision-workgroup-header {
     background: $color-gray-100;
-    padding: $spacing-3 $spacing-4;
+    padding: 0.1rem;
     border-bottom: 1px solid $color-border;
     display: flex;
     align-items: center;
@@ -257,6 +257,14 @@
     &:last-child {
         border-bottom: none;
     }
+
+    // Internal-only rows: muted background + left border indicator
+    &--internal {
+        background: rgba(107, 114, 128, 0.04);
+        border-left: 3px solid $color-gray-300;
+        padding-left: calc(#{$spacing-4} - 3px);
+        opacity: 0.75;
+    }
 }
 
 .revision-row-content {
@@ -267,9 +275,28 @@
 
 .revision-row-header {
     display: flex;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: center;
     gap: $spacing-2;
+}
+
+.revision-row-header-badges {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    flex-shrink: 0;
+}
+
+.revision-internal-badge {
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgba(107, 114, 128, 0.12);
+    color: $color-gray-500;
+    white-space: nowrap;
 }
 
 .revision-row-name {
@@ -312,6 +339,12 @@
 
         p {
             margin: 0;
+        }
+
+        // Disable checkboxes in read-only/preview mode
+        ul[data-type="taskList"] label input[type="checkbox"] {
+            pointer-events: none;
+            opacity: 0.7;
         }
     }
 }
@@ -358,36 +391,40 @@
 
 // Images
 .revision-images {
-    margin-top: $spacing-2;
+    margin-top: $spacing-3;
     display: flex;
-    gap: $spacing-2;
+    gap: $spacing-3;
     flex-wrap: wrap;
+    align-items: flex-start;
 }
 
 .revision-image-card {
     display: flex;
     flex-direction: column;
-    width: 80px;
-    gap: 2px;
+    max-width: 100%;
+    gap: 4px;
 }
 
 .revision-image {
-    width: 80px;
-    height: 60px;
-    object-fit: cover;
-    border-radius: 4px;
+    max-width: 100%;
+    max-height: 400px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: $border-radius-sm;
     border: 1px solid $color-border;
     cursor: pointer;
-    transition: transform $transition-fast;
+    transition: transform $transition-fast, border-color $transition-fast, box-shadow $transition-fast;
 
     &:hover {
-        transform: scale(1.05);
+        transform: scale(1.02);
         border-color: $color-primary;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     }
 }
 
 .revision-image-caption {
-    font-size: 0.65rem;
+    font-size: $font-size-xs;
     color: $color-gray-500;
     @include truncate;
 }
@@ -411,16 +448,16 @@
 
 .lightbox-content {
     position: relative;
-    max-width: 90vw;
-    max-height: 90vh;
+    max-width: 95vw;
+    max-height: 95vh;
     display: flex;
     flex-direction: column;
     align-items: center;
 
     img {
         max-width: 100%;
-        max-height: 80vh;
-        border-radius: 4px;
+        max-height: 85vh;
+        border-radius: $border-radius-sm;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
 }

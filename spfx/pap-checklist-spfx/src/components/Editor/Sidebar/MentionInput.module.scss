@@ -1,0 +1,130 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+// ============================================
+// Mention Input Wrapper
+// ============================================
+
+.mention-input-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.mention-textarea {
+    width: 100%;
+    min-height: 38px;
+    max-height: 120px;
+    padding: $spacing-2 $spacing-3;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-md;
+    background-color: $color-white;
+    font-family: $font-family-body;
+    font-size: $font-size-sm;
+    color: $color-gray-900;
+    resize: none;
+    outline: none;
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+    line-height: $line-height-normal;
+    box-sizing: border-box;
+
+    &:focus {
+        border-color: $color-primary-light;
+        box-shadow: 0 0 0 2px $input-focus-ring;
+    }
+
+    &:disabled {
+        background-color: $color-gray-100;
+        cursor: not-allowed;
+    }
+
+    &::placeholder {
+        color: $color-gray-400;
+    }
+}
+
+// ============================================
+// Mention Dropdown
+// ============================================
+
+.mention-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    margin-bottom: 4px;
+    background: $color-white;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-lg;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 100;
+    @include scrollbar;
+}
+
+.mention-loading {
+    padding: $spacing-3;
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    text-align: center;
+    font-style: italic;
+}
+
+.mention-option {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    width: 100%;
+    padding: $spacing-2 $spacing-3;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font-size: $font-size-sm;
+    color: $color-gray-800;
+    transition: background-color $transition-fast;
+
+    &:hover,
+    &--active {
+        background-color: rgba($color-primary, 0.06);
+    }
+
+    &--active {
+        color: $color-primary;
+    }
+}
+
+.mention-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-full;
+    background: $color-primary;
+    color: $color-white;
+    font-size: 12px;
+    font-weight: $font-weight-bold;
+    flex-shrink: 0;
+}
+
+.mention-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.mention-name {
+    font-weight: $font-weight-medium;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mention-title {
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

@@ -15,6 +15,8 @@ import { Filter20Regular, Dismiss20Regular, ChevronDown20Regular, ChevronUp20Reg
 import { ANSWER_CONFIG, ANSWER_STATES, type AnswerState, type Workgroup } from '../../models';
 import styles from './FilterBar.module.scss';
 
+export type SectionFilter = 'client' | 'estimator' | 'reviewer';
+
 export interface FilterState {
     answerStates: AnswerState[];
     markedForReview: boolean | null;
@@ -23,6 +25,7 @@ export interface FilterState {
     internalOnly: boolean | null;
     workgroupIds: string[];
     showRowsWithData: boolean;
+    sections: SectionFilter[];
 }
 
 interface FilterBarProps {
@@ -138,6 +141,30 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     expandTasks = true,
     onExpandTasksChange,
 }) => {
+    // Detect when filter bar is stuck (scrolled past its natural position)
+    const barRef = React.useRef<HTMLDivElement>(null);
+    const [isStuck, setIsStuck] = useState(false);
+
+    useEffect(() => {
+        const el = barRef.current;
+        if (!el) return;
+        // Sentinel: a 1px element placed right above the filter bar's natural position.
+        // When it scrolls out of view, the filter bar is stuck.
+        const sentinel = document.createElement('div');
+        sentinel.style.height = '1px';
+        sentinel.style.width = '1px';
+        sentinel.style.position = 'absolute';
+        sentinel.style.pointerEvents = 'none';
+        el.parentElement?.insertBefore(sentinel, el);
+
+        const observer = new IntersectionObserver(
+            ([entry]) => { setIsStuck(!entry.isIntersecting); },
+            { threshold: 0 }
+        );
+        observer.observe(sentinel);
+        return () => { observer.disconnect(); sentinel.remove(); };
+    }, []);
+
     // Local state for instant checkbox visual feedback — defers heavy workgroup re-renders to next task
     const [localShowRowsWithData, setLocalShowRowsWithData] = useState(filters.showRowsWithData);
     useEffect(() => { setLocalShowRowsWithData(filters.showRowsWithData); }, [filters.showRowsWithData]);
@@ -183,14 +210,27 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         setTimeout(() => { onFiltersChange({ ...filters, showRowsWithData: checked }); }, 0);
     };
 
-    const clearFilters = () => {
-        onFiltersChange({ answerStates: [], markedForReview: null, notifyAdmin: null, builderToConfirm: null, internalOnly: null, workgroupIds: [], showRowsWithData: false });
+    const allSections: SectionFilter[] = ['client', 'estimator', 'reviewer'];
+
+    const handleSectionChange = (section: SectionFilter, checked: boolean) => {
+        const current = filters.sections.length > 0 ? filters.sections : allSections;
+        const updated = checked
+            ? [...current, section]
+            : current.filter(s => s !== section);
+        onFiltersChange({ ...filters, sections: updated });
     };
 
-    const hasActiveFilters = filters.answerStates.length > 0 || filters.markedForReview !== null || filters.notifyAdmin !== null || filters.builderToConfirm !== null || filters.internalOnly !== null || filters.workgroupIds.length > 0 || filters.showRowsWithData;
+    // Treat empty sections array as "all visible" for active-filter detection
+    const sectionsFiltered = filters.sections.length > 0 && filters.sections.length < allSections.length;
+
+    const clearFilters = () => {
+        onFiltersChange({ answerStates: [], markedForReview: null, notifyAdmin: null, builderToConfirm: null, internalOnly: null, workgroupIds: [], showRowsWithData: false, sections: [] });
+    };
+
+    const hasActiveFilters = filters.answerStates.length > 0 || filters.markedForReview !== null || filters.notifyAdmin !== null || filters.builderToConfirm !== null || filters.internalOnly !== null || filters.workgroupIds.length > 0 || filters.showRowsWithData || sectionsFiltered;
 
     return (
-        <div className={styles['filter-bar']}>
+        <div ref={barRef} className={`${styles['filter-bar']} ${isStuck ? styles['filter-bar--stuck'] : ''}`}>
             {/* Collapse Toggles */}
             {onExpandWorkgroupsChange && (
                 <div className={styles['filter-toggles']}>
@@ -243,7 +283,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                             style={{ justifyContent: 'space-between', fontWeight: 400 }}
                         >
                             <span style={{ color: filters.answerStates.length === 0 ? '#616161' : 'inherit' }}>
-                                {filters.answerStates.length === 0 ? 'Answer' : `${filters.answerStates.length} Selected`}
+                                {filters.answerStates.length === 0 ? 'Key' : `${filters.answerStates.length} Selected`}
                             </span>
                         </Button>
                     </MenuTrigger>
@@ -342,6 +382,61 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                                 }}
                             >
                                 Internal Only
+                            </MenuItemCheckbox>
+                        </MenuList>
+                    </MenuPopover>
+                </Menu>
+
+                <Menu>
+                    <MenuTrigger disableButtonEnhancement>
+                        <Button
+                            className={styles['filter-dropdown']}
+                            appearance="outline"
+                            icon={<ChevronDown20Regular />}
+                            iconPosition="after"
+                            style={{ justifyContent: 'space-between', fontWeight: 400 }}
+                        >
+                            <span style={{ color: !sectionsFiltered ? '#616161' : 'inherit' }}>
+                                {!sectionsFiltered ? 'Section' : `${filters.sections.length} Section${filters.sections.length !== 1 ? 's' : ''}`}
+                            </span>
+                        </Button>
+                    </MenuTrigger>
+                    <MenuPopover>
+                        <MenuList checkedValues={{
+                            section: filters.sections.length > 0 ? filters.sections : allSections
+                        }}>
+                            <MenuItemCheckbox
+                                name="section"
+                                value="client"
+                                onClick={(e) => {
+                                    const active = filters.sections.length > 0 ? filters.sections : allSections;
+                                    handleSectionChange('client', !active.includes('client'));
+                                    e.stopPropagation();
+                                }}
+                            >
+                                Client/Checklist Notes
+                            </MenuItemCheckbox>
+                            <MenuItemCheckbox
+                                name="section"
+                                value="estimator"
+                                onClick={(e) => {
+                                    const active = filters.sections.length > 0 ? filters.sections : allSections;
+                                    handleSectionChange('estimator', !active.includes('estimator'));
+                                    e.stopPropagation();
+                                }}
+                            >
+                                Estimator Notes
+                            </MenuItemCheckbox>
+                            <MenuItemCheckbox
+                                name="section"
+                                value="reviewer"
+                                onClick={(e) => {
+                                    const active = filters.sections.length > 0 ? filters.sections : allSections;
+                                    handleSectionChange('reviewer', !active.includes('reviewer'));
+                                    e.stopPropagation();
+                                }}
+                            >
+                                Reviewer Notes
                             </MenuItemCheckbox>
                         </MenuList>
                     </MenuPopover>

@@ -43,6 +43,26 @@
         "scope": "Mail.Send"
       },
       {
+        "resource": "Microsoft Graph",
+        "scope": "People.Read"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "User.Read.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Chat.Create"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "ChatMessage.Send"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "ChannelMessage.Send"
+      },
+      {
         "resource": "Dataverse",
         "scope": "user_impersonation"
       }

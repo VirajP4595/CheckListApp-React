@@ -1,41 +1,43 @@
 // ─── ANSWER STATE ────────────────────────────────────────
-export type AnswerState = 'YES' | 'NO' | 'BLANK' | 'PS' | 'PC' | 'SUB' | 'OTS' | 'TBC' | 'OPT_EXTRA' | 'BUILDER_SPEC' | 'RFQ' | 'SPECS_PLANS';
+export type AnswerState = 'YES' | 'NO' | 'BLANK' | 'PS' | 'PC' | 'SUB' | 'OTS' | 'TBC' | 'OPT_EXTRA' | 'BUILDER_SPEC' | 'RFQ' | 'SPECS_PLANS' | 'CLIENT_NOTIF';
 
-export const ANSWER_STATES: AnswerState[] = ['YES', 'NO', 'BLANK', 'PS', 'PC', 'SUB', 'OTS', 'TBC', 'OPT_EXTRA', 'BUILDER_SPEC', 'RFQ', 'SPECS_PLANS'];
+export const ANSWER_STATES: AnswerState[] = ['YES', 'NO', 'BLANK', 'PS', 'PC', 'SUB', 'OTS', 'TBC', 'OPT_EXTRA', 'BUILDER_SPEC', 'RFQ', 'SPECS_PLANS', 'CLIENT_NOTIF'];
 
 export const ANSWER_CONFIG: Record<AnswerState, { label: string; color: string; description: string }> = {
-    YES: { label: 'Yes', color: '#107c10', description: 'Included' },
+    YES: { label: 'Yes', color: '#60923f', description: 'Included' },
     NO: { label: 'Noted as Excluded', color: '#d13438', description: 'Noted as excluded from scope' },
     BLANK: { label: 'Nothing Selected', color: '#8a8886', description: 'Intentionally unanswered' },
-    PS: { label: 'PS', color: '#ff8c00', description: 'Provisional Sum' },
+    PS: { label: 'PS', color: '#004985', description: 'Provisional Sum' },
     PC: { label: 'PC', color: '#0078d4', description: 'Prime Cost' },
     SUB: { label: 'Subcontractor Quote', color: '#8764b8', description: 'Subcontractor' },
     OTS: { label: 'OTS', color: '#038387', description: 'Owner to Supply' },
-    TBC: { label: 'TBC', color: '#a4262c', description: 'To Be Confirmed' },
+    TBC: { label: 'Confirmation Required', color: '#a4262c', description: 'Confirmation Required' },
     OPT_EXTRA: { label: 'Optional Extra', color: '#ca5010', description: 'Optional extra item' },
     BUILDER_SPEC: { label: 'Builder Spec Item', color: '#498205', description: 'Builder specification item' },
     RFQ: { label: 'RFQ', color: '#986f0b', description: 'Request for Quote' },
     SPECS_PLANS: { label: 'As Per Specs/Plans', color: '#00695c', description: 'As per specifications/plans' },
+    CLIENT_NOTIF: { label: 'Client Notification', color: '#ff8c00', description: 'Requires client notification' },
 };
 
 // ─── ROW SECTION ─────────────────────────────────────────
 export type RowSection = 'client' | 'estimator' | 'reviewer';
 
 export const SECTION_CONFIG: Record<RowSection, { label: string; color: string }> = {
-    'client': { label: 'Checklist Filler / Client', color: '#0078d4' },
-    'estimator': { label: 'Estimator', color: '#8764b8' },
-    'reviewer': { label: 'Reviewer', color: '#c239b3' },
+    'client': { label: 'Client/Checklist Notes', color: '#0078d4' },
+    'estimator': { label: 'Estimator Notes', color: '#8764b8' },
+    'reviewer': { label: 'Reviewer Notes', color: '#c239b3' },
 };
 
 export const ROW_SECTIONS: RowSection[] = ['client', 'estimator', 'reviewer'];
 
 // ─── CHECKLIST STATUS ────────────────────────────────────
-export type ChecklistStatus = 'draft' | 'in-review' | 'in-revision' | 'final';
+export type ChecklistStatus = 'draft' | 'in-progress' | 'in-revision' | 'delivered' | 'final';
 
 export const STATUS_CONFIG: Record<ChecklistStatus, { label: string; color: string }> = {
     'draft': { label: 'Draft', color: '#8a8886' },
-    'in-review': { label: 'In Review', color: '#ff8c00' },
+    'in-progress': { label: 'In Progress', color: '#ff8c00' },
     'in-revision': { label: 'In Revision', color: '#5b5fc7' },
+    'delivered': { label: 'Delivered', color: '#0078d4' },
     'final': { label: 'Final', color: '#107c10' },
 };
 
@@ -45,6 +47,7 @@ export interface CommonNoteSection {
     title: string;
     content: string;
     order: number;
+    createdAt?: Date;
 }
 
 // ─── INLINE IMAGE ────────────────────────────────────────
@@ -57,6 +60,16 @@ export interface ChecklistImage {
     order: number;
 }
 
+// ─── RFQ LINE ITEM (table rendered inside RFQ rows) ──────
+export interface RfqLineItem {
+    id: string;
+    itemNo: string;        // "1", "2", "3a"... free text, auto-indexed on create
+    description: string;   // Plain text description
+    qty: string;           // Free text to preserve decimals e.g. "15.29"
+    unit: string;          // "m2", "item", etc.
+    imageId?: string;      // References a ChecklistImage.id on the same row
+}
+
 // ─── CHECKLIST ROW ───────────────────────────────────────
 export interface ChecklistRow {
     id: string;
@@ -67,6 +80,8 @@ export interface ChecklistRow {
     answer: AnswerState;
     supplierName?: string;  // Only relevant when answer = 'RFQ'
     supplierEmail?: string; // Only relevant when answer = 'RFQ'
+    specifiedBy?: string;   // Only relevant when answer = 'RFQ' — who specified the product
+    rfqLineItems?: RfqLineItem[]; // Only relevant when answer = 'RFQ'
     notes: string;
     markedForReview: boolean;
     notifyAdmin: boolean;
@@ -103,11 +118,25 @@ export interface Revision {
 }
 
 // ─── COMMENT ─────────────────────────────────────────────
+export interface CommentLike {
+    userId: string;       // Graph user ID
+    displayName: string;
+    timestamp: string;    // ISO string
+}
+
+export interface CommentMention {
+    userId: string;       // Graph user ID (used for Teams notification)
+    displayName: string;
+}
+
 export interface ChecklistComment {
     id: string;
     text: string;
     author: string;
+    authorEmail?: string;
     createdAt: Date;
+    likes?: CommentLike[];       // Rich like data with user identity
+    mentions?: CommentMention[]; // @mentioned users with Graph IDs
 }
 
 // ─── FILE ────────────────────────────────────────────────
@@ -149,16 +178,26 @@ export interface Checklist {
         meetingOccurred?: boolean;
         checklistChoice?: string | number | null;
         appointmentDate?: Date | null;
-        // ── Job Metadata Header fields (TEMP column names — pending client confirmation) ──
-        builderName?: string;          // TEMP: _vin_account_value (same as client?) — TBC
-        siteAddress?: string;          // TEMP: vin_buildarea — TBC
-        qbeFlagged?: boolean;          // vin_qbeflagged
+        // ── Job Metadata Header fields ──
+        accountId?: string;            // _vin_account_value (raw GUID for SP folder path)
+        builderName?: string;          // _vin_account_value (formatted)
+        siteAddress?: string;          // vin_name (job address)
+        qbeFlagged?: boolean;          // vin_qbecomplete (QB Complete on FQE card)
         qbeLow?: number | null;        // vin_qbelow
         qbeHigh?: number | null;       // vin_qbehigh
-        engineering?: boolean | null;   // TEMP: unknown column — TBC
-        threeDModel?: boolean | null;   // TEMP: vin_dmodelsuited — TBC
+        engineering?: boolean | null;  // reserved
+        threeDModel?: boolean | null;  // vin_dmodelsuited
+        googleMapsLink?: string;       // vin_googlemapslink (stored URL on job record)
+        fqeRevisionNumber?: number | null; // vin_revisionnumber (FQE revision counter)
         // procurement?: boolean;       // ON HOLD — Adrienne to confirm
     };
+    // ── General Info Section fields (Dataverse columns on pap_checklist) ──
+    hardDeadline?: boolean;
+    hardDeadlineDate?: Date | null;
+    builderSuppliedQuotes?: boolean;
+    contractType?: 'standard' | 'cost-plus' | null;
+    buildStages?: boolean;
+    buildStagesNotes?: string;
     carpentryLabourImageUrl?: string;
     carpentryLabourDescription?: string;
     // ────────────────────────

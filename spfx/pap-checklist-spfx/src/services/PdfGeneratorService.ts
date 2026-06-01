@@ -20,17 +20,18 @@ export class PdfGeneratorService {
      */
     public async generate(
         brandingLogoBlob: Blob | null,
-        onProgress: (status: string, percent: number) => boolean
+        onProgress: (status: string, percent: number) => boolean,
+        papLogoBlob?: Blob | null
     ): Promise<Blob> {
 
 
         // 1. Setup Document
-        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
         this.renderer = new PdfRichTextRenderer(doc);
 
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = { top: 35, bottom: 20, left: 14, right: 14 };
+        const margin = { top: 35, topContinuation: 12, bottom: 14, left: 14, right: 14 };
         const contentWidth = pageWidth - margin.left - margin.right;
 
         let logoDataUrl: string | undefined = undefined;
@@ -47,6 +48,17 @@ export class PdfGeneratorService {
             } catch (e) { console.warn("Logo dimensions unknown", e); }
         }
 
+        // PAP Company Logo (Top Left)
+        let papLogoDataUrl: string | undefined = undefined;
+        let papLogoRatio = 1;
+        if (papLogoBlob) {
+            try {
+                papLogoDataUrl = await this.readBlobAsDataURL(papLogoBlob);
+                const props = await this.getImageProperties(papLogoDataUrl);
+                papLogoRatio = props.ratio;
+            } catch (e) { console.warn("PAP Logo dimensions unknown", e); }
+        }
+
         // --- Layout Helpers ---
         let cursorY = margin.top;
 
@@ -55,18 +67,30 @@ export class PdfGeneratorService {
             doc.setFillColor(BRAND_COLORS.WHITE);
             doc.rect(0, 0, pageWidth, 30, 'F'); // White background for header
 
-            // 1. Job Name (Top Left) - Replaces GUID
+            // PAP Logo (Top Left)
+            let textStartX = margin.left;
+            if (papLogoDataUrl) {
+                const papMaxH = 21;
+                const papLogoH = papMaxH;
+                const papLogoW = papLogoH * papLogoRatio;
+                const papLogoX = margin.left;
+                const papLogoY = 5; // 5mm from top
+                doc.addImage(papLogoDataUrl, 'PNG', papLogoX, papLogoY, papLogoW, papLogoH);
+                textStartX = margin.left + papLogoW + 3; // Shift text right of PAP logo
+            }
+
+            // 1. Job Name
             doc.setFontSize(10);
             doc.setTextColor(BRAND_COLORS.GRAY);
             doc.setFont('helvetica', 'bold');
             const jobName = this.checklist.jobDetails?.jobName || '';
-            doc.text(jobName.toUpperCase(), margin.left, 10);
+            doc.text(jobName.toUpperCase(), textStartX, 10);
 
             // 2. Checklist Title
             doc.setFontSize(18);
             doc.setTextColor(BRAND_COLORS.BLACK);
             doc.setFont('helvetica', 'bold');
-            doc.text(this.checklist.title, margin.left, 18);
+            doc.text(this.checklist.title, textStartX, 18);
 
             // 3. Metadata Line (Client | Status | Rev | Date)
             doc.setFontSize(9);
@@ -79,7 +103,7 @@ export class PdfGeneratorService {
             const revLabel = `Rev ${this.checklist.currentRevisionNumber}`;
             const dateLabel = new Date().toLocaleDateString();
 
-            doc.text(`${clientName}${jobType}${statusLabel} | ${revLabel} | ${dateLabel}`, margin.left, 24);
+            doc.text(`${clientName}${jobType}${statusLabel} | ${revLabel} | ${dateLabel}`, textStartX, 24);
 
             // Blue Separator Line
             const lineY = 28;
@@ -87,18 +111,13 @@ export class PdfGeneratorService {
             doc.setLineWidth(0.5);
             doc.line(margin.left, lineY, pageWidth - margin.right, lineY);
 
-            // Logo (Right Aligned, Maximize Height)
+            // Client/Branding Logo (Right Aligned, Maximize Height)
             if (logoDataUrl) {
-                // Available height from Top(5) to Line(28) -> 23mm
-                // Leave 2mm padding -> 21mm max height
                 const maxH = 21;
                 const logoH = maxH;
                 const logoW = logoH * logoRatio;
-
-                // Position: Right aligned, Bottom aligned to line (minus padding)
                 const logoX = pageWidth - margin.right - logoW;
-                const logoY = lineY - logoH - 1; // 1mm above line
-
+                const logoY = lineY - logoH - 1;
                 doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoW, logoH);
             }
         };
@@ -111,16 +130,28 @@ export class PdfGeneratorService {
             if (this.checklist.jobDetails?.jobName) {
                 doc.text(this.checklist.jobDetails.jobName, margin.left, footerY);
             }
+            // Builder business name (right-aligned)
+            if (this.checklist.jobDetails?.builderName) {
+                doc.text(this.checklist.jobDetails.builderName, pageWidth - margin.right, footerY, { align: 'right' });
+            }
         };
 
         const checkPageBreak = (heightNeeded: number) => {
             if (cursorY + heightNeeded > pageHeight - margin.bottom) {
                 doc.addPage();
-                cursorY = margin.top;
-                // Header is only page 1
+                cursorY = margin.topContinuation;
                 return true;
             }
             return false;
+        };
+
+        // Reusable section divider — consistent line between major sections
+        const drawSectionDivider = () => {
+            cursorY += 2;
+            doc.setDrawColor('#b0b8c4');
+            doc.setLineWidth(0.5);
+            doc.line(margin.left, cursorY, pageWidth - margin.right, cursorY);
+            cursorY += 3;
         };
 
         // Initialize Page 1
@@ -128,34 +159,35 @@ export class PdfGeneratorService {
 
         // ─── Common Notes Section (before workgroups) ───
         if (this.checklist.commonNotes && this.checklist.commonNotes.length > 0) {
-            checkPageBreak(15);
-            cursorY += 2;
-            doc.setFillColor('#f3f2f1');
-            doc.rect(margin.left, cursorY, contentWidth, 8, 'F');
-            doc.setFontSize(10);
-            doc.setTextColor(BRAND_COLORS.BLUE);
+            checkPageBreak(12);
+            doc.setFillColor(BRAND_COLORS.HEADER_BG);
+            doc.rect(margin.left, cursorY, contentWidth, 7, 'F');
+            doc.setFontSize(9);
+            doc.setTextColor(BRAND_COLORS.WHITE);
             doc.setFont('helvetica', 'bold');
-            doc.text('COMMON NOTES', margin.left + 2, cursorY + 5.5);
-            cursorY += 10;
+            doc.text('GENERAL NOTES', margin.left + 2, cursorY + 4.8);
+            cursorY += 7;
 
             for (const section of this.checklist.commonNotes) {
-                if (!section.content || section.content === '<p></p>') continue;
-                checkPageBreak(12);
-                doc.setFontSize(9);
+                // Skip sections with no meaningful content (empty paragraphs, whitespace-only, etc.)
+                const stripped = (section.content || '').replace(/<[^>]*>/g, '').trim();
+                if (!stripped) continue;
+                checkPageBreak(10);
+                doc.setFontSize(8);
                 doc.setTextColor('#333333');
                 doc.setFont('helvetica', 'bold');
-                doc.text(section.title, margin.left + 2, cursorY + 4);
-                cursorY += 6;
+                doc.text(section.title, margin.left + 2, cursorY + 3.5);
+                cursorY += 5;
 
                 doc.setFont('helvetica', 'normal');
                 const rendered = this.renderer.render(
                     section.content, margin.left + 2, cursorY,
                     contentWidth - 4, pageHeight - margin.bottom,
-                    () => { doc.addPage(); return margin.top; }
+                    () => { doc.addPage(); return margin.topContinuation; }
                 );
-                cursorY = rendered + 4;
+                cursorY = rendered + 1;
             }
-            cursorY += 2;
+            drawSectionDivider();
         }
 
         // 2. Loop & Draw (Manual Engine)
@@ -163,196 +195,331 @@ export class PdfGeneratorService {
         this.checklist.workgroups.forEach(wg => { totalItems += wg.rows.length; });
         let processedItems = 0;
 
-        const renderWorkgroup = async (wg: Workgroup, totalItemsCount: number) => {
+        // ─── TABLE-BASED LANDSCAPE LAYOUT ───
+        // Column widths for the 4-column table (Key | Item | Description | Image)
+        const col = {
+            keyW: 30,
+            itemW: 40,
+            descW: contentWidth - 30 - 40 - 84,  // flexible middle (~115mm)
+            imgW: 84,
+        };
+        const colX = {
+            key: margin.left,
+            item: margin.left + col.keyW,
+            desc: margin.left + col.keyW + col.itemW,
+            img: margin.left + col.keyW + col.itemW + (contentWidth - 30 - 40 - 84),
+        };
+        const minRowH = 7; // minimum row height
+
+        /**
+         * Draw a combined section + table header in ONE row (saves one row per section).
+         * Section label appears in italic in the Key column area.
+         * Item / Description / Image column labels appear in their respective columns.
+         */
+        const drawSectionAndTableHeader = (label: string) => {
+            checkPageBreak(7);
+            doc.setFillColor('#d6dce4');
+            doc.rect(margin.left, cursorY, contentWidth, 6.5, 'F');
+
+            // Key column: show section label in italic (replaces generic "Key" label)
+            doc.setFontSize(6.5);
+            doc.setTextColor('#1a3a5c');
+            doc.setFont('helvetica', 'bolditalic');
+            doc.text(label, colX.key + 2, cursorY + 4.2);
+
+            // Item, Description, Image column labels
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor('#333333');
+            doc.text('Item', colX.item + 2, cursorY + 4.2);
+            doc.text('Description', colX.desc + 2, cursorY + 4.2);
+            doc.text('Image', colX.img + 2, cursorY + 4.2);
+
+            // Column dividers
+            doc.setDrawColor('#b0b8c4'); doc.setLineWidth(0.2);
+            doc.line(colX.item, cursorY, colX.item, cursorY + 6.5);
+            doc.line(colX.desc, cursorY, colX.desc, cursorY + 6.5);
+            doc.line(colX.img, cursorY, colX.img, cursorY + 6.5);
+            cursorY += 6.5;
+        };
+
+        const renderWorkgroup = async (wg: Workgroup, totalItemsCount: number, showAllRows = false) => {
             // Pre-calculate visible rows for this workgroup
+            // showAllRows = true for revision workgroups (show all rows regardless of answer)
             const visibleRows = wg.rows.filter((row: ChecklistRow) => {
                 const isBtcExport = this.checklist.title.startsWith('[BTC');
-                
-                // If it's a BTC checklist, ONLY show BTC rows (including internal ones if they are BTC)
-                if (isBtcExport) {
-                    return row.builderToConfirm;
-                }
-
-                // Normal export rules:
+                if (isBtcExport) return row.builderToConfirm;
                 if (row.internalOnly) return false;
-                if (row.answer === 'BLANK' && !row.builderToConfirm) return false;
+                const hasDescription = !!(row.description?.trim() || row.notes?.trim());
+                const hasImages = !!(row.images && row.images.length > 0 && row.images.some((img: any) => !!img.source));
+                const hasAnswer = !!(row.answer && row.answer !== 'BLANK');
+                // Hide rows with no meaningful content — name alone is not enough
+                if (!hasAnswer && !hasDescription && !hasImages && !row.builderToConfirm) return false;
+                // In main checklist (not showAllRows): also hide BLANK answer rows
+                if (!showAllRows && !hasAnswer && !row.builderToConfirm) return false;
                 return true;
             });
 
             if (visibleRows.length === 0) return;
 
-            // -- Workgroup Header --
-            checkPageBreak(15);
-            cursorY += 2;
-            doc.setFillColor('#f3f2f1'); 
-            doc.rect(margin.left, cursorY, contentWidth, 10, 'F');
-            doc.setFontSize(11);
-            doc.setTextColor(BRAND_COLORS.BLUE);
+            // -- Workgroup Header (dark blue, name + number on one line) --
+            checkPageBreak(10);
+            doc.setFillColor(BRAND_COLORS.HEADER_BG);
+            doc.rect(margin.left, cursorY, contentWidth, 7, 'F');
+            doc.setFontSize(9);
+            doc.setTextColor(BRAND_COLORS.WHITE);
             doc.setFont('helvetica', 'bold');
-            doc.text(`${wg.number}  ${wg.name}`, margin.left + 2, cursorY + 7);
-            cursorY += 12;
-
-            const workgroupImages: { data: string; ratio: number; caption?: string }[] = [];
+            // Number badge on left, name after it — all on one line
+            doc.text(`${wg.number}  ${wg.name}`, margin.left + 2, cursorY + 4.8);
+            cursorY += 7;
 
             // Group rows by section
             const sections = [
-                { id: 'client', label: 'Checklist Filler / Client', rows: visibleRows.filter(r => r.section === 'client' || !r.section) },
-                { id: 'estimator', label: 'Estimator', rows: visibleRows.filter(r => r.section === 'estimator') }
+                { id: 'client', label: 'Client/Checklist Notes:', bgColor: '#ffffff', rows: visibleRows.filter(r => r.section === 'client' || !r.section) },
+                { id: 'estimator', label: 'Estimator Notes:', bgColor: '#e8f5e9', rows: visibleRows.filter(r => r.section === 'estimator') },
+                { id: 'reviewer', label: 'Reviewer Notes:', bgColor: '#f3e8fd', rows: visibleRows.filter(r => r.section === 'reviewer') }
             ];
 
             for (const section of sections) {
                 if (section.rows.length === 0) continue;
 
-                // Section Header
-                checkPageBreak(10);
-                doc.setFontSize(9);
-                doc.setTextColor(BRAND_COLORS.GRAY);
-                doc.setFont('helvetica', 'bold');
-                doc.text(section.label.toUpperCase(), margin.left, cursorY + 4);
-                doc.setDrawColor('#e1dfdd');
-                doc.setLineWidth(0.2);
-                doc.line(margin.left, cursorY + 6, margin.left + doc.getTextWidth(section.label), cursorY + 6);
-                cursorY += 10;
+                drawSectionAndTableHeader(section.label);
 
                 for (const row of section.rows) {
                     processedItems++;
-                    // Check for progress
                     if (totalItemsCount > 0) {
                         if (!onProgress(`Drawing Row ${processedItems}...`, 10 + (processedItems / totalItemsCount) * 85)) {
                             throw new Error("Cancelled");
                         }
                     }
 
-                    const col2W = contentWidth;
-                    let contentH = 0;
-                    const title = row.name || this.stripHtml(row.description).substring(0, 50);
-                    if (title) contentH += 6;
-                    const descH = this.renderer.measureHeight(row.description || '', col2W);
-                    if (descH > 0) contentH += descH + 2;
-                    const notesH = row.notes ? this.renderer.measureHeight(row.notes, col2W) + 4 : 0;
-                    contentH += notesH;
-
-                    // Estimate supplier info height
-                    let supplierH = 0;
-                    if (row.answer === 'RFQ' && (row.supplierName || row.supplierEmail)) {
-                        supplierH = 10;
-                    }
-                    contentH += supplierH;
-
-                    checkPageBreak(Math.min(contentH + 5, 40));
-
-                    let drawY = cursorY + 4;
-                    const fullW = contentWidth;
                     const answerConf = ANSWER_CONFIG[row.answer as AnswerState] || ANSWER_CONFIG.BLANK;
+                    const rowStartY = cursorY;
 
-                    if (title) {
-                        doc.setTextColor(BRAND_COLORS.BLACK);
-                        doc.setFontSize(11);
-                        doc.setFont('helvetica', 'bold');
-                        doc.text(title, margin.left, drawY + 3);
-                        const titleW = doc.getTextWidth(title);
-                        const pillX = margin.left + titleW + 4;
-                        const pillW = doc.getTextWidth(answerConf.label) + 6;
-                        doc.setFillColor(answerConf.color);
-                        doc.roundedRect(pillX, drawY - 1, pillW, 5, 2, 2, 'F');
-                        doc.setTextColor(BRAND_COLORS.WHITE);
-                        doc.setFontSize(7);
-                        doc.setFont('helvetica', 'bold');
-                        doc.text(answerConf.label, pillX + (pillW / 2), drawY + 2.5, { align: 'center' });
-                        drawY += 7;
-                    }
+                    // ── Pre-calculate content heights for each column ──
+                    // Col 3 (Description): rich text + supplier + RFQ table + notes
+                    let descContentH = 1; // top padding
+                    const descColW = col.descW - 4; // inner padding
 
+                    // Description text height — use rich text renderer for accurate measurement
                     if (row.description) {
-                        doc.setFontSize(9);
-                        doc.setTextColor('#323130');
-                        drawY = this.renderer.render(row.description, margin.left, drawY, fullW, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; }) + 2;
+                        const descMeasured = this.renderer.measureHeight(row.description, descColW);
+                        descContentH += descMeasured + 1;
                     }
 
-                    // RFQ Supplier Block
-                    if (row.answer === 'RFQ' && (row.supplierName || row.supplierEmail)) {
-                        drawY += 1;
-                        const sH = 8;
-                        if (drawY + sH > pageHeight - margin.bottom) { doc.addPage(); drawY = margin.top + 2; }
-                        doc.setFillColor('#ebf3fc'); doc.rect(margin.left, drawY, fullW, sH, 'F');
-                        doc.setFillColor('#0078d4'); doc.rect(margin.left, drawY, 1.5, sH, 'F');
-                        doc.setFontSize(8); doc.setTextColor('#0078d4'); doc.setFont('helvetica', 'bold');
-                        doc.text("SUPPLIER:", margin.left + 3, drawY + 3.5);
-                        doc.setFontSize(9); doc.setTextColor('#004578'); doc.setFont('helvetica', 'normal');
-                        const supplierText = [row.supplierName, row.supplierEmail].filter(Boolean).join(' | ');
-                        doc.text(supplierText, margin.left + 3, drawY + 6.5);
-                        drawY += sH + 2;
-                    }
-
+                    // Notes text height
                     if (row.notes) {
-                        drawY += 1;
-                        const bH = this.renderer.measureHeight(row.notes, fullW) + 5;
-                        if (drawY + bH > pageHeight - margin.bottom) { doc.addPage(); drawY = margin.top + 2; }
-                        doc.setFillColor('#fff9e6'); doc.rect(margin.left, drawY, fullW, bH, 'F');
-                        doc.setFillColor('#fce100'); doc.rect(margin.left, drawY, 1.5, bH, 'F');
-                        doc.setFontSize(8); doc.setTextColor('#8a6d3b'); doc.setFont('helvetica', 'bold');
-                        doc.text("NOTES:", margin.left + 3, drawY + 3.5);
-                        doc.setFontSize(9); doc.setTextColor('#484644'); doc.setFont('helvetica', 'normal');
-                        this.renderer.render(row.notes, margin.left + 3, drawY + 5, fullW - 4, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; });
-                        drawY += bH + 2;
+                        const notesMeasured = this.renderer.measureHeight(row.notes, descColW);
+                        descContentH += notesMeasured + 1;
                     }
 
+                    // RFQ extras
+                    if (row.answer === 'RFQ') {
+                        if (row.supplierName || row.supplierEmail) descContentH += 7;
+                        if (row.rfqLineItems && row.rfqLineItems.length > 0) {
+                            descContentH += 5 + row.rfqLineItems.length * 4.5 + 1;
+                        }
+                    }
+                    descContentH = Math.max(descContentH, minRowH);
+
+                    // Col 4 (Image): prepare all images, but only first goes in this row
+                    const imgColInnerW = col.imgW - 4;
+                    const imageDataUrls: { dataUrl: string; format: string; w: number; h: number; caption?: string }[] = [];
                     if (row.images && row.images.length > 0) {
                         for (const img of row.images) {
-                            if (img.source) {
-                                workgroupImages.push({ data: img.source, ratio: 1.77, caption: row.name });
+                            if (!img.source) continue;
+                            try {
+                                let d = img.source;
+                                if (d.startsWith('http') || d.startsWith('blob:')) {
+                                    const r = await fetch(d).catch(() => null);
+                                    if (!r || !r.ok) continue;
+                                    const b = await r.blob();
+                                    d = await this.readBlobAsDataURL(b);
+                                }
+                                d = await this.compressImageForPdf(d);
+                                const props = await this.getImageProperties(d).catch(() => ({ ratio: 1.77, width: 0, height: 0 }));
+                                const maxImgH = 30;
+                                const imgH = Math.min(maxImgH, imgColInnerW / props.ratio);
+                                const imgW = imgH * props.ratio;
+                                imageDataUrls.push({ dataUrl: d, format: 'JPEG', w: Math.min(imgW, imgColInnerW), h: imgH, caption: img.caption });
+                            } catch (e) {
+                                console.warn('[PDF] Image prep failed', e);
                             }
                         }
                     }
-                    cursorY = drawY;
-                    doc.setDrawColor('#e1dfdd'); doc.setLineWidth(0.1);
-                    doc.line(margin.left, cursorY, pageWidth - margin.right, cursorY);
-                    cursorY += 1;
-                }
-            }
+                    // Only first image height counts toward the main row
+                    const firstImgH = imageDataUrls.length > 0
+                        ? 1 + imageDataUrls[0].h + (imageDataUrls[0].caption ? 4.5 : 1)
+                        : minRowH;
+                    const imgContentH = Math.max(firstImgH, minRowH);
 
-            // Render Workgroup Images
-            if (workgroupImages.length > 0) {
-                checkPageBreak(30);
-                doc.setFontSize(10); doc.setTextColor(BRAND_COLORS.BLUE); doc.setFont('helvetica', 'bold');
-                doc.text("Workgroup Images:", margin.left, cursorY + 5);
-                cursorY += 8;
+                    // Final row height = max of all columns (only 1 image factored in)
+                    const finalRowH = Math.max(descContentH, imgContentH, minRowH);
 
-                const gap = 4;
-                const gridW = (contentWidth - gap) / 2;
-                // Process all workgroup images in parallel — getImageProperties() on base64 data
-                // is synchronous image decoding, so parallel is safe and significantly faster.
-                const loadedImages = (await Promise.all(
-                    workgroupImages.map(async (item) => {
-                        try {
-                            let d = item.data;
-                            if (d.startsWith('http') || d.startsWith('blob:')) {
-                                const r = await fetch(d).catch(() => null);
-                                if (!r || !r.ok) return null;
-                                const b = await r.blob();
-                                d = await this.readBlobAsDataURL(b);
-                            }
-                            let format = 'JPEG';
-                            if (d.startsWith('data:image/png')) format = 'PNG';
-                            else if (d.startsWith('data:image/webp')) format = 'WEBP';
-                            const props = await this.getImageProperties(d).catch(() => ({ ratio: 1.77 }));
-                            return { data: d, ratio: props.ratio, format };
-                        } catch (e) {
-                            console.error('Img Load Err', e);
-                            return null;
+                    // Page break check
+                    if (cursorY + finalRowH > pageHeight - margin.bottom) {
+                        doc.addPage();
+                        cursorY = margin.topContinuation;
+                    }
+
+                    // ── Draw row background ──
+                    // TBC / Confirmation Required → red overrides section color
+                    const rowBg = row.answer === 'TBC'
+                        ? '#fce4ec' // Red/pink for Confirmation Required
+                        : section.id === 'estimator' ? '#e8f5e9'
+                        : section.id === 'reviewer' ? '#f3e8fd'
+                        : '#ffffff';
+                    doc.setFillColor(rowBg);
+                    doc.rect(margin.left, cursorY, contentWidth, finalRowH, 'F');
+
+                    // ── Col 1: Key (answer pill) ──
+                    const pillW = Math.min(doc.getTextWidth(answerConf.label) * 1.2 + 6, col.keyW - 4);
+                    const pillX = colX.key + 2;
+                    const pillY = cursorY + 2;
+                    doc.setFillColor(answerConf.color);
+                    doc.roundedRect(pillX, pillY, pillW, 5, 1.5, 1.5, 'F');
+                    doc.setTextColor(BRAND_COLORS.WHITE);
+                    doc.setFontSize(7);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(answerConf.label, pillX + pillW / 2, pillY + 3.5, { align: 'center' });
+
+                    // ── Col 2: Item name ──
+                    doc.setTextColor(BRAND_COLORS.BLACK);
+                    doc.setFontSize(8);
+                    doc.setFont('helvetica', 'bold');
+                    const itemName = row.name || '';
+                    const itemLines = doc.splitTextToSize(itemName, col.itemW - 4);
+                    doc.text(itemLines, colX.item + 2, cursorY + 5);
+
+                    // ── Col 3: Description + Notes + RFQ ──
+                    let dY = cursorY + 2;
+                    const dX = colX.desc + 2;
+
+                    if (row.description) {
+                        doc.setFontSize(8);
+                        doc.setTextColor('#323130');
+                        doc.setFont('helvetica', 'normal');
+                        dY = this.renderer.render(
+                            row.description, dX, dY, descColW,
+                            cursorY + finalRowH, // constrain to row bounds
+                            () => { /* no page break inside cell */ return dY; }
+                        ) + 1;
+                    }
+
+                    // RFQ Supplier
+                    if (row.answer === 'RFQ' && (row.supplierName || row.supplierEmail)) {
+                        dY += 1;
+                        doc.setFontSize(7); doc.setTextColor('#0078d4'); doc.setFont('helvetica', 'bold');
+                        doc.text('Supplier:', dX, dY + 3);
+                        doc.setFont('helvetica', 'normal'); doc.setTextColor('#004578');
+                        const supplierText = [row.supplierName, row.supplierEmail].filter(Boolean).join(' | ');
+                        doc.text(supplierText, dX + 16, dY + 3);
+                        dY += 5;
+                    }
+
+                    // RFQ Line Items Table (compact inside desc column)
+                    if (row.answer === 'RFQ' && row.rfqLineItems && row.rfqLineItems.length > 0) {
+                        const tblW = descColW;
+                        const liColW = { itemNo: 14, desc: tblW - 42, qty: 14, unit: 14 };
+                        const liRowH = 4.5;
+                        // Header
+                        doc.setFillColor('#e3f2fd');
+                        doc.rect(dX, dY, tblW, liRowH, 'F');
+                        doc.setFontSize(6.5); doc.setTextColor('#333'); doc.setFont('helvetica', 'bold');
+                        let lX = dX + 1;
+                        doc.text('No.', lX, dY + 3); lX += liColW.itemNo;
+                        doc.text('Description', lX, dY + 3); lX += liColW.desc;
+                        doc.text('Qty', lX, dY + 3); lX += liColW.qty;
+                        doc.text('Unit', lX, dY + 3);
+                        dY += liRowH;
+                        // Data rows
+                        doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5);
+                        for (let li = 0; li < row.rfqLineItems.length; li++) {
+                            const item = row.rfqLineItems[li];
+                            if (li % 2 === 1) { doc.setFillColor('#f8f8f8'); doc.rect(dX, dY, tblW, liRowH, 'F'); }
+                            doc.setTextColor('#333');
+                            lX = dX + 1;
+                            doc.text(item.itemNo || '', lX, dY + 3); lX += liColW.itemNo;
+                            doc.text((item.description || '').substring(0, 60), lX, dY + 3); lX += liColW.desc;
+                            doc.text(item.qty || '', lX, dY + 3); lX += liColW.qty;
+                            doc.text(item.unit || '', lX, dY + 3);
+                            dY += liRowH;
                         }
-                    })
-                )).filter(Boolean) as { data: string; ratio: number; format: string }[];
+                        dY += 1;
+                    }
 
-                for (let i = 0; i < loadedImages.length; i += 2) {
-                    const img1 = loadedImages[i]; const img2 = loadedImages[i + 1];
-                    const h1 = gridW / img1.ratio; const h2 = img2 ? (gridW / img2.ratio) : 0;
-                    const rH = Math.max(h1, h2);
-                    if (cursorY + rH > pageHeight - margin.bottom) { doc.addPage(); cursorY = margin.top; }
-                    doc.addImage(img1.data, img1.format, margin.left, cursorY, gridW, h1);
-                    if (img2) doc.addImage(img2.data, img2.format, margin.left + gridW + gap, cursorY, gridW, h2);
-                    cursorY += rH + 4;
+                    // Notes
+                    if (row.notes) {
+                        dY += 1;
+                        doc.setFontSize(7.5);
+                        doc.setTextColor('#555555');
+                        doc.setFont('helvetica', 'normal');
+                        dY = this.renderer.render(
+                            row.notes, dX, dY, descColW,
+                            cursorY + finalRowH,
+                            () => { return dY; }
+                        ) + 1;
+                    }
+
+                    // ── Col 4: First image only in this row ──
+                    const iX = colX.img + 2;
+                    if (imageDataUrls.length > 0) {
+                        let iY = cursorY + 2;
+                        const firstImg = imageDataUrls[0];
+                        if (firstImg.caption) {
+                            doc.setFontSize(6.5);
+                            doc.setTextColor('#333333');
+                            doc.setFont('helvetica', 'bold');
+                            doc.text(firstImg.caption, iX, iY + 2.5);
+                            iY += 4;
+                        }
+                        doc.addImage(firstImg.dataUrl, firstImg.format, iX, iY, firstImg.w, firstImg.h);
+                    }
+
+                    // ── Draw cell borders ──
+                    doc.setDrawColor('#b0b8c4'); doc.setLineWidth(0.15);
+                    doc.rect(margin.left, cursorY, contentWidth, finalRowH, 'S');
+                    doc.line(colX.item, cursorY, colX.item, cursorY + finalRowH);
+                    doc.line(colX.desc, cursorY, colX.desc, cursorY + finalRowH);
+                    doc.line(colX.img, cursorY, colX.img, cursorY + finalRowH);
+
+                    cursorY += finalRowH;
+
+                    // ── Continuation rows for additional images (1 image per row) ──
+                    for (let imgIdx = 1; imgIdx < imageDataUrls.length; imgIdx++) {
+                        const extraImg = imageDataUrls[imgIdx];
+                        const contRowH = extraImg.h + (extraImg.caption ? 5.5 : 1.5) + 2;
+
+                        // Page break if needed
+                        if (cursorY + contRowH > pageHeight - margin.bottom) {
+                            doc.addPage();
+                            cursorY = margin.topContinuation;
+                        }
+
+                        // Light background for continuation row
+                        doc.setFillColor(rowBg);
+                        doc.rect(margin.left, cursorY, contentWidth, contRowH, 'F');
+
+                        // Render image in col 4
+                        let cY = cursorY + 1;
+                        if (extraImg.caption) {
+                            doc.setFontSize(6.5);
+                            doc.setTextColor('#333333');
+                            doc.setFont('helvetica', 'bold');
+                            doc.text(extraImg.caption, iX, cY + 2.5);
+                            cY += 4;
+                        }
+                        doc.addImage(extraImg.dataUrl, extraImg.format, iX, cY, extraImg.w, extraImg.h);
+
+                        // Draw borders for continuation row
+                        doc.setDrawColor('#b0b8c4'); doc.setLineWidth(0.15);
+                        doc.rect(margin.left, cursorY, contentWidth, contRowH, 'S');
+                        doc.line(colX.item, cursorY, colX.item, cursorY + contRowH);
+                        doc.line(colX.desc, cursorY, colX.desc, cursorY + contRowH);
+                        doc.line(colX.img, cursorY, colX.img, cursorY + contRowH);
+
+                        cursorY += contRowH;
+                    }
                 }
-                cursorY += 5;
             }
         };
 
@@ -360,11 +527,11 @@ export class PdfGeneratorService {
         const revisions = (this.checklist.revisions || []).sort((a, b) => b.number - a.number);
         if (revisions.length > 0) {
             checkPageBreak(20);
-            doc.setFontSize(14);
+            doc.setFontSize(13);
             doc.setTextColor(BRAND_COLORS.BLACK);
             doc.setFont('helvetica', 'bold');
-            doc.text("Revision History", margin.left, cursorY + 6);
-            cursorY += 12;
+            doc.text("Revision History", margin.left, cursorY + 5);
+            cursorY += 8;
 
             for (const rev of revisions) {
                 const revWorkgroups = this.checklist.workgroups
@@ -392,34 +559,26 @@ export class PdfGeneratorService {
 
                 // Revision Notes
                 if (rev.notes) {
-                    cursorY = this.renderer.render(rev.notes, margin.left + 2, cursorY, contentWidth - 4, pageHeight - margin.bottom, () => { doc.addPage(); return margin.top; }) + 6;
+                    cursorY = this.renderer.render(rev.notes, margin.left + 2, cursorY, contentWidth - 4, pageHeight - margin.bottom, () => { doc.addPage(); return margin.topContinuation; });
                 }
 
-                // Revision Items
+                // Revision Items — show all rows (including BLANK) for revision context
                 for (const wg of revWorkgroups) {
-                    await renderWorkgroup(wg, totalItems);
+                    await renderWorkgroup(wg, totalItems, true);
                 }
-                
-                cursorY += 5; // Spacing between revisions
+
+                cursorY += 2; // Spacing between revisions
             }
 
             // Divider + "Original Checklist" header before main checklist
             checkPageBreak(25);
+            drawSectionDivider();
 
-            // Draw full-width blue separator line
-            doc.setDrawColor(BRAND_COLORS.BLUE);
-            doc.setLineWidth(0.8);
-            doc.line(margin.left, cursorY, pageWidth - margin.right, cursorY);
-            cursorY += 4;
-
-            // "Original Checklist" section title — reset all state explicitly
-            doc.setFillColor('#ffffff');          // White bg to prevent bleed-through
-            doc.rect(margin.left, cursorY, contentWidth, 10, 'F');
             doc.setFontSize(13);
             doc.setFont('helvetica', 'bold');
-            doc.setTextColor('#000000');          // Explicit hex, avoids constant resolution issues
-            doc.text('Original Checklist', margin.left, cursorY + 7);
-            cursorY += 14;
+            doc.setTextColor('#000000');
+            doc.text('Original Checklist', margin.left, cursorY + 5);
+            cursorY += 8;
         }
 
         // --- SECTION: MAIN CHECKLIST ---
@@ -436,7 +595,7 @@ export class PdfGeneratorService {
             // Optionally force new page if preferred
             if (cursorY > margin.top + 20) {
                 doc.addPage();
-                cursorY = margin.top;
+                cursorY = margin.topContinuation;
             }
 
             doc.setFontSize(14);
@@ -450,7 +609,8 @@ export class PdfGeneratorService {
             try {
                 const carpentryBlob = await getImageService().downloadCarpentryImage(this.checklist.id);
                 if (carpentryBlob) {
-                    const dataUrl = await this.readBlobAsDataURL(carpentryBlob);
+                    const rawDataUrl = await this.readBlobAsDataURL(carpentryBlob);
+                    const dataUrl = await this.compressImageForPdf(rawDataUrl, 1200, 0.8); // wider for full-width image
                     const props = await this.getImageProperties(dataUrl);
 
                     const maxW = contentWidth;
@@ -465,9 +625,8 @@ export class PdfGeneratorService {
                         }
                     }
 
-                    // Render image
-                    // jsPDF handles PNG/JPEG automatically if type is passed, or we can look closely at format
-                    doc.addImage(dataUrl, 'WEBP', margin.left, cursorY, imgW, imgH, undefined, 'FAST');
+                    // Render image (compressed to JPEG)
+                    doc.addImage(dataUrl, 'JPEG', margin.left, cursorY, imgW, imgH, undefined, 'MEDIUM');
                     cursorY += imgH + 8;
                 }
             } catch (err) {
@@ -484,7 +643,7 @@ export class PdfGeneratorService {
                     cursorY,
                     contentWidth,
                     pageHeight - margin.bottom,
-                    () => { doc.addPage(); cursorY = margin.top; return margin.top; }
+                    () => { doc.addPage(); cursorY = margin.topContinuation; return margin.topContinuation; }
                 );
                 cursorY = descY + 5;
             }
@@ -561,6 +720,63 @@ export class PdfGeneratorService {
                 });
             };
             img.onerror = reject;
+            img.src = dataUrl;
+        });
+    }
+
+    /**
+     * Compress and resize an image to JPEG for PDF embedding.
+     * Caps at 800px wide — enough for crisp 35mm PDF display at 300 DPI.
+     * Converts PNG/WebP/JPEG → JPEG at 0.72 quality, typically 5–15× smaller than raw PNG.
+     */
+    private compressImageForPdf(dataUrl: string, maxPx: number = 800, quality: number = 0.72): Promise<string> {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const scale = Math.min(1, maxPx / img.naturalWidth);
+                    canvas.width = Math.round(img.naturalWidth * scale);
+                    canvas.height = Math.round(img.naturalHeight * scale);
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) { resolve(dataUrl); return; }
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                } catch (e) {
+                    console.warn('[PDF] compressImageForPdf failed, using original', e);
+                    resolve(dataUrl);
+                }
+            };
+            img.onerror = () => resolve(dataUrl);
+            img.src = dataUrl;
+        });
+    }
+
+    /**
+     * Re-renders an image onto a canvas at 2× native resolution and exports as PNG.
+     * Preserves transparency and improves sharpness in PDF output.
+     */
+    private upscaleToPng(dataUrl: string, scale: number = 2): Promise<string> {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth * scale;
+                    canvas.height = img.naturalHeight * scale;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) { resolve(dataUrl); return; }
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    // Do NOT fill background — preserve transparency for PNG logos
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/png'));
+                } catch (e) {
+                    console.warn('[PdfGeneratorService] upscaleToPng failed, using original', e);
+                    resolve(dataUrl);
+                }
+            };
+            img.onerror = () => resolve(dataUrl); // fallback to original on error
             img.src = dataUrl;
         });
     }
